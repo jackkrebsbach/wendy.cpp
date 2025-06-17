@@ -25,7 +25,7 @@ public:
    * @brief Minimum radius for the test functions (diagnostic & implementation
    * usage).
    */
-  double min_radius;
+  double min_radius = 2;
 
   /**
    * @brief Symbolic system expressions (one per dimension of f the RHS of the
@@ -36,7 +36,7 @@ public:
   /**
    * @brief Symbolic Jacobian of the system
    */
-  std::vector<std::vector<SymEngine::Expression>> sym_system_jac;
+  std::vector<std::vector<SymEngine::Expression> > sym_system_jac;
 
   /**
    * @brief Constructor for Wendy.
