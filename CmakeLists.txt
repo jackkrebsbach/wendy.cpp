@@ -12,6 +12,8 @@ find_library(SYMENGINE_LIBRARY symengine HINTS /opt/homebrew/lib)
 find_library(FLINT_LIBRARY flint HINTS /opt/homebrew/lib)
 find_library(GMP_LIBRARY gmp HINTS /opt/homebrew/lib)
 find_library(MPFR_LIBRARY mpfr HINTS /opt/homebrew/lib)
+find_library(SPDLOG_LIBRARY spdlog HINTS /opts/homebrew/lib)
+find_library(FMT_LIBRARY fmt HINTS /opts/homebrew/lib)
 
 # Create the static library
 add_library(wendy STATIC ${WENDY_SOURCES})
@@ -30,6 +32,8 @@ target_link_libraries(wendy
         ${FLINT_LIBRARY}
         ${GMP_LIBRARY}
         ${MPFR_LIBRARY}
+        ${SPDLOG_LIBRARY}
+        ${FMT_LIBRARY}
 )
 
 # Example executable

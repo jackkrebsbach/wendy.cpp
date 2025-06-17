@@ -9,7 +9,7 @@ std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              size_t count) {
   std::vector<Expression> vars;
   for (int i = 0; i < count; i++) {
-    vars.emplace_back(Expression(symbol(base_name + std::to_string(i + 1))));
+    vars.emplace_back(Expression(symbol(base_name + std::to_string(i))));
   }
   return vars;
 }

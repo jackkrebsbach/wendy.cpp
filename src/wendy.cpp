@@ -2,6 +2,12 @@
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
 #include <xtensor/containers/xarray.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <fmt/ranges.h>
+
+
+auto console = spdlog::stdout_color_mt("console");
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0) {
   if (U.dimension() != 2) {
@@ -13,8 +19,14 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 
   sym_system = create_symbolic_system(f);
 
-  const auto p_symbols = create_symbolic_vars("p", J);
-  // auto u_symbols = create_symbolic_vars("u", D);
+  auto p_symbols = create_symbolic_vars("p", J);
+
+  std::vector<std::string> p_symbol_strs;
+  for (const auto &sym: p_symbols) {
+    p_symbol_strs.push_back(str(sym));
+  }
+
+  console->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
 
   const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
 
@@ -22,27 +34,32 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 void Wendy::log_details() const {
-  std::cout << "Wendy class details:" << std::endl;
-  std::cout << "  D (Number of state variables): " << D << std::endl;
-  std::cout << "  J (Number of parameters): " << J << std::endl;
-  std::cout << "  min_radius: " << min_radius << std::endl;
-
-  std::cout << "  sym_system (Symbolic system expressions):" << std::endl;
-  std::cout << "    Size: " << sym_system.size() << std::endl;
-  for (size_t i = 0; i < sym_system.size(); ++i) {
-    std::cout << "      [" << i << "]: " << sym_system[i] << std::endl;
-  }
-
-  std::cout << "  sym_system_jac (Symbolic Jacobian):" << std::endl;
-  std::cout << "    Size: " << sym_system_jac.size() << std::endl;
-  for (size_t i = 0; i < sym_system_jac.size(); ++i) {
-    std::cout << "      Row " << i << " (size " << sym_system_jac[i].size()
-        << "): ";
-    for (size_t j = 0; j < sym_system_jac[i].size(); ++j) {
-      std::cout << sym_system_jac[i][j];
-      if (j < sym_system_jac[i].size() - 1)
-        std::cout << ", ";
+    // Create or get the color logger (singleton pattern)
+    auto console = spdlog::get("console");
+    if (!console) {
+        console = spdlog::stdout_color_mt("console");
     }
-    std::cout << std::endl;
-  }
+
+    console->info("Wendy class details:");
+    console->info("  D (Number of state variables): {}", D);
+    console->info("  J (Number of parameters): {}", J);
+    console->info("  min_radius: {}", min_radius);
+
+    console->info("  sym_system (Symbolic system expressions):");
+    console->info("    Size: {}", sym_system.size());
+    for (size_t i = 0; i < sym_system.size(); ++i) {
+        console->info("      [{}]: {}", i, str(sym_system[i]));
+    }
+
+    console->info("  sym_system_jac (Symbolic Jacobian):");
+    console->info("    Size: {}", sym_system_jac.size());
+    for (size_t i = 0; i < sym_system_jac.size(); ++i) {
+        std::string row;
+        for (size_t j = 0; j < sym_system_jac[i].size(); ++j) {
+            row += str(sym_system_jac[i][j]);
+            if (j < sym_system_jac[i].size() - 1)
+                row += ", ";
+        }
+        console->info("      Row {} (size {}): {}", i, sym_system_jac[i].size(), row);
+    }
 }
