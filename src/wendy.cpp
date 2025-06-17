@@ -3,7 +3,7 @@
 #include <symengine/expression.h>
 #include <xtensor/containers/xarray.hpp>
 
-Wendy::Wendy(std::vector<std::string> f, xt::xarray<double> U, std::vector<float> p0) {
+Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0) {
   if (U.dimension() != 2) {
     throw std::invalid_argument("U must be 2-dimensional");
   }
@@ -13,10 +13,10 @@ Wendy::Wendy(std::vector<std::string> f, xt::xarray<double> U, std::vector<float
 
   sym_system = create_symbolic_system(f);
 
-  auto p_symbols = create_symbolic_vars("p", J);
-  auto u_symbols = create_symbolic_vars("u", D);
+  const auto p_symbols = create_symbolic_vars("p", J);
+  // auto u_symbols = create_symbolic_vars("u", D);
 
-  auto grad_p_f = compute_jacobian(sym_system, p_symbols);
+  const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
 
   sym_system_jac = grad_p_f;
 }

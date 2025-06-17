@@ -5,53 +5,20 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
-
 /**
  * @brief Weak form estimation of nonlinear dynamics
  */
 class Wendy {
 public:
-  /**
-   * @brief Number of state variables (u1, ..., uD) aka dimension of the system
-   */
-  int D;
+    size_t D;
+    size_t J;
+    double min_radius = 2;
+    std::vector<SymEngine::Expression> sym_system;
+    std::vector<std::vector<SymEngine::Expression> > sym_system_jac;
 
-  /**
-   * @brief Number of parameters (p1, ..., pJ).
-   */
-  int J;
+    Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0);
 
-  /**
-   * @brief Minimum radius for the test functions (diagnostic & implementation
-   * usage).
-   */
-  double min_radius = 2;
-
-  /**
-   * @brief Symbolic system expressions (one per dimension of f the RHS of the
-   * system).
-   */
-  std::vector<SymEngine::Expression> sym_system;
-
-  /**
-   * @brief Symbolic Jacobian of the system
-   */
-  std::vector<std::vector<SymEngine::Expression> > sym_system_jac;
-
-  /**
-   * @brief Constructor for Wendy.
-   * @param f Character vector of system equations as strings (will be passed
-   * from R)
-   * @param U Numeric matrix of state values (noisy data).
-   * @param p0 Numeric vector of initial parameter guess (p0)
-   */
-  Wendy(std::vector<std::string> f, xt::xarray<double> U, std::vector<float> p0);
-
-  /**
-   *
-   * @brief Logs all public member details to std::cout
-   */
-  void log_details() const;
+    void log_details() const;
 };
 
 #endif // WENDY_H

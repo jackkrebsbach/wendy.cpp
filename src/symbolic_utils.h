@@ -10,7 +10,7 @@ std::vector<SymEngine::Expression>
 create_symbolic_system(const std::vector<std::string> &f);
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
-                                             int count);
+                                             size_t count);
 
 std::vector<SymEngine::Expression> create_all_symbolic_inputs(int J, int D);
 

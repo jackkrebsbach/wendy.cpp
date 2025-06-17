@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+// In general, it is not the best practice to unit test results from a library
+// however this is more of my confirming the behavior of the symbolic library.
 
 bool expr_equal(const SymEngine::Expression &a,
                 const SymEngine::Expression &b) {

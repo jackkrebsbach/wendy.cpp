@@ -6,15 +6,15 @@
 using namespace SymEngine;
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
-                                             int count) {
+                                             size_t count) {
   std::vector<Expression> vars;
   for (int i = 0; i < count; i++) {
-    vars.push_back(Expression(symbol(base_name + std::to_string(i + 1))));
+    vars.emplace_back(Expression(symbol(base_name + std::to_string(i + 1))));
   }
   return vars;
 }
 
-// Inputs includes both the parameters, p1,p2,.. and the state variables u1,...
+// Inputs includes both the parameters, p1,p2, ... and the state variables u1,...
 // and t
 std::vector<SymEngine::Expression> create_all_symbolic_inputs(int D, int J) {
   std::vector<SymEngine::Expression> u_symbols = create_symbolic_vars("u", D);
@@ -39,7 +39,7 @@ create_symbolic_system(const std::vector<std::string> &f) {
   std::vector<SymEngine::Expression> dx;
   dx.reserve(f.size());
   for (const auto &s: f) {
-    dx.push_back(SymEngine::parse(s));
+    dx.emplace_back(SymEngine::parse(s));
   }
   return dx;
 }
@@ -60,9 +60,9 @@ build_symbolic_system(const std::vector<Expression> &dx, int D, int J) {
   std::vector<LambdaRealDoubleVisitor> visitors;
   visitors.reserve(dx.size());
 
-  for (size_t i = 0; i < dx.size(); ++i) {
+  for (const auto &i: dx) {
     LambdaRealDoubleVisitor visitor;
-    visitor.init(inputs, *dx[i].get_basic());
+    visitor.init(inputs, *i.get_basic());
     visitors.push_back(std::move(visitor));
   }
 
