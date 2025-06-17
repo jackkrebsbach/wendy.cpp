@@ -3,16 +3,11 @@
 #include <Rcpp.h>
 #include <symengine/expression.h>
 
-Wendy::Wendy(Rcpp::CharacterVector f_vec, NumericMatrix U, NumericVector p0) {
+Wendy::Wendy(std::vector<std::string> f_vec, NumericMatrix U, NumericVector p0) {
   J = p0.length(); // Number of parameters in the system
   D = U.cols();    // Dimension of the system
 
-  // First need to convert the Rcpp::CharacterVector to the std vector
-  std::vector<std::string> f(f_vec.size());
-  for (int i = 0; i < f_vec.size(); ++i) {
-    f[i] = Rcpp::as<std::string>(f_vec[i]);
-  }
-  sym_system = create_symbolic_system(f);
+  sym_system = create_symbolic_system(f_vec);
 
   auto p_symbols = create_symbolic_vars("p", J);
   auto u_symbols = create_symbolic_vars("u", D);

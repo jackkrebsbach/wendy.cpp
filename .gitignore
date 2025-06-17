@@ -1,0 +1,8 @@
+/build/
+/.venv
+*.DS_Store
+*.o
+test/*
+!pkg/test/*.*
+!pkg/test/Makefile
+.idea
