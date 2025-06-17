@@ -1,11 +1,10 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#include <Rcpp.h>
+#include <xtensor/containers/xarray.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
-using namespace Rcpp;
 
 /**
  * @brief Weak form estimation of nonlinear dynamics
@@ -46,7 +45,7 @@ public:
    * @param U Numeric matrix of state values (noisy data).
    * @param p0 Numeric vector of initial parameter guess (p0)
    */
-  Wendy(CharacterVector f, NumericMatrix U, NumericVector p0);
+  Wendy(std::vector<std::string> f, xt::xarray<double> U, std::vector<float> p0);
 
   /**
    *

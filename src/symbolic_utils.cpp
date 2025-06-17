@@ -1,10 +1,8 @@
 #include "symbolic_utils.h"
-#include <Rcpp.h>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 #include <symengine/parser.h>
 
-using namespace Rcpp;
 using namespace SymEngine;
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
@@ -27,9 +25,9 @@ std::vector<SymEngine::Expression> create_all_symbolic_inputs(int D, int J) {
   std::vector<SymEngine::Expression> input_symbols;
   input_symbols.reserve(D + J + 1);
 
-  for (const auto &e : u_symbols)
+  for (const auto &e: u_symbols)
     input_symbols.push_back(e);
-  for (const auto &e : p_symbols)
+  for (const auto &e: p_symbols)
     input_symbols.push_back(e);
   input_symbols.push_back(t_symbol);
 
@@ -40,7 +38,7 @@ std::vector<SymEngine::Expression>
 create_symbolic_system(const std::vector<std::string> &f) {
   std::vector<SymEngine::Expression> dx;
   dx.reserve(f.size());
-  for (const auto &s : f) {
+  for (const auto &s: f) {
     dx.push_back(SymEngine::parse(s));
   }
   return dx;
@@ -49,7 +47,7 @@ create_symbolic_system(const std::vector<std::string> &f) {
 vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
   vec_basic basics;
   basics.reserve(exprs.size());
-  for (const auto &e : exprs)
+  for (const auto &e: exprs)
     basics.push_back(e.get_basic());
   return basics;
 }
@@ -70,12 +68,13 @@ build_symbolic_system(const std::vector<Expression> &dx, int D, int J) {
 
   return visitors;
 }
+
 // For vector input
-std::vector<std::vector<Expression>>
+std::vector<std::vector<Expression> >
 compute_jacobian(const std::vector<Expression> &system,
                  const std::vector<Expression> &inputs) {
-  std::vector<std::vector<Expression>> jacobian(
-      system.size(), std::vector<Expression>(inputs.size()));
+  std::vector<std::vector<Expression> > jacobian(
+    system.size(), std::vector<Expression>(inputs.size()));
 
   for (size_t i = 0; i < system.size(); ++i) {
     for (size_t j = 0; j < inputs.size(); ++j) {
@@ -86,14 +85,14 @@ compute_jacobian(const std::vector<Expression> &system,
 }
 
 // For matrix input
-std::vector<std::vector<std::vector<Expression>>>
-compute_jacobian(const std::vector<std::vector<Expression>> &matrix,
+std::vector<std::vector<std::vector<Expression> > >
+compute_jacobian(const std::vector<std::vector<Expression> > &matrix,
                  const std::vector<Expression> &inputs) {
   size_t rows = matrix.size();
   size_t cols = rows > 0 ? matrix[0].size() : 0;
-  std::vector<std::vector<std::vector<Expression>>> jacobian(
-      rows, std::vector<std::vector<Expression>>(
-                cols, std::vector<Expression>(inputs.size())));
+  std::vector<std::vector<std::vector<Expression> > > jacobian(
+    rows, std::vector<std::vector<Expression> >(
+      cols, std::vector<Expression>(inputs.size())));
 
   for (size_t i = 0; i < rows; ++i) {
     for (size_t j = 0; j < cols; ++j) {

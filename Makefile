@@ -4,7 +4,7 @@ LDFLAGS = -L/opt/homebrew/lib
 LIBS = -lsymengine -lflint -lgmp -lmpfr
 
 TARGET = main
-SRC = $(wildcard src/*.cpp)
+SRC = $(wildcard src/*.cpp) $(wildcard test/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 # Test-specific variables

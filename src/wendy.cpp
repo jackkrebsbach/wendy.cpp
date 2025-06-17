@@ -1,13 +1,17 @@
 #include "wendy.h"
 #include "symbolic_utils.h"
-#include <Rcpp.h>
 #include <symengine/expression.h>
+#include <xtensor/containers/xarray.hpp>
 
-Wendy::Wendy(std::vector<std::string> f_vec, NumericMatrix U, NumericVector p0) {
-  J = p0.length(); // Number of parameters in the system
-  D = U.cols();    // Dimension of the system
+Wendy::Wendy(std::vector<std::string> f, xt::xarray<double> U, std::vector<float> p0) {
+  if (U.dimension() != 2) {
+    throw std::invalid_argument("U must be 2-dimensional");
+  }
 
-  sym_system = create_symbolic_system(f_vec);
+  J = p0.size(); // Number of parameters in the system
+  D = U.shape()[1]; // Dimension of the system
+
+  sym_system = create_symbolic_system(f);
 
   auto p_symbols = create_symbolic_vars("p", J);
   auto u_symbols = create_symbolic_vars("u", D);
@@ -33,7 +37,7 @@ void Wendy::log_details() const {
   std::cout << "    Size: " << sym_system_jac.size() << std::endl;
   for (size_t i = 0; i < sym_system_jac.size(); ++i) {
     std::cout << "      Row " << i << " (size " << sym_system_jac[i].size()
-              << "): ";
+        << "): ";
     for (size_t j = 0; j < sym_system_jac[i].size(); ++j) {
       std::cout << sym_system_jac[i][j];
       if (j < sym_system_jac[i].size() - 1)
