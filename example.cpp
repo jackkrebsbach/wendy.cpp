@@ -3,9 +3,8 @@
 #include <string>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/containers/xadapt.hpp>
-#include <symengine/expression.h>
 #include "src/wendy.h"
-#include <spdlog/spdlog.h>
+#include "src/logger.h"
 #include <random>
 #include <cmath>
 
@@ -70,15 +69,16 @@ int main() {
     spdlog::set_pattern("[%^%l%$] %v");
 
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
-    std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
+    const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
     int npoints = 100;
-    double t0 = 0.0, t1 = 80.0;
-    double noise_ratio = 0.15;
-    auto u_star = integrate_goodwin(u0, p_star, t0, t1, npoints);
-    auto u_noisy = add_noise(u_star, noise_ratio);
+    constexpr double t0 = 0.0;
+    constexpr double t1 = 80.0;
+    constexpr double noise_ratio = 0.15;
+    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, npoints);
+    const auto u_noisy = add_noise(u_star, noise_ratio);
 
-    std::vector<size_t> shape = {static_cast<size_t>(npoints), u0.size()};
+    const std::vector<size_t> shape = {static_cast<size_t>(npoints), u0.size()};
 
     std::vector<double> u_flat;
     for (const auto &row: u_noisy) {
@@ -98,7 +98,8 @@ int main() {
     std::vector<float> p0(p_star.begin(), p_star.end());
     try {
         const Wendy wendy(system_eqs, U, p0);
-        wendy.log_details();
+        // console->debug("Testing console");
+        // wendy.log_details();
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }

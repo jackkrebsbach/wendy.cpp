@@ -1,4 +1,5 @@
 #include "wendy.h"
+#include "logger.h"
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
 #include <xtensor/containers/xarray.hpp>
@@ -6,8 +7,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
 
-
-auto console = spdlog::stdout_color_mt("console");
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0) {
     if (U.dimension() != 2) {
@@ -35,11 +34,6 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 void Wendy::log_details() const {
-    // Create or get the color logger (singleton pattern)
-    auto console = spdlog::get("console");
-    if (!console) {
-        console = spdlog::stdout_color_mt("console");
-    }
 
     console->info("Wendy class details:");
     console->info("  D (Number of state variables): {}", D);

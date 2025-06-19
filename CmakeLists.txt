@@ -5,57 +5,24 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB WENDY_SOURCES src/*.cpp)
+list(APPEND WENDY_SOURCES example.cpp)
 
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
+find_package(xtensor REQUIRED)
 
-target_link_libraries(wendy PUBLIC spdlog::spdlog fmt::fmt)
+add_executable(example example.cpp ${WENDY_SOURCES})
 
-find_library(SYMENGINE_LIBRARY symengine HINTS /opt/homebrew/lib)
-find_library(FLINT_LIBRARY flint HINTS /opt/homebrew/lib)
-find_library(GMP_LIBRARY gmp HINTS /opt/homebrew/lib)
-find_library(MPFR_LIBRARY mpfr HINTS /opt/homebrew/lib)
-find_library(SPDLOG_LIBRARY spdlog HINTS /opts/homebrew/lib)
-find_library(FMT_LIBRARY fmt HINTS /opts/homebrew/lib)
-
-add_library(wendy STATIC ${WENDY_SOURCES})
-
-target_include_directories(wendy
-        PUBLIC
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}
-        /opt/homebrew/include
-)
-
-target_link_libraries(wendy
-        PUBLIC
-        ${SYMENGINE_LIBRARY}
-        ${FLINT_LIBRARY}
-        ${GMP_LIBRARY}
-        ${MPFR_LIBRARY}
-        ${SPDLOG_LIBRARY}
-        ${FMT_LIBRARY}
-)
-
-add_executable(example example.cpp)
-
-target_include_directories(example
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-        /opt/homebrew/include
-)
+target_include_directories(example PRIVATE /opt/homebrew/include)
+target_link_directories(example PRIVATE /opt/homebrew/lib)
 
 target_link_libraries(example
         PRIVATE
-        wendy
-        ${SYMENGINE_LIBRARY}
-        ${FLINT_LIBRARY}
-        ${GMP_LIBRARY}
-        ${MPFR_LIBRARY}
-)
-
-set_target_properties(wendy example PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+        symengine
+        flint
+        mpfr
+        gmp
+        spdlog::spdlog
+        fmt::fmt
+        xtensor
 )
