@@ -95,13 +95,12 @@ int main() {
     };
 
 
-    std::vector<float> p0(p_star.begin(), p_star.end());
+    const std::vector<float> p0(p_star.begin(), p_star.end());
     try {
+        logger->set_level(spdlog::level::debug);
         const Wendy wendy(system_eqs, U, p0);
-        // console->debug("Testing console");
-        // wendy.log_details();
     } catch (const std::exception &e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        logger->error("Exception occured: {}", e.what());
     }
     return 0;
 }

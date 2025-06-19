@@ -26,7 +26,7 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
         p_symbol_strs.push_back(str(sym));
     }
 
-    console->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
+    logger->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
 
     const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
 
@@ -35,19 +35,19 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 
 void Wendy::log_details() const {
 
-    console->info("Wendy class details:");
-    console->info("  D (Number of state variables): {}", D);
-    console->info("  J (Number of parameters): {}", J);
-    console->info("  min_radius: {}", min_radius);
+    logger->info("Wendy class details:");
+    logger->info("  D (Number of state variables): {}", D);
+    logger->info("  J (Number of parameters): {}", J);
+    logger->info("  min_radius: {}", min_radius);
 
-    console->info("  sym_system (Symbolic system expressions):");
-    console->info("    Size: {}", sym_system.size());
+    logger->info("  sym_system (Symbolic system expressions):");
+    logger->info("    Size: {}", sym_system.size());
     for (size_t i = 0; i < sym_system.size(); ++i) {
-        console->info("      [{}]: {}", i, str(sym_system[i]));
+        logger->info("      [{}]: {}", i, str(sym_system[i]));
     }
 
-    console->info("  sym_system_jac (Symbolic Jacobian):");
-    console->info("    Size: {}", sym_system_jac.size());
+    logger->info("  sym_system_jac (Symbolic Jacobian):");
+    logger->info("    Size: {}", sym_system_jac.size());
     for (size_t i = 0; i < sym_system_jac.size(); ++i) {
         std::string row;
         for (size_t j = 0; j < sym_system_jac[i].size(); ++j) {
@@ -55,6 +55,6 @@ void Wendy::log_details() const {
             if (j < sym_system_jac[i].size() - 1)
                 row += ", ";
         }
-        console->info("      Row {} (size {}): {}", i, sym_system_jac[i].size(), row);
+        logger->info("      Row {} (size {}): {}", i, sym_system_jac[i].size(), row);
     }
 }
