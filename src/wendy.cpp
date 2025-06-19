@@ -10,27 +10,28 @@
 auto console = spdlog::stdout_color_mt("console");
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0) {
-  if (U.dimension() != 2) {
-    throw std::invalid_argument("U must be 2-dimensional");
-  }
+    if (U.dimension() != 2) {
+        throw std::invalid_argument("U must be 2-dimensional");
+    }
 
-  J = p0.size(); // Number of parameters in the system
-  D = U.shape()[1]; // Dimension of the system
+    J = p0.size(); // Number of parameters in the system
+    D = U.shape()[1]; // Dimension of the system
 
-  sym_system = create_symbolic_system(f);
+    sym_system = create_symbolic_system(f);
 
-  auto p_symbols = create_symbolic_vars("p", J);
+    auto p_symbols = create_symbolic_vars("p", J);
 
-  std::vector<std::string> p_symbol_strs;
-  for (const auto &sym: p_symbols) {
-    p_symbol_strs.push_back(str(sym));
-  }
+    std::vector<std::string> p_symbol_strs;
+    p_symbol_strs.reserve(p_symbols.size());
+    for (const auto &sym: p_symbols) {
+        p_symbol_strs.push_back(str(sym));
+    }
 
-  console->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
+    console->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
 
-  const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
+    const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
 
-  sym_system_jac = grad_p_f;
+    sym_system_jac = grad_p_f;
 }
 
 void Wendy::log_details() const {

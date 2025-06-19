@@ -5,6 +5,7 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
+
 /**
  * @brief Weak form estimation of nonlinear dynamics
  */
