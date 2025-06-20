@@ -1,5 +1,6 @@
 #include "wendy.h"
 #include "logger.h"
+#include "test_function.h"
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
 #include <xtensor/containers/xarray.hpp>
@@ -8,37 +9,42 @@
 #include <fmt/ranges.h>
 
 
-Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0) {
+std::tuple<xt::xarray<double>, xt::xarray<double>> Wendy::get_test_function_matrices() {
+
+    // auto [min_radius, max_radius, radius_params] = sanitize_radius_params()
+    // auto radii = min_radius*radius_params
+    // auto radii.filter(r < radius_max in radii)
+    //V_full = [build_test_function_matrix(int(i), tt) for i in radii ]
+
+    auto V = xt::xarray<double>({1.,3,4.0});
+    auto V_prime = xt::xarray<double>({1,3,4.0});
+
+    return {V, V_prime};
+}
+
+Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt){
     if (U.dimension() != 2) {
         throw std::invalid_argument("U must be 2-dimensional");
     }
 
     J = p0.size(); // Number of parameters in the system
     D = U.shape()[1]; // Dimension of the system
+    this->tt = tt; // Time array
 
     sym_system = create_symbolic_system(f);
 
-    auto p_symbols = create_symbolic_vars("p", J);
-
-    std::vector<std::string> p_symbol_strs;
-    p_symbol_strs.reserve(p_symbols.size());
-    for (const auto &sym: p_symbols) {
-        p_symbol_strs.push_back(str(sym));
-    }
-
-    logger->debug("p_symbols: [{}]", fmt::join(p_symbol_strs, ", "));
-
+    const auto p_symbols = create_symbolic_vars("p", J);
     const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
 
     sym_system_jac = grad_p_f;
 }
+
 
 void Wendy::log_details() const {
 
     logger->info("Wendy class details:");
     logger->info("  D (Number of state variables): {}", D);
     logger->info("  J (Number of parameters): {}", J);
-    logger->info("  min_radius: {}", min_radius);
 
     logger->info("  sym_system (Symbolic system expressions):");
     logger->info("    Size: {}", sym_system.size());

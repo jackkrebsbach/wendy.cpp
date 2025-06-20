@@ -6,7 +6,7 @@
 using namespace SymEngine;
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
-                                             size_t count) {
+                                             const size_t count) {
   std::vector<Expression> vars;
   vars.reserve(count);
 for (int i = 0; i < count; i++) {
@@ -56,7 +56,7 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
 std::vector<LambdaRealDoubleVisitor>
 build_symbolic_system(const std::vector<Expression> &dx, int D, int J) {
   std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
-  vec_basic inputs = expressions_to_vec_basic(input_exprs);
+  const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
   std::vector<LambdaRealDoubleVisitor> visitors;
   visitors.reserve(dx.size());

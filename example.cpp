@@ -71,14 +71,14 @@ int main() {
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    int npoints = 100;
+    int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
     constexpr double noise_ratio = 0.15;
-    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, npoints);
+    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
     const auto u_noisy = add_noise(u_star, noise_ratio);
 
-    const std::vector<size_t> shape = {static_cast<size_t>(npoints), u0.size()};
+    const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
     std::vector<double> u_flat;
     for (const auto &row: u_noisy) {
@@ -87,20 +87,21 @@ int main() {
 
     xt::xarray<double> U = xt::adapt(u_flat, shape);
 
-
     std::vector<std::string> system_eqs = {
         "p0 / (2.15 + p2 * u2^p3) - p1 * u0",
         "p4 * u0 - p5 * u1",
         "p6 * u1 - p7 * u2"
     };
 
-
+    const xt::xarray<double> tt = xt::linspace(t0, t1, num_samples);
     const std::vector<float> p0(p_star.begin(), p_star.end());
     try {
-        logger->set_level(spdlog::level::debug);
-        const Wendy wendy(system_eqs, U, p0);
+       logger->set_level(spdlog::level::debug);
+       const Wendy w(system_eqs, U, p0, tt);
+       const auto [V, V_prime] = w.get_test_function_matrices();
+
     } catch (const std::exception &e) {
-        logger->error("Exception occured: {}", e.what());
+        logger->error("Exception occurred: {}", e.what());
     }
     return 0;
 }

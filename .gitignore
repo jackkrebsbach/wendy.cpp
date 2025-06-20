@@ -6,3 +6,4 @@ test/*
 !pkg/test/*.*
 !pkg/test/Makefile
 .idea
+cmake-build-debug
