@@ -3,26 +3,15 @@
 #include "test_function.h"
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
+#include <iostream>
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/views/xview.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
 
 
-std::tuple<xt::xarray<double>, xt::xarray<double>> Wendy::get_test_function_matrices() {
-
-    // auto [min_radius, max_radius, radius_params] = sanitize_radius_params()
-    // auto radii = min_radius*radius_params
-    // auto radii.filter(r < radius_max in radii)
-    //V_full = [build_test_function_matrix(int(i), tt) for i in radii ]
-
-    auto V = xt::xarray<double>({1.,3,4.0});
-    auto V_prime = xt::xarray<double>({1,3,4.0});
-
-    return {V, V_prime};
-}
-
-Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt){
+Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt) {
     if (U.dimension() != 2) {
         throw std::invalid_argument("U must be 2-dimensional");
     }
@@ -40,8 +29,21 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 
-void Wendy::log_details() const {
+std::tuple<xt::xarray<double>, xt::xarray<double>> Wendy::get_test_function_matrices() const {
 
+    auto radii = testFunctionParams.radius_params;
+
+    xt::xarray<double> V_k = build_test_function_matrix(tt, 3);
+    // Now just need to loop through all the radii and stack them together
+
+    auto V_prime = xt::xarray<double>({1,3,4.0});
+
+    return {V_prime, V_prime};
+
+}
+
+
+void Wendy::log_details() const {
     logger->info("Wendy class details:");
     logger->info("  D (Number of state variables): {}", D);
     logger->info("  J (Number of parameters): {}", J);
@@ -51,6 +53,7 @@ void Wendy::log_details() const {
     for (size_t i = 0; i < sym_system.size(); ++i) {
         logger->info("      [{}]: {}", i, str(sym_system[i]));
     }
+
 
     logger->info("  sym_system_jac (Symbolic Jacobian):");
     logger->info("    Size: {}", sym_system_jac.size());

@@ -3,7 +3,7 @@
 
 double phi(const double &t, const double &eta = 9);
 
- void build_test_function_matrix(
-  const int &radius,
-  const xt::xarray<double> &tt,
-  std::optional<int> number_test_functions = std::nullopt);
+xt::xarray<double> build_test_function_matrix(const xt::xarray<double> &tt, int radius);
+
+std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, int len_tt,
+     std::optional<int> n_test_functions = std::nullopt);
