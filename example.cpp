@@ -98,8 +98,9 @@ int main() {
     const std::vector<float> p0(p_star.begin(), p_star.end());
     try {
        logger->set_level(spdlog::level::debug);
-       const Wendy w(system_eqs, U, p0, tt);
-       const auto [V, V_prime] = w.get_test_function_matrices();
+       Wendy w(system_eqs, U, p0, tt);
+       w.build_test_function_matrices();
+       auto V = w.getV();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());

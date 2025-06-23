@@ -29,17 +29,21 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 
-std::tuple<xt::xarray<double>, xt::xarray<double>> Wendy::get_test_function_matrices() const {
+void Wendy::build_test_function_matrices(){
 
-    auto radii = testFunctionParams.radius_params;
+   auto radii = testFunctionParams.radius_params;
 
-    xt::xarray<double> V_k = build_test_function_matrix(tt, 3);
-    // Now just need to loop through all the radii and stack them together
-
-    auto V_prime = xt::xarray<double>({1,3,4.0});
-
-    return {V_prime, V_prime};
-
+   std::vector<xt::xarray<double>> test_matrices;
+   for (int i = 0; i < radii.shape()[0]; ++i) {
+        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i]);
+        test_matrices.emplace_back(std::move(V_k));
+    }
+    xt::xarray<double> V_full = test_matrices[0];
+    for (size_t i = 1; i < test_matrices.size(); ++i) {
+        V_full = xt::concatenate(xt::xtuple(V_full, test_matrices[i]));
+    }
+    this->V = V_full;
+    this->V_prime = V_full;
 }
 
 
@@ -67,3 +71,4 @@ void Wendy::log_details() const {
         logger->info("      Row {} (size {}): {}", i, sym_system_jac[i].size(), row);
     }
 }
+

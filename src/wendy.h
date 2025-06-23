@@ -42,8 +42,12 @@ public:
         const std::vector<float> &p0,
         const xt::xarray<double> &tt);
 
-    [[nodiscard]] std::tuple<xt::xarray<double>, xt::xarray<double>> get_test_function_matrices() const;
+    void build_test_function_matrices();
     void log_details() const;
+
+
+    //Getters
+    [[nodiscard]] const xt::xarray<double>& getV() const { return V; }
 };
 
 #endif // WENDY_H
