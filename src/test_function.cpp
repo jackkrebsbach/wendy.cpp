@@ -49,7 +49,7 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
    std::vector<std::vector<std::size_t>> indices_list;
 
     for (int i = 0; i < n ; ++i) {
-         auto start = i*gap+1; // Offset by 1 to skip the boundary
+        auto start = i*gap+1; // Offset by 1 to skip the boundary
         auto end = start + diameter;
 
         if (n == 1) {
@@ -87,13 +87,16 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
     xt::xarray<double> v_row = xt::zeros<double>({xx.size()});
     std::ranges::transform(xx, v_row.begin(), [](const double x) { return phi(x, 9.0); });
+    // Add back in zero on the endpoints
+    xt::xarray<double> v_row_padded = xt::zeros<double>({v_row.size() + 2});
+    xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
 
     xt::xarray<double> V = xt::zeros<double>({indices.size(), len_tt});
 
     for (size_t i = 0; i < indices.size() - 1; i++) {
         const auto& support_indices = indices[i];
         auto n_support = support_indices.size();
-        xt::view(V, i, xt::keep(support_indices)) = xt::view(v_row, xt::range(0, n_support));
+        xt::view(V, i, xt::keep(support_indices)) = xt::view(v_row_padded, xt::range(0, n_support));
     }
 
     return V;
