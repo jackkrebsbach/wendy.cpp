@@ -100,7 +100,6 @@ int main() {
        logger->set_level(spdlog::level::debug);
        Wendy w(system_eqs, U, p0, tt);
        w.build_test_function_matrices();
-       auto V = w.getV();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());
