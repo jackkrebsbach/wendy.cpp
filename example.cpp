@@ -72,7 +72,7 @@ int main() {
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    int num_samples = 100;
+    int num_samples = 20;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
     constexpr double noise_ratio = 0.15;

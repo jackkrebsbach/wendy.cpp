@@ -39,9 +39,12 @@ void Wendy::build_test_function_matrices(){
         test_matrices.emplace_back(std::move(V_k));
     }
     xt::xarray<double> V_full = test_matrices[0];
+
     for (size_t i = 1; i < test_matrices.size(); ++i) {
-        V_full = xt::concatenate(xt::xtuple(V_full, test_matrices[i]));
+        // Very subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
+        V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
     }
+
     this->V = V_full;
     this->V_prime = V_full;
 }
