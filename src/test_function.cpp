@@ -3,6 +3,8 @@
 #include "logger.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
+#include <xtensor/core/xmath.hpp>
+#include <xtensor/reducers/xnorm.hpp>
 
 
 using namespace xt;
@@ -88,6 +90,10 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
     xt::xarray<double> v_row = xt::zeros<double>({xx.size()});
     std::ranges::transform(xx, v_row.begin(), [](const double x) { return phi(x, 9.0); });
+    // Normalize
+
+    auto v_l2 = xt::norm_l2(v_row, {});
+    v_row /= v_l2;
 
     // Add back in zero on the endpoints
     xt::xarray<double> v_row_padded = xt::zeros<double>({v_row.size() + 2});
