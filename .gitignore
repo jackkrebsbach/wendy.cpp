@@ -2,6 +2,7 @@
 /.venv
 *.DS_Store
 *.o
+*.tmp
 test/*
 !pkg/test/*.*
 !pkg/test/Makefile

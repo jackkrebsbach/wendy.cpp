@@ -9,6 +9,14 @@ using namespace xt;
 double phi(const double &t, const double &eta = 9) {
   return (std::exp(-eta * std::pow((1 -std::pow(t,2)), -1 )));
 }
+std::vector<double> phi(const std::vector<double>& t_vec, double eta = 9) {
+    std::vector<double> result;
+    result.reserve(t_vec.size());
+    for (const auto& t : t_vec) {
+        result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
+    }
+    return result;
+}
 
 std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
     const std::optional<int> n_test_functions = std::nullopt) {
@@ -77,7 +85,7 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     auto xx = xt::view(xt::linspace(-1,1, diameter+2), xt::range(1,diameter-1));
 
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
-    xt::xarray<double> v_row = xt::zeros<double>({len_tt - 2});
+    xt::xarray<double> v_row = xt::zeros<double>({xx.size()});
     std::ranges::transform(xx, v_row.begin(), [](const double x) { return phi(x, 9.0); });
 
     xt::xarray<double> V = xt::zeros<double>({indices.size(), len_tt});

@@ -1,5 +1,9 @@
 # wendy.cpp
 
+>[!WARNING]
+> This package is not ready for usage and is still under development.
+
+
 Weak Form Estimation of Nonlinear Dynamics (WENDy) is an algorithm to estimate parameters of a system of Ordinary
 Differential Equations (ODE).
 
