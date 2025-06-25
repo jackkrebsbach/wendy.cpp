@@ -37,15 +37,17 @@ void Wendy::build_test_function_matrices(){
 
    double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
 
+    // Vector containing test matrices for one radius
    std::vector<xt::xarray<double>> test_matrices;
    for (int i = 0; i < radii.shape()[0]; ++i) {
+        // Build the test matrix for one radius
         xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i]);
         test_matrices.emplace_back(std::move(V_k));
     }
     xt::xarray<double> V_full = test_matrices[0];
 
     for (size_t i = 1; i < test_matrices.size(); ++i) {
-        // Very subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
+        //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
         V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
     }
 

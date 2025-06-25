@@ -4,6 +4,7 @@
 #include <xtensor/views/xview.hpp>
 #include <xtensor/reducers/xnorm.hpp>
 #include <xtensor/misc/xcomplex.hpp>
+#include <xtensor/core/xvectorize.hpp>
 
 using namespace xt;
 
@@ -82,16 +83,15 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     }
     // For one radius get the support indices for all phi_k (different centers)
     auto indices = get_test_function_support_indices(radius, len_tt);
+
     // Don't include the endpoints (support is zero)
-    auto xx = xt::view(xt::linspace(-1,1, diameter+2), xt::range(1,diameter-1));
+    auto lin = xt::linspace(-1.0, 1.0, diameter + 2);
+    auto xx = xt::xarray<double>(xt::view(lin, xt::range(1, diameter + 1)));
 
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
-    xt::xarray<double> v_row = xt::zeros<double>({xx.size()});
-    std::ranges::transform(xx, v_row.begin(), [](const double x) { return phi(x, 9.0); });
-
-    // Normalize
-    auto v_l2 = xt::norm_l2(v_row);
-    v_row /= v_l2;
+    auto phi_vec = xt::vectorize([](double x) { return phi(x, 9.0); });
+    auto v_row = xt::eval(phi_vec(xx));
+    v_row /= xt::norm_l2(v_row)();
 
     // Add back in zero on the endpoints
     xt::xarray<double> v_row_padded = xt::zeros<double>({v_row.size() + 2});
