@@ -10,11 +10,11 @@
 
 xt::xarray<std::complex<double>>
 calculate_fft(const xt::xarray<double>& data) {
-
     int nrows = static_cast<int>(data.shape()[0]);
-    int ncols =static_cast<int>(data.shape()[1]);
-
+    int ncols = static_cast<int>(data.shape()[1]);
     int nfreq = ncols / 2 + 1;
+
+
     xt::xarray<std::complex<double>> f_hat = xt::zeros<std::complex<double>>({nrows, nfreq});
 
     std::vector<double> in(ncols);
@@ -27,8 +27,10 @@ calculate_fft(const xt::xarray<double>& data) {
 
     for (int row = 0; row < nrows; ++row) {
         auto data_row = xt::row(data, row);
-        std::ranges::copy(data_row, in.begin());
+        std::copy(data_row.begin(), data_row.end(), in.begin());
+
         fftw_execute(plan);
+
         for (int freq = 0; freq < nfreq; ++freq) {
             f_hat(row, freq) = out[freq];
         }

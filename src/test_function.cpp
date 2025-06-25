@@ -129,10 +129,10 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
         // (K, D, Mp1) Need this so reshaping works the way we want
         auto GT = xt::xarray<double>(xt::transpose(xt::xarray<double>(G), std::vector<std::size_t>{0,2,1}));
         //For column i (index time), one row is phi_k(t_i)u(t_i)[D] <- Dth dimension
-        GT.resize({K*D, Mp1});
+        auto GT_reshaped = xt::reshape_view(GT, {K*D, Mp1});
 
         //Fast Fourier Transform
-        auto f_hat_G = calculate_fft(GT);
+        auto f_hat_G = calculate_fft(GT_reshaped);
         auto f_hat_G_imag = xt::eval(xt::imag(xt::col(f_hat_G, IX)));
         errors[i] = xt::norm_l2(f_hat_G_imag)(); // Have to actually evaluate the expression ()
     }
