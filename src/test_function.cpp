@@ -1,11 +1,9 @@
-#include <cmath>
-#include <iostream>
+#include "fft.h"
 #include "logger.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
-#include <xtensor/core/xmath.hpp>
 #include <xtensor/reducers/xnorm.hpp>
-
+#include <xtensor/misc/xcomplex.hpp>
 
 using namespace xt;
 
@@ -92,7 +90,7 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     std::ranges::transform(xx, v_row.begin(), [](const double x) { return phi(x, 9.0); });
 
     // Normalize
-    auto v_l2 = xt::norm_l2(v_row, {});
+    auto v_l2 = xt::norm_l2(v_row);
     v_row /= v_l2;
 
     // Add back in zero on the endpoints
@@ -112,14 +110,12 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
 
 double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     double radius_min, double radius_max,int n_test_functions, int num_radii=100, int sub_sample_rate = 2) {
-    // Number of data points
-    auto Mp1  = U.shape()[0];
-    // Dimension of the system
-    auto D = U.shape()[1];
+    auto Mp1  = U.shape()[0]; // Number of data points
+    auto D = U.shape()[1]; // Dimension of the system
+
     int step = std::max(1, static_cast<int>(std::ceil((radius_max - radius_min) / static_cast<double>(num_radii))));
     const auto radii = xt::arange(radius_min, radius_max, step);
-    auto errors = xt::xarray<double>::from_shape(std::vector<std::size_t>{radii.size()});
-
+    xt::xarray<double> errors = xt::zeros<double>({radii.size()});
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
@@ -128,17 +124,20 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
         auto V_r = build_test_function_matrix(tt, radius);
         auto K = V_r.shape()[0]; // Number of test functions for a given radius
 
-        // (K, Mp1, D) Essentially element wise for each dimension phi(t_i) and u(t_i) for all phi_k
+        // (K, Mp1, D)  Element wise for each dimension phi(t_i) and u(t_i) for all phi_k
         auto G = xt::expand_dims(V_r,2) * xt::expand_dims(U, 0);
-
         // (K, D, Mp1) Need this so reshaping works the way we want
         auto GT = xt::xarray<double>(xt::transpose(xt::xarray<double>(G), std::vector<std::size_t>{0,2,1}));
-
         //For column i (index time), one row is phi_k(t_i)u(t_i)[D] <- Dth dimension
-        GT.reshape({K*D, Mp1});
+        GT.resize({K*D, Mp1});
+
+        //Fast Fourier Transform
+        auto f_hat_G = calculate_fft(GT);
+        auto f_hat_G_imag = xt::eval(xt::imag(xt::col(f_hat_G, IX)));
+        errors[i] = xt::norm_l2(f_hat_G_imag)(); // Have to actually evaluate the expression ()
     }
 
-
-    return 2;
+    // Need to actually find the elbow point
+    return radii[0];
 }
 
