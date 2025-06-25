@@ -9,7 +9,7 @@
 
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
-    xt::xarray<int> radius_params = xt::pow(2, xt::xarray<double>{1,3,5});
+    xt::xarray<int> radius_params = xt::pow(2, xt::xarray<double>{1,3});
     double radius_min_time = 0.01;
     double radius_max_time = 5;
 
