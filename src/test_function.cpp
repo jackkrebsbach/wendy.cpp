@@ -142,3 +142,13 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     return radii[0];
 }
 
+size_t get_corner_index(const xt::xarray<double> &yy, std::optional<xt::xarray<double>> xx_in = std::nullopt) {
+    auto N = yy.size();
+
+    xt::xarray<double> xx;
+    if (!xx_in) {
+        xx = xt::arange<double>(1, N+1);
+    }
+
+    return 1;
+}
