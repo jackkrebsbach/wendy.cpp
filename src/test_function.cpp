@@ -1,3 +1,5 @@
+#include "test_function.h"
+
 #include "fft.h"
 #include "logger.h"
 #include <xtensor/views/xview.hpp>
@@ -9,10 +11,10 @@
 
 using namespace xt;
 
-double phi(const double &t, const double &eta = 9) {
+double phi(const double &t, const double &eta) {
   return (std::exp(-eta * std::pow((1 -std::pow(t,2)), -1 )));
 }
-std::vector<double> phi(const std::vector<double>& t_vec, double eta = 9) {
+std::vector<double> phi(const std::vector<double>& t_vec, double eta) {
     std::vector<double> result;
     result.reserve(t_vec.size());
     for (const auto& t : t_vec) {
@@ -22,7 +24,7 @@ std::vector<double> phi(const std::vector<double>& t_vec, double eta = 9) {
 }
 
 std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
-    const std::optional<int> n_test_functions = std::nullopt) {
+    const std::optional<int> n_test_functions) {
 
     const int diameter =  2 * radius + 1;
     const int len_interior = len_tt - 2;
@@ -110,7 +112,7 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
 
 
 double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
-    double radius_min, double radius_max,int n_test_functions, int num_radii=100, int sub_sample_rate = 2) {
+    double radius_min, double radius_max,int n_test_functions, int num_radii, int sub_sample_rate) {
     auto Mp1  = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
 
@@ -138,12 +140,11 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
         errors[i] = xt::norm_l2(f_hat_G_imag)(); // Have to actually evaluate the expression ()
     }
 
-    // Need to actually find the elbow point. Using two secant lines.
-    // More work on submodule
-    return radii[0];
+    auto ix = get_corner_index(errors);
+    return ix;
 }
 
-size_t get_corner_index(const xt::xarray<double> &yy, std::optional<xt::xarray<double>> xx_in = std::nullopt) {
+size_t get_corner_index(const xt::xarray<double> &yy, const std::optional<xt::xarray<double>>& xx_in = std::nullopt) {
     auto N = yy.size();
 
     xt::xarray<double> xx;
