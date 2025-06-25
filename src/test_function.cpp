@@ -144,7 +144,7 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     return ix;
 }
 
-size_t get_corner_index(const xt::xarray<double> &yy, const std::optional<xt::xarray<double>>& xx_in = std::nullopt) {
+size_t get_corner_index(const xt::xarray<double> &yy, const std::optional<xt::xarray<double>>& xx_in) {
     auto N = yy.size();
 
     xt::xarray<double> xx;
@@ -177,6 +177,7 @@ size_t get_corner_index(const xt::xarray<double> &yy, const std::optional<xt::xa
         auto err1 = xt::sum(xt::abs(l1 - y1_view)/y1_view);
         auto y2_view = xt::view(yy_scaled, xt::range(i, yy_scaled.size()));
         auto err2 = xt::sum(xt::abs(l2 - y2_view)/y2_view);
+        errors[i] = err1() + err2();
     }
 
     auto inf = std::numeric_limits<double>::infinity();
