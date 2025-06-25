@@ -138,6 +138,7 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     }
 
     // Need to actually find the elbow point. Using two secant lines.
+    // More work on submodule
     return radii[0];
 }
 
