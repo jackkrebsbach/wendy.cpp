@@ -32,7 +32,7 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 void Wendy::build_test_function_matrices(){
 
    auto radii = testFunctionParams.radius_params;
-   double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
+   // double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
 
    std::vector<xt::xarray<double>> test_matrices;
    for (int i = 0; i < radii.shape()[0]; ++i) {
