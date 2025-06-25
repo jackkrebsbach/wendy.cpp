@@ -137,7 +137,7 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
         errors[i] = xt::norm_l2(f_hat_G_imag)(); // Have to actually evaluate the expression ()
     }
 
-    // Need to actually find the elbow point
+    // Need to actually find the elbow point. Using two secant lines.
     return radii[0];
 }
 
