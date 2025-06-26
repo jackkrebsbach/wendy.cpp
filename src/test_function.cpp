@@ -1,5 +1,4 @@
 #include "test_function.h"
-
 #include "fft.h"
 #include "logger.h"
 #include <xtensor/views/xview.hpp>
@@ -8,12 +7,18 @@
 #include <xtensor/core/xvectorize.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/misc/xsort.hpp>
+#include <symengine/expression.h>
+#include <symengine/lambda_double.h>
+#include <symengine/parser.h>
+
+
 
 using namespace xt;
 
 double phi(const double &t, const double &eta) {
   return (std::exp(-eta * std::pow((1 -std::pow(t,2)), -1 )));
 }
+
 std::vector<double> phi(const std::vector<double>& t_vec, double eta) {
     std::vector<double> result;
     result.reserve(t_vec.size());
@@ -21,6 +26,14 @@ std::vector<double> phi(const std::vector<double>& t_vec, double eta) {
         result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
     }
     return result;
+}
+
+auto test_function_derivative(const int radius, const double dt, const int order) {
+    const auto scale_factor = std::pow(radius*dt, -1*order); // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
+    const SymEngine::RCP<const SymEngine::Symbol> t = SymEngine::symbol("t");
+    const SymEngine::Expression expression = SymEngine::exp(-9 * SymEngine::pow((1 -SymEngine::pow(SymEngine::Expression(t),2 )), -1 ));
+    const auto derivative = SymEngine::expand(scale_factor*expression.diff(t));
+    return(make_scalar_function(derivative, t));
 }
 
 std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
@@ -74,8 +87,11 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
 }
 
 // Builds a test function matrix for one radius value.
-xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radius) {
+xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radius, int order) {
    const auto len_tt = tt.size();
+   const double dt = std::accumulate(std::next(tt.begin()), tt.end(), 0.0,
+    [it=tt.begin()](double sum, double val) mutable { double diff = val - *it++; return sum + diff; }) / (tt.size() - 1);
+
 
     // Diameter can not be larger than the interior of the domain update the radius if it is
     auto diameter = 2*radius +1;
@@ -91,8 +107,15 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     auto lin = xt::linspace(-1.0, 1.0, diameter + 2);
     auto xx = xt::xarray<double>(xt::view(lin, xt::range(1, diameter + 1)));
 
+    auto f = [order,radius,dt](const double t) -> double {
+        if (order == 0) {
+            return(phi(t, 9));
+        }
+        const std::function<double(double)> phi_deriv = test_function_derivative(radius,dt,order);
+        return(phi_deriv(t));
+    };
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
-    auto phi_vec = xt::vectorize([](double x) { return phi(x, 9.0); });
+    auto phi_vec = xt::vectorize(f);
     auto v_row = xt::eval(phi_vec(xx));
     v_row /= xt::norm_l2(v_row)();
 

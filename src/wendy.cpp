@@ -31,7 +31,7 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 
-void Wendy::build_test_function_matrices(){
+xt::xarray<double> Wendy::build_full_test_function_matrix(const int order){
 
    auto radii = testFunctionParams.radius_params;
 
@@ -41,7 +41,7 @@ void Wendy::build_test_function_matrices(){
    std::vector<xt::xarray<double>> test_matrices;
    for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
-        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i]);
+        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i], order);
         test_matrices.emplace_back(std::move(V_k));
     }
     xt::xarray<double> V_full = test_matrices[0];
@@ -51,8 +51,13 @@ void Wendy::build_test_function_matrices(){
         V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
     }
 
-    this->V = V_full;
-    this->V_prime = V_full;
+    // Not really a good idea but will do this for now
+    if (order == 0) {
+        this->V=V_full;
+    } else {
+        this->V_prime=V_full;
+    }
+    return(V_full);
 }
 
 

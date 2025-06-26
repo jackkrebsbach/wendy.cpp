@@ -42,7 +42,7 @@ public:
         const std::vector<float> &p0,
         const xt::xarray<double> &tt);
 
-    void build_test_function_matrices();
+    xt::xarray<double> build_full_test_function_matrix(int order=0);
     void log_details() const;
 
 
