@@ -133,6 +133,25 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     return V;
 }
 
+xt::xarray<double> build_full_test_function_matrix(const xt::xarray<double> &tt, const xt::xarray<int> &radii, const int order) {
+
+    // Vector containing test matrices for one radius
+   std::vector<xt::xarray<double>> test_matrices;
+   for (int i = 0; i < radii.shape()[0]; ++i) {
+        // Build the test matrix for one radius
+        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i], order);
+        test_matrices.emplace_back(std::move(V_k));
+    }
+    xt::xarray<double> V_full = test_matrices[0];
+
+    for (size_t i = 1; i < test_matrices.size(); ++i) {
+        //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
+        V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
+    }
+
+    return V_full;
+}
+
 
 double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     double radius_min, double radius_max,int n_test_functions, int num_radii, int sub_sample_rate) {
