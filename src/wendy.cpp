@@ -1,5 +1,6 @@
 #include "wendy.h"
 #include "logger.h"
+#include "utils.h"
 #include "test_function.h"
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
@@ -9,6 +10,9 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
+#include <Eigen/Dense>
+#include <xtensor/containers/xarray.hpp>
+
 
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt) {
@@ -31,33 +35,35 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
 }
 
 
-xt::xarray<double> Wendy::build_full_test_function_matrix(const int order){
+void Wendy::build_full_test_function_matrices(){
 
-   auto radii = testFunctionParams.radius_params;
-
+   auto radii = test_function_params.radius_params;
    double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
 
-    // Vector containing test matrices for one radius
-   std::vector<xt::xarray<double>> test_matrices;
-   for (int i = 0; i < radii.shape()[0]; ++i) {
-        // Build the test matrix for one radius
-        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i], order);
-        test_matrices.emplace_back(std::move(V_k));
-    }
-    xt::xarray<double> V_full = test_matrices[0];
+   auto V = build_full_test_function_matrix(tt, radii, 0);
+   auto V_prime = build_full_test_function_matrix(tt, radii, 1);
 
-    for (size_t i = 1; i < test_matrices.size(); ++i) {
-        //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
-        V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
+    if (!compute_svd) {
+       this->V =V;
+       this->V_prime = V_prime;
+       return;
     }
 
-    // Not really a good idea but will do this for now
-    if (order == 0) {
-        this->V=V_full;
-    } else {
-        this->V_prime=V_full;
-    }
-    return(V_full);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V)); //Check how fast this is
+    Eigen::VectorXd singular_values = svd.singularValues();
+
+    auto k_full = V.shape()[0];// Number of rows ie number of test functions
+    auto mp1 = U.shape()[0]; //Number of observations
+
+    //Recall the condition number of a matrix is (σ_max)/(σ_min), these are ordered
+    auto condition_numbers = singular_values[0]/singular_values.array();
+    //We want to look at the change point of the cumulative sum of the singular values
+
+    auto sum_singular_values = singular_values.sum();
+
+
+
+
 }
 
 

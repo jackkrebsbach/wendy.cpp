@@ -14,6 +14,8 @@ auto test_function_derivative(int radius, double dt, int order = 0);
 
 xt::xarray<double> build_test_function_matrix(const xt::xarray<double> &tt, int radius, int order=0);
 
+xt::xarray<double> build_full_test_function_matrix(const xt::xarray<double> &tt,const xt::xarray<int> &radii, int order=0);
+
 std::vector<std::vector<std::size_t> > get_test_function_support_indices(const int &radius, int len_tt,
                                                                          std::optional<int> n_test_functions =
                                                                                  std::nullopt);

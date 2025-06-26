@@ -99,9 +99,7 @@ int main() {
     try {
        logger->set_level(spdlog::level::debug);
        Wendy w(system_eqs, U, p0, tt);
-
-       auto V = w.build_full_test_function_matrix();
-       auto V_prime = w.build_full_test_function_matrix(1);
+       w.build_full_test_function_matrices(); // Builds both full V and V_prime
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());
