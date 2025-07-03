@@ -14,7 +14,7 @@ find_package(Eigen3 REQUIRED)
 
 add_executable(example ${WENDY_SOURCES})
 
-#target_include_directories(example PRIVATE /opt/homebrew/include)
+target_include_directories(example PRIVATE /opt/homebrew/Caskroom/miniforge/base/include)
 target_link_directories(example PRIVATE /opt/homebrew/lib)
 
 target_link_libraries(example

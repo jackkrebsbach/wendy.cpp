@@ -5,8 +5,6 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
-#include "test_function.h"
-
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
     xt::xarray<int> radius_params = xt::pow(2, xt::xarray<double>{1,3});

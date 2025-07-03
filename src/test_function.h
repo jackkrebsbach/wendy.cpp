@@ -16,6 +16,8 @@ xt::xarray<double> build_test_function_matrix(const xt::xarray<double> &tt, int 
 
 xt::xarray<double> build_full_test_function_matrix(const xt::xarray<double> &tt,const xt::xarray<int> &radii, int order=0);
 
+//TODO: Ask Nic about this. Why do we need to do this?
+xt::xarray<double> project_onto_svd_basis(const xt::xarray<double> &M, const xt::xarray<double> &U, xt::xarray<double> &s);
 
 
 std::vector<std::vector<std::size_t> > get_test_function_support_indices(const int &radius, int len_tt,

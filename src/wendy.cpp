@@ -13,8 +13,6 @@
 #include <Eigen/Dense>
 
 
-
-
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt) {
     if (U.dimension() != 2) {
         throw std::invalid_argument("U must be 2-dimensional");
@@ -49,40 +47,44 @@ void Wendy::build_full_test_function_matrices(){
        return;
     }
 
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V)); //Check how fast this is
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V),Eigen::ComputeThinU); //Check how fast this is
     xt::xarray<double> singular_values = eigen_to_xtensor_1d( svd.singularValues());
 
     auto k_full = static_cast<double>(V.shape()[0]);// Number of rows, i.e. number of test functions
     auto mp1 = static_cast<double>(U.shape()[0]); //Number of observations
     double max_test_fun_matrix = test_function_params.k_max;
+    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix}));
 
     //Recall the condition number of a matrix is σ_max/σ_min, these are ordered
     xt::xarray<double> condition_numbers = singular_values(0)/singular_values;
 
-    //We want to look at the change point of the cumulative sum of the singular values
-    //TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values
+    // We want to look at the change point of the cumulative sum of the singular values
+    // TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values
+    // So probably need to add more in. Look at Nic's code
     double sum_singular_values = xt::sum(singular_values)();
 
     // Natural information is the ratio of the first k singular values to the sum
-    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix}));
-
     xt::xarray<double> info_numbers = xt::zeros<double>({k_max});
-
     for (int i = 1; i < k_max ; i++ ) {
         info_numbers[i]= xt::sum(xt::view(singular_values, xt::range(0,i)))()/sum_singular_values;
     }
 
     auto k1 = find_last(condition_numbers,[this](const double x) { return x < test_function_params.max_test_fun_condition_number; } );
-    //TODO: Check this over with Nic
+    // TODO: Check this over with Nic. His code is < than but I think it should be greater than
     auto k2 = find_last(info_numbers,[this](const double x) { return x > test_function_params.min_test_fun_info_number; } );
     auto K = std::min({k1,k2,k_max});
 
     if (K == k_max) {
-        logger->info("k_max is equal to k_max");
+        logger->warn("k_max is equal to k_max");
     }
 
+    // Columns of U are an orthonormal basis of V
+    auto V_orthonormal = eigen_matrix_to_xtensor(svd.matrixU());
+    // We want the columns of Vprime to be in the basis of the SVD
+    auto Vp_orthonormal = project_onto_svd_basis(V_prime,V_orthonormal, singular_values);
 
-
+    this->V = xt::view(V_orthonormal, xt::all(), xt::range(0,K));
+    this->V_prime = xt::view(Vp_orthonormal, xt::all(), xt::range(0,K));
 }
 
 

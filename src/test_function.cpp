@@ -7,10 +7,10 @@
 #include <xtensor/core/xvectorize.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/misc/xsort.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 #include <symengine/parser.h>
-
 
 
 using namespace xt;
@@ -34,6 +34,14 @@ auto test_function_derivative(const int radius, const double dt, const int order
     const SymEngine::Expression expression = SymEngine::exp(-9 * SymEngine::pow((1 -SymEngine::pow(SymEngine::Expression(t),2 )), -1 ));
     const auto derivative = SymEngine::expand(scale_factor*expression.diff(t));
     return(make_scalar_function(derivative, t));
+}
+
+// If we have a matrix M and want to represent it in the SVD basis (columns of U) we first dot each column of U
+// with the columns of M. Then we scale the rows by the singular values.
+xt::xarray<double> project_onto_svd_basis(const xt::xarray<double> &M, const xt::xarray<double> &U, xt::xarray<double> &s) {
+    const auto UT_M = xt::linalg::dot( xt::transpose(U), M);
+    const auto s_pseudo_inv = xt::diag(1/s);
+    return(xt::linalg::dot(s_pseudo_inv, UT_M));
 }
 
 std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
