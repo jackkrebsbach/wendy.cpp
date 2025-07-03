@@ -38,9 +38,13 @@ auto test_function_derivative(const int radius, const double dt, const int order
 
 // If we have a matrix M and want to represent it in the SVD basis (columns of U) we first dot each column of U
 // with the columns of M. Then we scale the rows by the singular values.
-xt::xarray<double> project_onto_svd_basis(const xt::xarray<double> &M, const xt::xarray<double> &U, xt::xarray<double> &s) {
+xt::xarray<double> project_onto_svd_basis(
+    const xt::xarray<double> &M,
+    const xt::xarray<double> &U,
+    xt::xarray<double> &s) {
+
     const auto UT_M = xt::linalg::dot( xt::transpose(U), M);
-    const auto s_pseudo_inv = xt::diag(1/s);
+    const auto s_pseudo_inv = xt::diag(1.0/s);
     return(xt::linalg::dot(s_pseudo_inv, UT_M));
 }
 

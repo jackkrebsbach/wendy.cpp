@@ -11,7 +11,7 @@ struct TestFunctionParams {
     double radius_min_time = 0.01;
     double radius_max_time = 5;
     int k_max = 200;
-    double max_test_fun_condition_number = 1e-4;
+    double max_test_fun_condition_number = 1e4;
     double min_test_fun_info_number = 0.95; //Double check where these come from
 };
 
@@ -51,6 +51,7 @@ public:
 
     //Getters
     [[nodiscard]] const xt::xarray<double>& getV() const { return V; }
+    [[nodiscard]] const xt::xarray<double>& getV_prime() const { return V_prime; }
 };
 
 #endif // WENDY_H

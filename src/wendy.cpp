@@ -47,7 +47,7 @@ void Wendy::build_full_test_function_matrices(){
        return;
     }
 
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V),Eigen::ComputeThinU); //Check how fast this is
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V),Eigen::ComputeThinU | Eigen::ComputeThinV); //Check how fast this is
     xt::xarray<double> singular_values = eigen_to_xtensor_1d( svd.singularValues());
 
     auto k_full = static_cast<double>(V.shape()[0]);// Number of rows, i.e. number of test functions
@@ -70,21 +70,25 @@ void Wendy::build_full_test_function_matrices(){
     }
 
     auto k1 = find_last(condition_numbers,[this](const double x) { return x < test_function_params.max_test_fun_condition_number; } );
-    // TODO: Check this over with Nic. His code is < than but I think it should be greater than
-    auto k2 = find_last(info_numbers,[this](const double x) { return x > test_function_params.min_test_fun_info_number; } );
+    auto k2 = find_last(info_numbers,[this](const double x) { return x < test_function_params.min_test_fun_info_number; } );
+
+    if (k1 == -1) {k1 = std::numeric_limits<int>::max();}
+    if (k2 == -1) {k2 =std::numeric_limits<int>::max();}
+
     auto K = std::min({k1,k2,k_max});
 
     if (K == k_max) {
         logger->warn("k_max is equal to k_max");
     }
 
-    // Columns of U are an orthonormal basis of V
-    auto V_orthonormal = eigen_matrix_to_xtensor(svd.matrixU());
-    // We want the columns of Vprime to be in the basis of the SVD
-    auto Vp_orthonormal = project_onto_svd_basis(V_prime,V_orthonormal, singular_values);
+    logger->info("Condition Number is now: {}", condition_numbers[K]);
+    auto V_orthonormal = xt::view(eigen_matrix_to_xtensor(svd.matrixV()), xt::all(), xt::range(0,K));
 
-    this->V = xt::view(V_orthonormal, xt::all(), xt::range(0,K));
-    this->V_prime = xt::view(Vp_orthonormal, xt::all(), xt::range(0,K));
+    // We want the columns of Vprime to be in the basis of the SVD
+    auto Vp_orthonormal = project_onto_svd_basis(V_prime,eigen_matrix_to_xtensor(svd.matrixU()), singular_values);
+
+    this->V = xt::transpose(V_orthonormal);
+    this->V_prime = xt::view(Vp_orthonormal, xt::range(0,K), xt::all());
 }
 
 
