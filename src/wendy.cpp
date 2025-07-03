@@ -11,7 +11,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
 #include <Eigen/Dense>
-#include <xtensor/containers/xarray.hpp>
+
 
 
 
@@ -50,17 +50,36 @@ void Wendy::build_full_test_function_matrices(){
     }
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V)); //Check how fast this is
-    Eigen::VectorXd singular_values = svd.singularValues();
+    xt::xarray<double> singular_values = eigen_to_xtensor_1d( svd.singularValues());
 
-    auto k_full = V.shape()[0];// Number of rows ie number of test functions
-    auto mp1 = U.shape()[0]; //Number of observations
+    auto k_full = static_cast<double>(V.shape()[0]);// Number of rows, i.e. number of test functions
+    auto mp1 = static_cast<double>(U.shape()[0]); //Number of observations
+    double max_test_fun_matrix = test_function_params.k_max;
 
-    //Recall the condition number of a matrix is (σ_max)/(σ_min), these are ordered
-    auto condition_numbers = singular_values[0]/singular_values.array();
+    //Recall the condition number of a matrix is σ_max/σ_min, these are ordered
+    xt::xarray<double> condition_numbers = singular_values(0)/singular_values;
+
     //We want to look at the change point of the cumulative sum of the singular values
+    //TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values
+    double sum_singular_values = xt::sum(singular_values)();
 
-    auto sum_singular_values = singular_values.sum();
+    // Natural information is the ratio of the first k singular values to the sum
+    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix}));
 
+    xt::xarray<double> info_numbers = xt::zeros<double>({k_max});
+
+    for (int i = 1; i < k_max ; i++ ) {
+        info_numbers[i]= xt::sum(xt::view(singular_values, xt::range(0,i)))()/sum_singular_values;
+    }
+
+    auto k1 = find_last(condition_numbers,[this](const double x) { return x < test_function_params.max_test_fun_condition_number; } );
+    //TODO: Check this over with Nic
+    auto k2 = find_last(info_numbers,[this](const double x) { return x > test_function_params.min_test_fun_info_number; } );
+    auto K = std::min({k1,k2,k_max});
+
+    if (K == k_max) {
+        logger->info("k_max is equal to k_max");
+    }
 
 
 

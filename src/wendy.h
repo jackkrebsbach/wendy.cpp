@@ -51,7 +51,6 @@ public:
     void  build_full_test_function_matrices();
     void log_details() const;
 
-
     //Getters
     [[nodiscard]] const xt::xarray<double>& getV() const { return V; }
 };
