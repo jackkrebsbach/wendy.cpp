@@ -25,6 +25,7 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, con
     this->tt = tt; // Time array
 
     sym_system = create_symbolic_system(f);
+    F = build_symbolic_system(sym_system, D, J);
 
     const auto p_symbols = create_symbolic_vars("p", J);
     const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
