@@ -15,20 +15,19 @@ for (int i = 0; i < count; i++) {
   return vars;
 }
 
-// Inputs includes both the parameters, p1,p2, ... and the state variables u1,...
-// and t
-std::vector<SymEngine::Expression> create_all_symbolic_inputs(int D, int J) {
-  std::vector<SymEngine::Expression> u_symbols = create_symbolic_vars("u", D);
-  std::vector<SymEngine::Expression> p_symbols = create_symbolic_vars("p", J);
-  SymEngine::Expression t_symbol =
+// Inputs includes both the parameters, p1, p2,... and the state variables u1, ..., and t
+std::vector<SymEngine::Expression> create_all_symbolic_inputs(const size_t D, const size_t J) {
+  const std::vector<SymEngine::Expression> u_symbols = create_symbolic_vars("u", D);
+  const std::vector<SymEngine::Expression> p_symbols = create_symbolic_vars("p", J);
+  const auto t_symbol =
       SymEngine::Expression(SymEngine::symbol("t"));
 
   std::vector<SymEngine::Expression> input_symbols;
   input_symbols.reserve(D + J + 1);
 
-  for (const auto &e: u_symbols)
-    input_symbols.push_back(e);
   for (const auto &e: p_symbols)
+    input_symbols.push_back(e);
+  for (const auto &e: u_symbols)
     input_symbols.push_back(e);
   input_symbols.push_back(t_symbol);
 
@@ -45,7 +44,7 @@ create_symbolic_system(const std::vector<std::string> &f) {
   return dx;
 }
 
-vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
+vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
   vec_basic basics;
   basics.reserve(exprs.size());
   for (const auto &e: exprs)
@@ -54,7 +53,7 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
 }
 
 std::vector<LambdaRealDoubleVisitor>
-build_symbolic_system(const std::vector<Expression> &dx, int D, int J) {
+build_symbolic_system(const std::vector<Expression> &dx, const size_t D, const size_t J) {
   std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 

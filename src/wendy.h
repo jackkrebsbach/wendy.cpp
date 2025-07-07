@@ -6,6 +6,7 @@
 #include <symengine/lambda_double.h>
 
 
+
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
     xt::xarray<int> radius_params = xt::pow(2, xt::xarray<double>{1,3});
@@ -31,12 +32,12 @@ public:
     xt::xarray<double> tt; // Time array (should be equispaced)
     xt::xarray<double> U; //Noisy data
 
-    //Internal
-    std::vector<SymEngine::LambdaRealDoubleVisitor> F;
-    size_t D; //Dimension of system
-    size_t J; //Number of parameters
-    xt::xarray<double> V; //Orthonormal Test Function Matrix
-    xt::xarray<double> V_prime; //Orthonormal derivative of Test Function Matrix
+    // Internal
+    std::vector<SymEngine::LambdaRealDoubleVisitor> F; // the RHS symbolic system
+    size_t D; // Dimension of system
+    size_t J; // Number of parameters
+    xt::xarray<double> V; // Orthonormal Test Function Matrix
+    xt::xarray<double> V_prime; // Orthonormal derivative of Test Function Matrix
 
 
     std::vector<SymEngine::Expression> sym_system; //Symbolic representation of system

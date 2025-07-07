@@ -99,7 +99,7 @@ int main() {
     try {
        logger->set_level(spdlog::level::debug);
        Wendy w(system_eqs, U, p0, tt);
-       // w.build_full_test_function_matrices(); // Builds both full V and V_prime
+       w.build_full_test_function_matrices(); // Builds both full V and V_prime
        w.log_details();
 
     } catch (const std::exception &e) {
