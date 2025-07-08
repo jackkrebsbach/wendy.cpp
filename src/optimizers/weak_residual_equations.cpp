@@ -1,4 +1,3 @@
-#include "weak_residual_equations.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
