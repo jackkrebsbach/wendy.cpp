@@ -7,6 +7,7 @@
 #include <iostream>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
@@ -39,14 +40,18 @@ void Wendy::build_full_test_function_matrices(){
    auto radii = test_function_params.radius_params;
    double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
 
-   auto V = build_full_test_function_matrix(tt, radii, 0);
-   auto V_prime = build_full_test_function_matrix(tt, radii, 1);
+   enum TestFunctionOrder { VALUE = 0, DERIVATIVE = 1 };
+   auto V = build_full_test_function_matrix(tt, radii, TestFunctionOrder::VALUE);
+   auto V_prime = build_full_test_function_matrix(tt, radii, TestFunctionOrder::DERIVATIVE);
 
     if (!compute_svd) {
        this->V =V;
        this->V_prime = V_prime;
        return;
     }
+
+    //TODO: Change to xt::linalg so we don't have to switch between data types
+    // const auto[_U,_S,_V] = xt::linalg::svd(V);
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V),Eigen::ComputeThinU | Eigen::ComputeThinV); //Check how fast this is
     xt::xarray<double> singular_values = eigen_to_xtensor_1d( svd.singularValues());
