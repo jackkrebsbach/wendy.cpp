@@ -8,5 +8,3 @@ int find_last(const xt::xtensor<T,1>& arr, Predicate pred) {
     }
     return -1;
 }
-
-

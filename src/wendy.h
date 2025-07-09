@@ -9,7 +9,7 @@
 
 struct TestFunctionParams {
     const std::optional<int> number_test_functions; // Number of test functions to use in the minimum radius selection process
-    xt::xarray<int> radius_params = xt::pow(2, xt::xarray<double>{1,3}); // Radii to use for the test functions
+    xt::xtensor<int,1> radius_params = xt::pow(2, xt::xtensor<double,1>{1,3}); // Radii to use for the test functions
     double radius_min_time = 0.01; // Minimum radius (in seconds)
     double radius_max_time = 5; // Maximum radius (in seconds)
     int k_max = 200; // Hard maximum on the number of test functions

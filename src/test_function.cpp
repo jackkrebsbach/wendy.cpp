@@ -136,17 +136,17 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int r
 xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double,1> &tt, const xt::xtensor<int,1> &radii, const int order) {
 
     // Vector containing test matrices for one radius
-   std::vector<xt::xarray<double>> test_matrices;
+   std::vector<xt::xtensor<double,2>> test_matrices;
    for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
-        xt::xarray<double> V_k = build_test_function_matrix(tt, radii[i], order);
+        xt::xtensor<double,2> V_k = build_test_function_matrix(tt, radii[i], order);
         test_matrices.emplace_back(std::move(V_k));
     }
-    xt::xarray<double> V_full = test_matrices[0];
+    xt::xtensor<double,2> V_full = test_matrices[0];
 
     for (size_t i = 1; i < test_matrices.size(); ++i) {
         //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
-        V_full = xt::xarray<double>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
+        V_full = xt::xtensor<double,2>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
     }
 
     return V_full;
