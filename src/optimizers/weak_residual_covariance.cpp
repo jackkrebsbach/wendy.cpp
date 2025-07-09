@@ -11,7 +11,7 @@ xt::xtensor<double, 2> covariance(
     xt::xtensor<double, 2>& U, // state data
     xt::xtensor<double, 1>& tt, // time stamps
     xt::xtensor<double, 2>& V, // test function matrix
-    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>>& J_f_u // Jacobian of f w.r.t the state variables
+    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>>& J_f_u // Jacobian of f w.r.t the state variables Jᵤf(p,u,t)
     ) {
     //Build L where LL^T = S
     // ∇ᵤg gradient of g with respect to the state

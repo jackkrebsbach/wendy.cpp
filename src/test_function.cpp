@@ -12,7 +12,6 @@
 #include <symengine/lambda_double.h>
 #include <symengine/parser.h>
 
-
 using namespace xt;
 
 double phi(const double &t, const double &eta) {
@@ -36,18 +35,6 @@ auto test_function_derivative(const int radius, const double dt, const int order
     return(make_scalar_function(derivative, t));
 }
 
-// If we have a matrix M and want to represent it in the SVD basis (columns of U) we first dot each column of U
-// with the columns of M. Then we scale the rows by the singular values.
-//TODO: Why not project onto the row space?
-xt::xarray<double> project_onto_svd_basis(
-    const xt::xarray<double> &M,
-    const xt::xarray<double> &U,
-    xt::xarray<double> &s) {
-
-    const auto UT_M = xt::linalg::dot( xt::transpose(U), M);
-    const auto s_pseudo_inv = xt::diag(1.0/s);
-    return(xt::linalg::dot(s_pseudo_inv, UT_M));
-}
 
 std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
     const std::optional<int> n_test_functions) {
@@ -100,10 +87,10 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
 }
 
 // Builds a test function matrix for one radius value.
-xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radius, int order) {
+xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int radius, int order) {
    const auto len_tt = tt.size();
    const double dt = std::accumulate(std::next(tt.begin()), tt.end(), 0.0,
-    [it=tt.begin()](double sum, double val) mutable { double diff = val - *it++; return sum + diff; }) / (tt.size() - 1);
+    [it=tt.begin()](const double sum, const double val) mutable { const double diff = val - *it++; return sum + diff; }) / (tt.size() - 1);
 
 
     // Diameter can not be larger than the interior of the domain update the radius if it is
@@ -133,9 +120,9 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     v_row /= xt::norm_l2(v_row)();
 
     // Add back in zero on the endpoints
-    xt::xarray<double> v_row_padded = xt::zeros<double>({v_row.size() + 2});
+    xt::xtensor<double,1> v_row_padded = xt::zeros<double>({v_row.size() + 2});
     xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
-    xt::xarray<double> V = xt::zeros<double>({indices.size(), len_tt});
+    xt::xtensor<double,2> V = xt::zeros<double>({indices.size(), len_tt});
 
     for (size_t i = 0; i < indices.size() - 1; i++) {
         const auto& support_indices = indices[i];
@@ -146,7 +133,7 @@ xt::xarray<double> build_test_function_matrix(const xarray<double> &tt, int radi
     return V;
 }
 
-xt::xarray<double> build_full_test_function_matrix(const xt::xarray<double> &tt, const xt::xarray<int> &radii, const int order) {
+xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double,1> &tt, const xt::xtensor<int,1> &radii, const int order) {
 
     // Vector containing test matrices for one radius
    std::vector<xt::xarray<double>> test_matrices;
@@ -166,7 +153,7 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xarray<double> &tt,
 }
 
 
-double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
+double find_min_radius_int_error(xt::xtensor<double,2> &U, xt::xtensor<double, 1> &tt,
     double radius_min, double radius_max,int n_test_functions, int num_radii, int sub_sample_rate) {
     auto Mp1  = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
@@ -199,18 +186,18 @@ double find_min_radius_int_error(xt::xarray<double> &U, xt::xarray<double> &tt,
     return ix;
 }
 
-size_t get_corner_index(const xt::xarray<double> &yy, const std::optional<xt::xarray<double>>& xx_in) {
+size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1>* xx_in) {
     auto N = yy.size();
 
-    xt::xarray<double> xx;
-    if (!xx_in) {
+    xt::xtensor<double,1> xx;
+    if (xx_in == nullptr) {
         xx = xt::arange<double>(1, N+1);
     }
 
     // Scale in hopes of improving stability
     auto yy_scaled = (yy/ xt::amax(xt::abs(yy))) * N;
 
-    xt::xarray<double> errors = xt::zeros<double>({N});
+    xt::xtensor<double,1> errors = xt::zeros<double>({N});
 
     for (int i=0; i < N; ++i) {
         //Check for zeros (should never happen though)

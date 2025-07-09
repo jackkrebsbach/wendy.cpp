@@ -86,21 +86,20 @@ int main() {
         u_flat.insert(u_flat.end(), row.begin(), row.end());
     }
 
-    xt::xarray<double> U = xt::adapt(u_flat, shape);
+    const xt::xtensor<double,2> U = xt::adapt(u_flat, shape);
 
-    std::vector<std::string> system_eqs = {
+    const std::vector<std::string> system_eqs = {
         "p0 / (2.15 + p2 * u2^p3) - p1 * u0",
         "p4 * u0 - p5 * u1",
         "p6 * u1 - p7 * u2"
     };
 
-    const xt::xarray<double> tt = xt::linspace(t0, t1, num_samples);
+    const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     const std::vector<float> p0(p_star.begin(), p_star.end());
     try {
        logger->set_level(spdlog::level::debug);
        Wendy w(system_eqs, U, p0, tt);
        w.build_full_test_function_matrices(); // Builds both full V and V_prime
-       w.log_details();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());

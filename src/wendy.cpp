@@ -11,34 +11,26 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
-#include <Eigen/Dense>
 
 
-Wendy::Wendy(const std::vector<std::string> &f, const xt::xarray<double> &U, const std::vector<float> &p0, const xt::xarray<double> &tt) {
-    if (U.dimension() != 2) {
-        throw std::invalid_argument("U must be 2-dimensional");
-    }
+Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) {
 
-    J = p0.size(); // Number of parameters in the system
-    D = U.shape()[1]; // Dimension of the system
-
-    this->U = U; //Noisy data
+    this->J = p0.size(); // Number of parameters in the system
+    this->D = U.shape()[1]; // Dimension of the system
+    this->U = U; // Noisy data
     this->tt = tt; // Time array
+    this->sym_system = create_symbolic_system(f); // Symbolic representation of the RHS
+    this->sym_system_jac = compute_jacobian(sym_system, create_symbolic_vars("p", J)); // Symbolic representation of the Jacobian of the RHS
+    this->F = build_symbolic_system(sym_system, D, J); // callable function for numerics input
 
-    sym_system = create_symbolic_system(f);
-    F = build_symbolic_system(sym_system, D, J);
-
-    const auto p_symbols = create_symbolic_vars("p", J);
-    const auto grad_p_f = compute_jacobian(sym_system, p_symbols);
-
-    sym_system_jac = grad_p_f;
 }
 
 
 void Wendy::build_full_test_function_matrices(){
 
    auto radii = test_function_params.radius_params;
-   double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
+   // double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
+    //TODO: Sanitize radius parameters to pass into the build_full_test_function_matrix
 
    enum TestFunctionOrder { VALUE = 0, DERIVATIVE = 1 };
    auto V = build_full_test_function_matrix(tt, radii, TestFunctionOrder::VALUE);
@@ -50,27 +42,27 @@ void Wendy::build_full_test_function_matrices(){
        return;
     }
 
-    //TODO: Change to xt::linalg so we don't have to switch between data types
-    // const auto[_U,_S,_V] = xt::linalg::svd(V);
-
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(xtensor_matrix_to_eigen(V),Eigen::ComputeThinU | Eigen::ComputeThinV); //Check how fast this is
-    xt::xarray<double> singular_values = eigen_to_xtensor_1d( svd.singularValues());
 
     auto k_full = static_cast<double>(V.shape()[0]);// Number of rows, i.e. number of test functions
     auto mp1 = static_cast<double>(U.shape()[0]); //Number of observations
     double max_test_fun_matrix = test_function_params.k_max;
     int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix}));
 
-    //Recall the condition number of a matrix is σ_max/σ_min, these are ordered
-    xt::xarray<double> condition_numbers = singular_values(0)/singular_values;
+    const auto SVD = xt::linalg::svd(V);
+    xt::xtensor<double,1> singular_values = std::get<1>(SVD);
+    xt::xtensor<double,2> U = std::get<0>(SVD);
+    xt::xtensor<double,2> V_ = std::get<2>(SVD);
 
+
+    xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, these are ordered
+
+    // TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values. So need to add more in. Look at Nic's code
+    // TODO: How do we actually find the change point of the singular values?
     // We want to look at the change point of the cumulative sum of the singular values
-    // TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values
-    // So probably need to add more in. Look at Nic's code
     double sum_singular_values = xt::sum(singular_values)();
 
     // Natural information is the ratio of the first k singular values to the sum
-    xt::xarray<double> info_numbers = xt::zeros<double>({k_max});
+    xt::xtensor<double,1> info_numbers = xt::zeros<double>({k_max});
     for (int i = 1; i < k_max ; i++ ) {
         info_numbers[i]= xt::sum(xt::view(singular_values, xt::range(0,i)))()/sum_singular_values;
     }
@@ -88,13 +80,15 @@ void Wendy::build_full_test_function_matrices(){
     }
 
     logger->info("Condition Number is now: {}", condition_numbers[K]);
-    auto V_orthonormal = xt::view(eigen_matrix_to_xtensor(svd.matrixV()), xt::all(), xt::range(0,K));
 
-    // We want the columns of Vprime to be in the basis of the SVD
-    auto Vp_orthonormal = project_onto_svd_basis(V_prime,eigen_matrix_to_xtensor(svd.matrixU()), singular_values);
+    xt::xtensor<double,2> V_orthonormal = xt::view(V_, xt::all(), xt::range(0,K));
 
     this->V = xt::transpose(V_orthonormal);
-    this->V_prime = xt::view(Vp_orthonormal, xt::range(0,K), xt::all());
+
+    // TODO: Compare this to the Fourier Transformation and talk to Nic about this representation
+    // Project the rows (each row is one test function) onto the O.N. basis of the test functions
+    this->V_prime = xt::linalg::dot(V_prime, V_orthonormal);
+
 }
 
 

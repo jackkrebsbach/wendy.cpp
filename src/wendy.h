@@ -2,6 +2,7 @@
 #define WENDY_H
 
 #include <xtensor/containers/xarray.hpp>
+#include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
@@ -21,10 +22,8 @@ struct TestFunctionParams {
  */
 class Wendy {
 public:
-    // User parameters for solving wendy system
+    // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
-
-    // Input parameters
     bool compute_svd = true; // If true then the test function matrices are orthonormal
 
     // Input Data
@@ -35,25 +34,22 @@ public:
     std::vector<SymEngine::LambdaRealDoubleVisitor> F; // the RHS symbolic system
     size_t D; // Dimension of system
     size_t J; // Number of parameters
-    xt::xarray<double> V; // Test Function Matrix (can be orthonormal)
-    xt::xarray<double> V_prime; //  Derivative of Test Function Matrix (can be orthonormal)
-
-
+    xt::xtensor<double,2> V; // Test Function Matrix (can be orthonormal)
+    xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix (can be orthonormal)
     std::vector<SymEngine::Expression> sym_system; //Symbolic representation of system
     std::vector<std::vector<SymEngine::Expression> > sym_system_jac;
 
 
     Wendy(const std::vector<std::string> &f,
-        const xt::xarray<double> &U,
+        const xt::xtensor<double,2> &U,
         const std::vector<float> &p0,
-        const xt::xarray<double> &tt);
+        const xt::xtensor<double,1> &tt);
 
     void  build_full_test_function_matrices();
     void log_details() const;
 
-    //Getters
-    [[nodiscard]] const xt::xarray<double>& getV() const { return V; }
-    [[nodiscard]] const xt::xarray<double>& getV_prime() const { return V_prime; }
+    [[nodiscard]] const xt::xtensor<double,2>& getV() const { return this->V; }
+    [[nodiscard]] const xt::xtensor<double,2>& getV_prime() const { return this->V_prime; }
 };
 
 #endif // WENDY_H
