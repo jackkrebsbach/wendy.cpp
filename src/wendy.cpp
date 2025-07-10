@@ -4,7 +4,6 @@
 #include "test_function.h"
 #include "symbolic_utils.h"
 #include <symengine/expression.h>
-#include <iostream>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -16,8 +15,8 @@
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) {
     this->J = p0.size(); // Number of parameters in the system
     this->D = U.shape()[1]; // Dimension of the system
-    this->U = U; // Noisy data
-    this->tt = tt; // Time array
+    this->U = U; // Noisy data (for now assumed to be additive Gaussian)
+    this->tt = tt; // Time array (should be equispaced)
     this->sym_system = create_symbolic_system(f); // Symbolic representation of the RHS
     this->sym_system_jac = compute_jacobian(sym_system, create_symbolic_vars("p", J)); // Symbolic representation of the Jacobian of the RHS
     this->F = build_symbolic_system(sym_system, D, J); // callable function for numerics input
@@ -26,36 +25,50 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, 
 
 void Wendy::build_full_test_function_matrices(){
 
-   auto radii = test_function_params.radius_params;
-   // double min_radius = find_min_radius_int_error(U, tt,  2, 3, 100, 2);
-    //TODO: Sanitize radius parameters to pass into the build_full_test_function_matrix
+   const double dt =xt::mean(xt::diff(tt))();
+   const auto k_full = static_cast<double>(V.shape()[0]);// Number of test functions (# of rows)
+   const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
+
+   auto radii = test_function_params.radius_params; // Radii multipliers
+   auto radius_min_time = test_function_params.radius_min_time;
+   auto radius_max_time = test_function_params.radius_max_time;
+
+   int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time/dt), 2.0)); // At least two data points
+
+   // The diameter shouldn't be larger than the interior domain available
+    int max_radius = static_cast<int>(std::floor(radius_max_time/dt));
+    if(int max_radius_for_interior = static_cast<int>(std::floor((mp1-2)/2)); max_radius > max_radius_for_interior) {
+        max_radius =  max_radius_for_interior;
+    }
+
+   const int min_radius_int_error = find_min_radius_int_error(U, tt, min_radius, max_radius);
+
+   radii = radii*min_radius_int_error;
+   radii = xt::filter(radii, radii < max_radius);
 
    enum TestFunctionOrder { VALUE = 0, DERIVATIVE = 1 };
    auto V = build_full_test_function_matrix(tt, radii, TestFunctionOrder::VALUE);
    auto V_prime = build_full_test_function_matrix(tt, radii, TestFunctionOrder::DERIVATIVE);
 
-    if (!compute_svd) {this->V =V; this->V_prime = V_prime; return;}
+   if (!compute_svd) {this->V =V; this->V_prime = V_prime; return;}
+
+   constexpr bool COMPUTE_FULL_MATRICES = false;
+   const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
+   const xt::xtensor<double,2> U = std::get<0>(SVD);
+   const xt::xtensor<double,1> singular_values = std::get<1>(SVD);
+   const xt::xtensor<double,2> Vᵀ = std::get<2>(SVD);
+
+   const double corner_index =  static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
+   const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
 
 
-    constexpr bool COMPUTE_FULL_MATRICES = false;
-    const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
-    xt::xtensor<double,2> U = std::get<0>(SVD);
-    xt::xtensor<double,1> singular_values = std::get<1>(SVD);
-    xt::xtensor<double,2> Vᵀ = std::get<2>(SVD);
+   xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
 
-    const auto k_full = static_cast<double>(V.shape()[0]);// Number of test functions (# of rows)
-    const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
-    const auto corner_index =  static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
-    const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
+   double sum_singular_values = xt::sum(singular_values)();
 
+   int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix, corner_index}));
 
-    xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
-
-    double sum_singular_values = xt::sum(singular_values)();
-
-    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix, corner_index}));
-
-    // Natural information is the ratio of the first k singular values to the sum
+   // Natural information is the ratio of the first k singular values to the sum
     xt::xtensor<double,1> info_numbers = xt::zeros<double>({k_max});
     for (int i = 1; i < k_max ; i++ ) {
         info_numbers[i]= xt::sum(xt::view(singular_values, xt::range(0,i)))()/sum_singular_values;

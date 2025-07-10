@@ -1,15 +1,13 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
-
 struct TestFunctionParams {
     const std::optional<int> number_test_functions; // Number of test functions to use in the minimum radius selection process
-    xt::xtensor<int,1> radius_params = xt::pow(2, xt::xtensor<double,1>{1,3}); // Radii to use for the test functions
+    xt::xtensor<int,1> radius_params = xt::pow(2, xt::xtensor<double,1>{0,1,3}); // Radii to use for the test functions
     double radius_min_time = 0.01; // Minimum radius (in seconds)
     double radius_max_time = 5; // Maximum radius (in seconds)
     int k_max = 200; // Hard maximum on the number of test functions
@@ -27,8 +25,8 @@ public:
     bool compute_svd = true; // If true then the test function matrices are orthonormal
 
     // Input Data
-    xt::xarray<double> tt; // Time array (should be equispaced)
-    xt::xarray<double> U; //Noisy data
+    xt::xtensor<double,1> tt; // Time array (should be equispaced)
+    xt::xtensor<double, 2> U; //Noisy data
 
     // Internal
     std::vector<SymEngine::LambdaRealDoubleVisitor> F; // the RHS symbolic system
@@ -36,8 +34,8 @@ public:
     size_t J; // Number of parameters
     xt::xtensor<double,2> V; // Test Function Matrix (can be orthonormal)
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix (can be orthonormal)
-    std::vector<SymEngine::Expression> sym_system; //Symbolic representation of system
-    std::vector<std::vector<SymEngine::Expression> > sym_system_jac;
+    std::vector<SymEngine::Expression> sym_system; // Symbolic representation of system
+    std::vector<std::vector<SymEngine::Expression>> sym_system_jac;
 
 
     Wendy(const std::vector<std::string> &f,

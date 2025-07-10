@@ -9,6 +9,7 @@
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>
+#include <xtensor/core/xmath.hpp>
 #include <symengine/lambda_double.h>
 
 using namespace xt;
@@ -88,9 +89,7 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
 // Builds a test function matrix for one radius value.
 xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int radius, int order) {
    const auto len_tt = tt.size();
-   const double dt = std::accumulate(std::next(tt.begin()), tt.end(), 0.0,
-    [it=tt.begin()](const double sum, const double val) mutable { const double diff = val - *it++; return sum + diff; }) / (tt.size() - 1);
-
+   const double dt =xt::mean(xt::diff(tt))();
 
     // Diameter can not be larger than the interior of the domain update the radius if it is
     auto diameter = 2*radius +1;
@@ -152,14 +151,14 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double,1> &
 }
 
 
-double find_min_radius_int_error(xt::xtensor<double,2> &U, xt::xtensor<double, 1> &tt,
-    double radius_min, double radius_max,int n_test_functions, int num_radii, int sub_sample_rate) {
+int find_min_radius_int_error(xtensor<double,2> &U, xtensor<double, 1> &tt,
+    double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
     auto Mp1  = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
 
     int step = std::max(1, static_cast<int>(std::ceil((radius_max - radius_min) / static_cast<double>(num_radii))));
-    const auto radii = xt::arange(radius_min, radius_max, step);
-    xt::xarray<double> errors = xt::zeros<double>({radii.size()});
+    const xtensor<int,1> radii = xt::arange(radius_min, radius_max, step);
+    xarray<double> errors = xt::zeros<double>({radii.size()});
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
@@ -182,6 +181,6 @@ double find_min_radius_int_error(xt::xtensor<double,2> &U, xt::xtensor<double, 1
     }
 
     auto ix = get_corner_index(errors);
-    return ix;
+    return radii[ix];
 }
 
