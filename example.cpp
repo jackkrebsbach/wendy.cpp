@@ -8,6 +8,7 @@
 #include "src/logger.h"
 #include <random>
 #include <cmath>
+#include <xtensor-blas/xlinalg.hpp>
 
 std::vector<double> goodwin_3d(double t, const std::vector<double> &u, const std::vector<double> &p) {
     double du1 = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];

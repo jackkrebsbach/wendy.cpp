@@ -36,30 +36,26 @@ void Wendy::build_full_test_function_matrices(){
    auto V = build_full_test_function_matrix(tt, radii, TestFunctionOrder::VALUE);
    auto V_prime = build_full_test_function_matrix(tt, radii, TestFunctionOrder::DERIVATIVE);
 
-    if (!compute_svd) {
-       this->V =V;
-       this->V_prime = V_prime;
-       return;
-    }
+    if (!compute_svd) {this->V =V; this->V_prime = V_prime; return;}
 
 
-    auto k_full = static_cast<double>(V.shape()[0]);// Number of rows, i.e. number of test functions
-    auto mp1 = static_cast<double>(U.shape()[0]); //Number of observations
-    double max_test_fun_matrix = test_function_params.k_max;
-    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix}));
-
-    const auto SVD = xt::linalg::svd(V);
-    xt::xtensor<double,1> singular_values = std::get<1>(SVD);
+    constexpr bool COMPUTE_FULL_MATRICES = false;
+    const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
     xt::xtensor<double,2> U = std::get<0>(SVD);
-    xt::xtensor<double,2> V_ = std::get<2>(SVD);
+    xt::xtensor<double,1> singular_values = std::get<1>(SVD);
+    xt::xtensor<double,2> Vᵀ = std::get<2>(SVD);
+
+    const auto k_full = static_cast<double>(V.shape()[0]);// Number of test functions (# of rows)
+    const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
+    const auto corner_index =  static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
+    const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
 
 
-    xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, these are ordered
+    xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
 
-    // TODO: if we compute the thin SVD we need look at the upper bound of the sum of singular values. So need to add more in. Look at Nic's code
-    // TODO: How do we actually find the change point of the singular values?
-    // We want to look at the change point of the cumulative sum of the singular values
     double sum_singular_values = xt::sum(singular_values)();
+
+    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix, corner_index}));
 
     // Natural information is the ratio of the first k singular values to the sum
     xt::xtensor<double,1> info_numbers = xt::zeros<double>({k_max});
@@ -67,28 +63,27 @@ void Wendy::build_full_test_function_matrices(){
         info_numbers[i]= xt::sum(xt::view(singular_values, xt::range(0,i)))()/sum_singular_values;
     }
 
+    // Regularize with user input (hard max on condition # of test function & how much "information" we want)
     auto k1 = find_last(condition_numbers,[this](const double x) { return x < test_function_params.max_test_fun_condition_number; } );
-    auto k2 = find_last(info_numbers,[this](const double x) { return x < test_function_params.min_test_fun_info_number; } );
+    auto k2 = find_last(info_numbers,[this](const double x) { return x > test_function_params.min_test_fun_info_number; } );
 
     if (k1 == -1) {k1 = std::numeric_limits<int>::max();}
     if (k2 == -1) {k2 =std::numeric_limits<int>::max();}
 
     auto K = std::min({k1,k2,k_max});
 
-    if (K == k_max) {
-        logger->warn("k_max is equal to k_max");
-    }
-
     logger->info("Condition Number is now: {}", condition_numbers[K]);
 
-    xt::xtensor<double,2> V_orthonormal = xt::view(V_, xt::all(), xt::range(0,K));
+    this-> V= xt::view(Vᵀ, xt::range(0,K), xt::all());
 
-    this->V = xt::transpose(V_orthonormal);
+    // TODO: Compare this to the Fourier Transformation
+    // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ
+    // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
 
-    // TODO: Compare this to the Fourier Transformation and talk to Nic about this representation
-    // Project the rows (each row is one test function) onto the O.N. basis of the test functions
-    this->V_prime = xt::linalg::dot(V_prime, V_orthonormal);
+    const auto Σ_psuedo_inverse = xt::diag(1.0/singular_values);
+    const auto UᵀV_prime =xt::linalg::dot(xt::transpose(U), V_prime);
 
+    this->V_prime = xt::view(xt::linalg::dot(Σ_psuedo_inverse ,UᵀV_prime), xt::range(0,K), xt::all());
 }
 
 
