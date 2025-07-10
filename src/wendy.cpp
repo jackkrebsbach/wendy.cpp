@@ -61,7 +61,6 @@ void Wendy::build_full_test_function_matrices(){
    const double corner_index =  static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
    const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
 
-
    xt::xtensor<double,1> condition_numbers = singular_values(0)/singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
 
    double sum_singular_values = xt::sum(singular_values)();
