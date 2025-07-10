@@ -14,7 +14,6 @@
 
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) {
-
     this->J = p0.size(); // Number of parameters in the system
     this->D = U.shape()[1]; // Dimension of the system
     this->U = U; // Noisy data
@@ -22,7 +21,6 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, 
     this->sym_system = create_symbolic_system(f); // Symbolic representation of the RHS
     this->sym_system_jac = compute_jacobian(sym_system, create_symbolic_vars("p", J)); // Symbolic representation of the Jacobian of the RHS
     this->F = build_symbolic_system(sym_system, D, J); // callable function for numerics input
-
 }
 
 

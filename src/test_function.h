@@ -1,7 +1,5 @@
 #pragma once
 #include <xtensor/containers/xarray.hpp>
-#include <symengine/expression.h>
-#include <symengine/lambda_double.h>
 #include <symengine/parser.h>
 
 //Default test function used, eta controls the shape
@@ -23,15 +21,4 @@ std::vector<std::vector<std::size_t> > get_test_function_support_indices(const i
 double find_min_radius_int_error(xt::xtensor<double,2> &U, xt::xtensor<double,1> &tt,
     double radius_min, double radius_max,int n_test_functions, int num_radii=100, int sub_sample_rate = 2);
 
-size_t get_corner_index(const xt::xtensor<double,1> &yy, const xt::xtensor<double,1>* xx_in = nullptr);
-
-inline std::function<double(double)>
-make_scalar_function(const SymEngine::Expression& expr, const SymEngine::RCP<const SymEngine::Symbol>& var){
-    return [expr, var](const double x) {
-        SymEngine::map_basic_basic subs;
-        subs[var] = SymEngine::real_double(x);
-        const SymEngine::Expression substituted = expr.subs(subs);
-        return SymEngine::eval_double(*substituted.get_basic());
-    };
-}
 
