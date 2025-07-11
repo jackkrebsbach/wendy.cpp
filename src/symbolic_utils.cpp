@@ -35,7 +35,7 @@ std::vector<SymEngine::Expression> create_all_symbolic_inputs(const size_t D, co
 }
 
 std::vector<SymEngine::Expression>
-create_symbolic_system(const std::vector<std::string> &f) {
+build_symbolic_f(const std::vector<std::string> &f) {
   std::vector<SymEngine::Expression> dx;
   dx.reserve(f.size());
   for (const auto &s: f) {
@@ -53,7 +53,7 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
 }
 
 std::vector<LambdaRealDoubleVisitor>
-build_symbolic_system(const std::vector<Expression> &dx, const size_t D, const size_t J) {
+build_f(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
@@ -71,7 +71,7 @@ build_symbolic_system(const std::vector<Expression> &dx, const size_t D, const s
 }
 
 std::vector<std::vector<LambdaRealDoubleVisitor>>
-build_symbolic_jacobian(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
+build_jacobian(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
@@ -100,7 +100,7 @@ build_symbolic_jacobian(const std::vector<std::vector<Expression>> &J_uf, const 
 
 // For vector input
 std::vector<std::vector<Expression> >
-compute_jacobian(const std::vector<Expression> &system,
+build_symbolic_jacobian(const std::vector<Expression> &system,
                  const std::vector<Expression> &inputs) {
   std::vector<std::vector<Expression> > jacobian(
     system.size(), std::vector<Expression>(inputs.size()));
@@ -115,7 +115,7 @@ compute_jacobian(const std::vector<Expression> &system,
 
 // For matrix input
 std::vector<std::vector<std::vector<Expression> > >
-compute_jacobian(const std::vector<std::vector<Expression> > &matrix,
+build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,
                  const std::vector<Expression> &inputs) {
   size_t rows = matrix.size();
   size_t cols = rows > 0 ? matrix[0].size() : 0;

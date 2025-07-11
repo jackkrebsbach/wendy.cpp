@@ -82,7 +82,7 @@ TEST_CASE("Jacobian of a linear system with respect to all variables") {
     u[0] * u[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1], p[0], p[1]};
-  auto jac = compute_jacobian(system, inputs);
+  auto jac = compute_symbolic_jacobian(system, inputs);
 
   print_system(system);
   print_jacobian(jac);
@@ -111,7 +111,7 @@ TEST_CASE("Jacobian of a nonlinear system (sin, cos, exp) with respect to all "
     SymEngine::add(sin(u[0]), exp(p[0] * u[1])), cos(u[1]) * p[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1], p[0], p[1]};
-  auto jac = compute_jacobian(system, inputs);
+  auto jac = compute_symbolic_jacobian(system, inputs);
 
   print_system(system);
   print_jacobian(jac);
@@ -147,7 +147,7 @@ TEST_CASE("Jacobian with respect to only u variables") {
     SymEngine::add(sin(u[0]), exp(p[0] * u[1])), u[0] * u[1] + p[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1]};
-  auto jac = compute_jacobian(system, inputs);
+  auto jac = compute_symbolic_jacobian(system, inputs);
 
   print_system(system);
   print_jacobian(jac);
@@ -173,7 +173,7 @@ TEST_CASE("Jacobian with respect to only p variables") {
     u[0] * u[1] + p[1]
   };
   std::vector<SymEngine::Expression> inputs = {p[0], p[1]};
-  auto jac = compute_jacobian(system, inputs);
+  auto jac = compute_symbolic_jacobian(system, inputs);
 
   print_system(system);
   print_jacobian(jac);
@@ -193,7 +193,7 @@ TEST_CASE("compute_jacobian (matrix version) computes derivatives") {
     {u[1] * u[0], u[1] * u[1]}
   };
   std::vector<Expression> inputs = {u[0], u[1]};
-  auto jac = compute_jacobian(matrix, inputs);
+  auto jac = compute_symbolic_jacobian(matrix, inputs);
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 2);
   REQUIRE(jac[0][0].size() == 2);

@@ -1,3 +1,4 @@
+#include "weak_residual.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
@@ -26,10 +27,10 @@ xt::xarray<double> f(
 }
 
 // Juf the jacobian of f with respect to the state, u.
-xt::xtensor<double,2> J_uf(
+xt::xtensor<double,2> eval_J_uf(
     std::vector<double>& p, // parameters of the system
     const xt::xtensor<double, 1>& u, // state for one time point
-    double &t, // time stamp
+    const double &t, // time stamp
     std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>> & jf // symbolic representation of J_uf
     ){
 
@@ -75,7 +76,6 @@ xt::xtensor<double, 1> g(
 
     return xt::ravel<xt::layout_type::column_major>(V_F_eval);
 }
-
 // r(p) = g(p) - b
 // b = vec[\dot{Phi}U]
 
@@ -91,7 +91,7 @@ xt::xtensor<double,1> r(
     ) {
     auto V_prime_U = xt::linalg::dot(V_prime, U);
     auto b = xt::ravel<xt::layout_type::column_major>(V_prime_U);
-    auto g = g(p, U, tt, V, f,dx);
-    auto r = g-b;
+    auto g_vec = g(p, U, tt, V, f,dx);
+    auto r = g_vec-b;
     return r;
 }
