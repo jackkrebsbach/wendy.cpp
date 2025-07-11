@@ -54,7 +54,8 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
 
 std::vector<LambdaRealDoubleVisitor>
 build_symbolic_system(const std::vector<Expression> &dx, const size_t D, const size_t J) {
-  std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
+
+  const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
   std::vector<LambdaRealDoubleVisitor> visitors;
@@ -64,6 +65,34 @@ build_symbolic_system(const std::vector<Expression> &dx, const size_t D, const s
     LambdaRealDoubleVisitor visitor;
     visitor.init(inputs, *i.get_basic());
     visitors.push_back(std::move(visitor));
+  }
+
+  return visitors;
+}
+
+std::vector<std::vector<LambdaRealDoubleVisitor>>
+build_symbolic_jacobian(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
+
+  const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
+  const vec_basic inputs = expressions_to_vec_basic(input_exprs);
+
+  std::vector<std::vector<LambdaRealDoubleVisitor>> visitors;
+  visitors.reserve(D);
+
+  for (size_t i = 0; i < D; ++i) {
+    std::vector<LambdaRealDoubleVisitor> row;
+    row.reserve(D);
+    for (size_t j = 0; j < D; ++j) {
+        row.emplace_back();
+      }
+    visitors.emplace_back(std::move(row));
+  }
+
+  for (size_t i = 0; i < D; ++i) {
+    for (size_t j = 0; j < D; ++j) {
+      auto basic  = J_uf[i][j].get_basic();
+      visitors[i][j].init(inputs, *basic);
+    }
   }
 
   return visitors;

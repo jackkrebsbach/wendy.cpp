@@ -13,13 +13,18 @@
 
 
 Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) {
+
     this->J = p0.size(); // Number of parameters in the system
     this->D = U.shape()[1]; // Dimension of the system
     this->U = U; // Noisy data (for now assumed to be additive Gaussian)
     this->tt = tt; // Time array (should be equispaced)
-    this->sym_system = create_symbolic_system(f); // Symbolic representation of the RHS
-    this->sym_system_jac = compute_jacobian(sym_system, create_symbolic_vars("p", J)); // Symbolic representation of the Jacobian of the RHS
-    this->F = build_symbolic_system(sym_system, D, J); // callable function for numerics input
+
+    // f(p,u,t) = u'
+    this->f_symbolic = create_symbolic_system(f); // Symbolic representation of the RHS
+    this->F = build_symbolic_system(f_symbolic, D, J); // callable function for numerical input
+    // Jacobian(f) w.r.t u
+    this->J_uf_symbolic = compute_jacobian(f_symbolic, create_symbolic_vars("u", D)); // Symbolic representation of the Jacobian of the RHS
+    this->J_uF = build_symbolic_jacobian(J_uf_symbolic, D, J); // callable function for numerical input
 }
 
 
@@ -29,7 +34,7 @@ void Wendy::build_full_test_function_matrices(){
    const auto k_full = static_cast<double>(V.shape()[0]);// Number of test functions (# of rows)
    const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
 
-   auto radii = test_function_params.radius_params; // Radii multipliers
+   auto radii = test_function_params.radius_params;
    auto radius_min_time = test_function_params.radius_min_time;
    auto radius_max_time = test_function_params.radius_max_time;
 
@@ -87,13 +92,11 @@ void Wendy::build_full_test_function_matrices(){
     this-> V= xt::view(Vᵀ, xt::range(0,K), xt::all());
 
     // TODO: Compare this to the Fourier Transformation
-    // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ
-    // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
+    // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
+    const auto S_psuedo_inverse = xt::diag(1.0/singular_values);
+    const auto UtV_prime =xt::linalg::dot(xt::transpose(U), V_prime);
 
-    const auto Σ_psuedo_inverse = xt::diag(1.0/singular_values);
-    const auto UᵀV_prime =xt::linalg::dot(xt::transpose(U), V_prime);
-
-    this->V_prime = xt::view(xt::linalg::dot(Σ_psuedo_inverse ,UᵀV_prime), xt::range(0,K), xt::all());
+    this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse ,UtV_prime), xt::range(0,K), xt::all());
 }
 
 
@@ -103,22 +106,22 @@ void Wendy::log_details() const {
     logger->info("  J (Number of parameters): {}", J);
 
     logger->info("  sym_system (Symbolic system expressions):");
-    logger->info("    Size: {}", sym_system.size());
-    for (size_t i = 0; i < sym_system.size(); ++i) {
-        logger->info("      [{}]: {}", i, str(sym_system[i]));
+    logger->info("    Size: {}", f_symbolic.size());
+    for (size_t i = 0; i < f_symbolic.size(); ++i) {
+        logger->info("      [{}]: {}", i, str(f_symbolic[i]));
     }
 
 
     logger->info("  sym_system_jac (Symbolic Jacobian):");
-    logger->info("    Size: {}", sym_system_jac.size());
-    for (size_t i = 0; i < sym_system_jac.size(); ++i) {
+    logger->info("    Size: {}", J_uf_symbolic.size());
+    for (size_t i = 0; i < J_uf_symbolic.size(); ++i) {
         std::string row;
-        for (size_t j = 0; j < sym_system_jac[i].size(); ++j) {
-            row += str(sym_system_jac[i][j]);
-            if (j < sym_system_jac[i].size() - 1)
+        for (size_t j = 0; j < J_uf_symbolic[i].size(); ++j) {
+            row += str(J_uf_symbolic[i][j]);
+            if (j < J_uf_symbolic[i].size() - 1)
                 row += ", ";
         }
-        logger->info("      Row {} (size {}): {}", i, sym_system_jac[i].size(), row);
+        logger->info("      Row {} (size {}): {}", i, J_uf_symbolic[i].size(), row);
     }
 }
 

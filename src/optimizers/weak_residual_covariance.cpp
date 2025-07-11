@@ -4,7 +4,7 @@
 #include <symengine/lambda_double.h>
 
 /**
- * Calculate the covariance S(p,U,t) = (∇g + ϕ'∘I)(Σ∘I)(∇g + ϕ'∘I)^T = LL^T
+ * Calculate the covariance S(p,U,t) = (∇g + ϕ'∘I)(Σ∘I)(∇gᵀ + ϕ'ᵀ∘I) = LL^T
  * We can factor Σ∘I =(Σ∘I)^1/2(Σ∘I)^1/2 because it is symmetric positive definite (it is also diagonal).
  * returns covariance S(p,U,t)
  **/
@@ -14,14 +14,16 @@ xt::xtensor<double, 2> covariance(
     xt::xtensor<double, 2>& U, // state data
     xt::xtensor<double, 1>& tt, // equispaced time stamps
     xt::xtensor<double, 2>& V, // test function matrix
-    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>>& J_f_u // Jacobian of f w.r.t the state variables Jᵤf(p,u,t)
+    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>>& J_f_u // Jacobian of f w.r.t the state variables: Jᵤf(p,u,t)
     ) {
     //Build L where LL^T = S
     // ∇ᵤg gradient of g with respect to the state
+    // Jᵤf(p,u,t) first we store all the gradient information in a 3D tensor
 
     // ϕ'∘I
 
     // (Σ∘I)^1/2
 
-    return xt::zeros<xt::xtensor<double, 2>>(dx);
+    return xt::zeros<xt::xtensor<double, 2>>(V);
 }
+

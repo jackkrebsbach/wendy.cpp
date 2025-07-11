@@ -23,6 +23,9 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs);
 std::vector<LambdaRealDoubleVisitor>
 build_symbolic_system(const std::vector<Expression> &dx, size_t D, size_t J);
 
+std::vector<std::vector<LambdaRealDoubleVisitor>>
+build_symbolic_jacobian(const std::vector<std::vector<Expression>> &J_uf, size_t D, size_t J);
+
 std::vector<std::vector<std::vector<Expression> > >
 compute_jacobian(const std::vector<std::vector<Expression> > &matrix,
                  const std::vector<Expression> &inputs);

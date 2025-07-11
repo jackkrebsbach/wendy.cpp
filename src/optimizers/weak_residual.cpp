@@ -25,7 +25,30 @@ xt::xarray<double> f(
     return out;
 }
 
-// g(p) = vec[Phi F(p,U,t)]
+// Juf the jacobian of f with respect to the state, u.
+xt::xtensor<double,2> J_uf(
+    std::vector<double>& p, // parameters of the system
+    const xt::xtensor<double, 1>& u, // state for one time point
+    double &t, // time stamp
+    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>> & jf // symbolic representation of J_uf
+    ){
+
+    auto D = u.size();
+    std::vector<double> inputs = p;
+    inputs.insert(p.end(), u.begin(), u.end());
+    inputs.emplace_back(t);
+
+    xt::xtensor<double, 2> out = xt::empty<double>({D,D});
+    for (std::size_t i =0; i < D; ++i) {
+        for (std::size_t j =0; j < D; ++j) {
+            out(i,j) = jf[i][j].call(inputs);
+        }
+    }
+    return out;
+}
+
+
+// g(p) = vec[Phi F(p,U,t)] column wise vectorization
 template <typename F>
 xt::xtensor<double, 1> g(
     std::vector<double>& p,
@@ -71,9 +94,4 @@ xt::xtensor<double,1> r(
     auto g = g(p, U, tt, V, f,dx);
     auto r = g-b;
     return r;
-}
-
-// ∇g_u(p) gradient of g w.r.t the vectorized data
-xt::xtensor<double,2> grad_g_u() {
-
 }

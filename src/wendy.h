@@ -29,13 +29,15 @@ public:
     xt::xtensor<double, 2> U; //Noisy data
 
     // Internal
-    std::vector<SymEngine::LambdaRealDoubleVisitor> F; // the RHS symbolic system
+    std::vector<SymEngine::LambdaRealDoubleVisitor> F; // Callable function of the RHS u' = f(p,u,t)
+    std::vector<std::vector<SymEngine::LambdaRealDoubleVisitor>> J_uF; // Callable Jacobion of f with respect to the state variable J_uf(p,u,t)
     size_t D; // Dimension of system
     size_t J; // Number of parameters
     xt::xtensor<double,2> V; // Test Function Matrix (can be orthonormal)
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix (can be orthonormal)
-    std::vector<SymEngine::Expression> sym_system; // Symbolic representation of system
-    std::vector<std::vector<SymEngine::Expression>> sym_system_jac;
+
+    std::vector<SymEngine::Expression> f_symbolic; // Symbolic representation of the RHS u' = f(p,u,t)
+    std::vector<std::vector<SymEngine::Expression>> J_uf_symbolic; // Symbolic representation of the jacobian of the RHS
 
 
     Wendy(const std::vector<std::string> &f,
