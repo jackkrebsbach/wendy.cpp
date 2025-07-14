@@ -1,11 +1,10 @@
 #ifndef WENDY_H
 #define WENDY_H
 
+#include "utils.h"
 #include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
-
-#include "utils.h"
 
 struct TestFunctionParams {
     const std::optional<int> number_test_functions; // Number of test functions to use in the minimum radius selection process
@@ -30,11 +29,10 @@ public:
     size_t J; // Number of parameters
     xt::xtensor<double,2> V; // Test Function Matrix
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
-    std::vector<SymEngine::Expression> f_symbolic; // Symbolic representation of the RHS u' = f(p,u,t)
-    std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic representation of the jacobian of the RHS
-    f f; // Callable function of the RHS u' = f(p,u,t)
-    Ju_f Ju_f; // Callable Jacobion of f with respect to the state variable J_uf(p,u,t)
-
+    std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
+    std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs
+    f f; // u' = f(p,u,t)
+    Ju_f Ju_f; // J_uf(p,u,t) Jacobian w.r.t state variable u
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
