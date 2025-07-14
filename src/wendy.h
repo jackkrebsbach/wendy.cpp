@@ -5,6 +5,8 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
+#include "utils.h"
+
 struct TestFunctionParams {
     const std::optional<int> number_test_functions; // Number of test functions to use in the minimum radius selection process
     xt::xtensor<int,1> radius_params = xt::pow(2, xt::xtensor<double,1>{0,1,3}); // Radii to use for the test functions
@@ -20,23 +22,23 @@ struct TestFunctionParams {
  */
 class Wendy {
 public:
-    // Input parameters for solving wendy system
-    TestFunctionParams test_function_params;
-    bool compute_svd = true; // If true then the test function matrices are orthonormal
-
     // Input Data
     xt::xtensor<double,1> tt; // Time array (should be equispaced)
     xt::xtensor<double, 2> U; //Noisy data
-
     // Internal
     size_t D; // Dimension of system
     size_t J; // Number of parameters
-    std::function<xt::xtensor<double, 1>(const std::vector<double>&, const xt::xtensor<double, 1>&, double)> f; // Callable function of the RHS u' = f(p,u,t)
-    std::function<xt::xtensor<double, 2>(const std::vector<double>&, const xt::xtensor<double, 1>&, double)> Ju_f; // Callable Jacobion of f with respect to the state variable J_uf(p,u,t)
     xt::xtensor<double,2> V; // Test Function Matrix
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic representation of the RHS u' = f(p,u,t)
     std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic representation of the jacobian of the RHS
+    f f; // Callable function of the RHS u' = f(p,u,t)
+    Ju_f Ju_f; // Callable Jacobion of f with respect to the state variable J_uf(p,u,t)
+
+
+    // Input parameters for solving wendy system
+    TestFunctionParams test_function_params;
+    bool compute_svd = true; // If true then the test function matrices are orthonormal
 
     Wendy(const std::vector<std::string> &f,
         const xt::xtensor<double,2> &U,

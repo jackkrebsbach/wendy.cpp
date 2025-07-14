@@ -1,26 +1,23 @@
-#include "weak_residual.h"
+#include "../utils.h"
 #include "weak_residual_covariance.h"
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
-#include <symengine/lambda_double.h>
 
-// /**
-//  * Calculate the covariance S(p,U,t) = (∇g + ϕ'∘I)(Σ∘I)(∇gᵀ + ϕ'ᵀ∘I) = LL^T
-//  * We can factor Σ∘I =(Σ∘I)^1/2(Σ∘I)^1/2 because it is symmetric positive definite (it is also diagonal).
-//  * returns covariance S(p,U,t)
-//  **/
+/**
+ * Calculate the covariance S(p,U,t) = (∇g + ϕ'∘I)(Σ∘I)(∇gᵀ + ϕ'ᵀ∘I) = LL^T
+ * We can factor Σ∘I =(Σ∘I)^1/2(Σ∘I)^1/2 because it is symmetric positive definite (it is also diagonal).
+ * returns covariance S(p,U,t)
+ **/
 
-template <typename F>
 xt::xtensor<double, 2> covariance(
     std::vector<double>  &p,
     xt::xtensor<double, 2> &U,
     xt::xtensor<double, 1> &tt,
     xt::xtensor<double, 2> &V,
-    F &Ju_f // Jacobian of f w.r.t the state variables: Jᵤf(p,u,t)
+    Ju_f &Ju_f // Jacobian Jᵤf(p,u,t)
     ) {
 
     // Build L where LL^T = S
-
     // 1 ∇ᵤg gradient of g with respect to the state
     // 1a Jᵤf(p,u,t) first we store all the gradient information in a 3D tensor
     const size_t D = U.shape()[1];

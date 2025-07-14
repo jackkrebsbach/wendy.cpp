@@ -12,19 +12,15 @@
 #include <fmt/ranges.h>
 
 
-Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) {
-
-    this->J = p0.size(); // Number of parameters in the system
-    this->D = U.shape()[1]; // Dimension of the system
-    this->U = U; // Noisy data (for now assumed to be additive Gaussian)
-    this->tt = tt; // Time array (should be equispaced)
-
-    // f(p,u,t) = u'
-    this->f_symbolic = build_symbolic_f(f);
-    this->f = build_f(f_symbolic, D, J);
-    // Jacobian(f) w.r.t u
-    this->Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D));
-    this->Ju_f = build_Ju_f(Ju_f_symbolic, D, J);
+Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) :
+    tt(tt),
+    U(U),
+    D(U.shape()[1]),
+    J(p0.size()),
+    f_symbolic(build_symbolic_f(f)),
+    Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
+    f(build_f(f_symbolic, D, J)),
+    Ju_f(build_Ju_f(Ju_f_symbolic, D, J)){
 }
 
 void Wendy::build_full_test_function_matrices(){

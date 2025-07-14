@@ -52,38 +52,38 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
   return basics;
 }
 
-std::vector<LambdaRealDoubleVisitor>
+std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>
 build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
-  std::vector<LambdaRealDoubleVisitor> visitors;
+  std::vector<std::unique_ptr<LambdaRealDoubleVisitor>> visitors;
   visitors.reserve(dx.size());
 
   for (const auto &i: dx) {
-    LambdaRealDoubleVisitor visitor;
-    visitor.init(inputs, *i.get_basic());
+    auto visitor = std::make_unique<LambdaRealDoubleVisitor>();
+    visitor->init(inputs, *i.get_basic());
     visitors.push_back(std::move(visitor));
   }
 
   return visitors;
 }
 
-std::vector<std::vector<LambdaRealDoubleVisitor>>
-build_jacobian_visitors(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
+std::vector<std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>>
+build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_uf, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
-  std::vector<std::vector<LambdaRealDoubleVisitor>> visitors;
+  std::vector<std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>> visitors;
   visitors.reserve(D);
 
   for (size_t i = 0; i < D; ++i) {
-    std::vector<LambdaRealDoubleVisitor> row;
+    std::vector<std::unique_ptr<LambdaRealDoubleVisitor>> row;
     row.reserve(D);
     for (size_t j = 0; j < D; ++j) {
-        row.emplace_back();
+        row.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
       }
     visitors.emplace_back(std::move(row));
   }
@@ -91,7 +91,7 @@ build_jacobian_visitors(const std::vector<std::vector<Expression>> &J_uf, const 
   for (size_t i = 0; i < D; ++i) {
     for (size_t j = 0; j < D; ++j) {
       auto basic  = J_uf[i][j].get_basic();
-      visitors[i][j].init(inputs, *basic);
+      visitors[i][j]->init(inputs, *basic);
     }
   }
 
