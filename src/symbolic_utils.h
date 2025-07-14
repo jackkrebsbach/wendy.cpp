@@ -21,10 +21,10 @@ build_symbolic_jacobian(const std::vector<Expression> &system,
 vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs);
 
 std::vector<LambdaRealDoubleVisitor>
-build_f(const std::vector<Expression> &dx, size_t D, size_t J);
+build_f_visitors(const std::vector<Expression> &dx, size_t D, size_t J);
 
 std::vector<std::vector<LambdaRealDoubleVisitor>>
-build_jacobian(const std::vector<std::vector<Expression>> &J_uf, size_t D, size_t J);
+build_jacobian_visitors(const std::vector<std::vector<Expression>> &J_uf, size_t D, size_t J);
 
 std::vector<std::vector<std::vector<Expression> > >
 build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,

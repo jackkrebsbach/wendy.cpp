@@ -1,6 +1,9 @@
 #pragma once
+#include "symbolic_utils.h"
 #include <xtensor/misc/xsort.hpp>
 #include <symengine/expression.h>
+#include <symengine/lambda_double.h>
+
 
 
 template <typename T, typename Predicate>
@@ -20,6 +23,47 @@ make_scalar_function(const SymEngine::Expression& expr, const SymEngine::RCP<con
         return SymEngine::eval_double(*substituted.get_basic());
     };
 }
+
+inline std::function<xt::xtensor<double, 1>(const std::vector<double>&, const xt::xtensor<double, 1>&, double)>
+build_f(const std::vector<SymEngine::Expression>& f_symbolic, const size_t D, const size_t J) {
+
+    auto dx = build_f_visitors(f_symbolic, D, J); // Symengine object to call numerical input
+
+    return [&dx](const std::vector<double> &p, const xt::xtensor<double, 1> &u, double t) {
+
+        std::vector<double> inputs = p;
+        inputs.insert(inputs.end(), u.begin(), u.end());
+        inputs.emplace_back(t);
+
+        xt::xtensor<double, 1> out = xt::empty<double>({dx.size()});
+        for (std::size_t i = 0; i < dx.size(); ++i) {
+            out[i] = dx[i].call(inputs);
+        }
+        return out;
+    };
+}
+inline std::function<xt::xtensor<double, 2>(const std::vector<double>&, const xt::xtensor<double, 1>&, double)>
+build_Ju_f(const std::vector<std::vector<SymEngine::Expression>>& Ju_f_symbolic, const size_t D, const size_t J) {
+
+    auto dx = build_jacobian_visitors(Ju_f_symbolic, D, J); // Symengine object to call numerical input
+
+    return [&dx, &D](const std::vector<double> &p, const xt::xtensor<double, 1> &u, double t) {
+
+        std::vector<double> inputs = p;
+        inputs.insert(inputs.end(), u.begin(), u.end());
+        inputs.emplace_back(t);
+        xt::xtensor<double, 2> out = xt::empty<double>({D,D});
+
+        for (std::size_t i =0; i < D; ++i) {
+            for (std::size_t j =0; j < D; ++j) {
+                out(i,j) = dx[i][j].call(inputs);
+            }
+        }
+        return out;
+
+    };
+}
+
 
 inline size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1>* xx_in = nullptr) {
     auto N = yy.size();

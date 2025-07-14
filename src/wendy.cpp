@@ -20,13 +20,12 @@ Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, 
     this->tt = tt; // Time array (should be equispaced)
 
     // f(p,u,t) = u'
-    this->f_symbolic = build_symbolic_f(f); // Symbolic representation of the RHS
-    this->F = build_f(f_symbolic, D, J); // callable function for numerical input
+    this->f_symbolic = build_symbolic_f(f);
+    this->f = build_f(f_symbolic, D, J);
     // Jacobian(f) w.r.t u
-    this->J_uf_symbolic = build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D)); // Symbolic representation of the Jacobian of the RHS
-    this->J_uF = build_jacobian(J_uf_symbolic, D, J); // callable function for numerical input
+    this->Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D));
+    this->Ju_f = build_Ju_f(Ju_f_symbolic, D, J);
 }
-
 
 void Wendy::build_full_test_function_matrices(){
 
@@ -113,15 +112,15 @@ void Wendy::log_details() const {
 
 
     logger->info("  sym_system_jac (Symbolic Jacobian):");
-    logger->info("    Size: {}", J_uf_symbolic.size());
-    for (size_t i = 0; i < J_uf_symbolic.size(); ++i) {
+    logger->info("    Size: {}", Ju_f_symbolic.size());
+    for (size_t i = 0; i < Ju_f_symbolic.size(); ++i) {
         std::string row;
-        for (size_t j = 0; j < J_uf_symbolic[i].size(); ++j) {
-            row += str(J_uf_symbolic[i][j]);
-            if (j < J_uf_symbolic[i].size() - 1)
+        for (size_t j = 0; j < Ju_f_symbolic[i].size(); ++j) {
+            row += str(Ju_f_symbolic[i][j]);
+            if (j < Ju_f_symbolic[i].size() - 1)
                 row += ", ";
         }
-        logger->info("      Row {} (size {}): {}", i, J_uf_symbolic[i].size(), row);
+        logger->info("      Row {} (size {}): {}", i, Ju_f_symbolic[i].size(), row);
     }
 }
 

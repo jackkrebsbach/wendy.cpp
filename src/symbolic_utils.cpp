@@ -53,7 +53,7 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
 }
 
 std::vector<LambdaRealDoubleVisitor>
-build_f(const std::vector<Expression> &dx, const size_t D, const size_t J) {
+build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
@@ -71,7 +71,7 @@ build_f(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 }
 
 std::vector<std::vector<LambdaRealDoubleVisitor>>
-build_jacobian(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
+build_jacobian_visitors(const std::vector<std::vector<Expression>> &J_uf, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
