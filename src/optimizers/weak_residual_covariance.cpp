@@ -34,14 +34,11 @@ xt::xtensor<double, 2> covariance(
     }
     // 1b
     // Create matrix with the information needed to build  ∇ᵤg
-    auto Vt = xt::transpose(V);
-    auto Vt_exp = xt::expand_dims(xt::expand_dims(Vt, 2), 3);         // (K, mp1, 1, 1)
-    auto Ju_F_exp = xt::expand_dims(Ju_F, 0);                                 // (1, mp1, D, D)
-    auto Ju_g_4d = Vt_exp * Ju_F_exp;                                             // (K, mp1, D, D)
-    auto Ju_g_t = xt::transpose(xt::eval(Ju_g_4d), {0, 2, 1, 3});           // (K, D, mp1, D)
+    auto V_exp = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);         // (K, mp1, 1, 1)
+    auto Ju_F_exp = xt::expand_dims(Ju_F, 0);                                // (1, mp1, D, D)
+    auto Ju_g_t = xt::transpose(xt::eval(V_exp * Ju_F_exp), {0, 2, 1, 3});           // (K, D, mp1, D)
     auto Ju_g_reshaped = xt::reshape_view(Ju_g_t, {K*D, D*mp1});
     xt::xtensor<double, 2> Ju_g = xt::eval(Ju_g_reshaped);                                      // (K*D, D*mp1)
-
     // ϕ'∘I
     // (Σ∘I)^1/2
 
