@@ -71,7 +71,10 @@ build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t
 }
 
 std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>
-build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_uf, const size_t D, const size_t J) {
+build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const size_t D, const size_t J) {
+
+  const size_t n_row = J_f.size();
+  const size_t n_col = J_f[0].size();
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
@@ -79,18 +82,18 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_uf, const
   std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>> visitors;
   visitors.reserve(D);
 
-  for (size_t i = 0; i < D; ++i) {
+  for (size_t i = 0; i < n_row; ++i) {
     std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> row;
-    row.reserve(D);
-    for (size_t j = 0; j < D; ++j) {
+    row.reserve(n_col);
+    for (size_t j = 0; j < n_col; ++j) {
         row.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
       }
     visitors.emplace_back(std::move(row));
   }
 
-  for (size_t i = 0; i < D; ++i) {
-    for (size_t j = 0; j < D; ++j) {
-      auto basic  = J_uf[i][j].get_basic();
+  for (size_t i = 0; i < n_row; ++i) {
+    for (size_t j = 0; j < n_col; ++j) {
+      auto basic  = J_f[i][j].get_basic();
       visitors[i][j]->init(inputs, *basic);
     }
   }

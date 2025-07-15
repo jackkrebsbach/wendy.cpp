@@ -19,8 +19,10 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U,
     J(p0.size()),
     f_symbolic(build_symbolic_f(f_)),
     Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
+    Jp_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
     f(build_f(f_symbolic, D, J)),
-    Ju_f(build_Ju_f(Ju_f_symbolic, D, J)),
+    Ju_f(build_J_f(Ju_f_symbolic, D, J)),
+    Jp_f(build_J_f(Jp_f_symbolic, D, J)),
     F({f, U, tt}) {}
 
 void Wendy::build_full_test_function_matrices(){

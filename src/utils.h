@@ -31,11 +31,11 @@ inline f_functor build_f(const std::vector<SymEngine::Expression>& f_symbolic, c
 }
 
 
-inline Ju_f_functor build_Ju_f(const std::vector<std::vector<SymEngine::Expression>>& Ju_f_symbolic, const size_t D, const size_t J) {
-    auto dx = build_jacobian_visitors(Ju_f_symbolic, D, J); // Symengine object to call numerical input
+inline J_f_functor build_J_f(const std::vector<std::vector<SymEngine::Expression>> &J_f_symbolic, const size_t &D, const size_t &J) {
+    auto dx = build_jacobian_visitors(J_f_symbolic, D, J); // Symengine object to call numerical input
     return {std::move(dx),D};
-
 }
+
 
 
 inline size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1>* xx_in = nullptr) {

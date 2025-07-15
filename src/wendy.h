@@ -1,6 +1,8 @@
 #ifndef WENDY_H
 #define WENDY_H
 
+#include <variant>
+
 #include "utils.h"
 #include "./optimizers/weak_residual.h"
 #include <xtensor/views/xview.hpp>
@@ -31,11 +33,14 @@ public:
     xt::xtensor<double,2> V; // Test Function Matrix
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
     xt::xtensor<double,1> b; //b = - vec[ϕ'U]
+    // Symbolics
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
     std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
     std::vector<std::vector<SymEngine::Expression>> Jp_f_symbolic; // Symbolic jacobian of the rhs w.r.t p⃗
+    // Callable functions
     f_functor f; // u' = f(p,u,t)
-    Ju_f_functor Ju_f; // J_uf(p,u,t) Jacobian w.r.t state variable u
+    J_f_functor Ju_f; // Ju_f(p,u,t) Jacobian w.r.t state variable u
+    J_f_functor Jp_f; // Jp_f(p,u,t) Jacobian w.r.t parameters p⃗
     F_functor F; // matrix valued function of rhs evalueation at all points f(p⃗, U, t⃗)
 
     // Input parameters for solving wendy system

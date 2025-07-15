@@ -24,7 +24,7 @@ struct CovarianceFactor {
         const xt::xtensor<double, 2>& V_,
         const xt::xtensor<double, 2>& V_prime_,
         const xt::xtensor<double, 2>& Sigma_,
-        Ju_f_functor& Ju_f_
+        J_f_functor& Ju_f_
     );
 
     xt::xtensor<double, 2> operator()(const std::vector<double>& p) const;

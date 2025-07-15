@@ -31,16 +31,17 @@ struct f_functor {
     }
 };
 
-// J_u f(p u, t)  Jacobian of rhs of system w.r.t state variable, function of all variables
-struct Ju_f_functor {
+struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
     size_t D;
-    Ju_f_functor(
+    J_f_functor(
         std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_,
         const size_t D_
     ) : dx(std::move(dx_)), D(D_) {}
-
-    xt::xtensor<double, 2> operator()(
+    
+   ~J_f_functor() = default;
+    
+   xt::xtensor<double, 2> operator()(
         const std::vector<double>& p,
         const xt::xtensor<double, 1>& u,
         const double& t
@@ -97,12 +98,12 @@ struct g_functor {
 };
 
 
-// ∇ᵤ g(p) Jacobian of g w.r.t state variables at all the time points, function of p. The data are known.
+// ∇_Ug(p) Jacobian of g w.r.t state variables at all the time points, function of p. The data are known.
 struct JU_g_functor {
     xt::xtensor<double, 2> U;
     xt::xtensor<double, 1> tt;
     xt::xtensor<double, 2> V;
-    Ju_f_functor& Ju_f;
+    J_f_functor& Ju_f;
     size_t D;
     size_t mp1;
     size_t K;
@@ -112,7 +113,7 @@ struct JU_g_functor {
         const xt::xtensor<double, 2>& U_,
         const xt::xtensor<double, 1>& tt_,
         const xt::xtensor<double, 2>& V_,
-        Ju_f_functor& Ju_f_
+        J_f_functor& Ju_f_
     )
     : U(U_), tt(tt_), V(V_), Ju_f(Ju_f_),
       D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
