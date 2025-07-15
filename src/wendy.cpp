@@ -12,16 +12,16 @@
 #include <fmt/ranges.h>
 
 
-Wendy::Wendy(const std::vector<std::string> &f, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) :
+Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) :
     tt(tt),
     U(U),
     D(U.shape()[1]),
     J(p0.size()),
-    f_symbolic(build_symbolic_f(f)),
+    f_symbolic(build_symbolic_f(f_)),
     Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
     f(build_f(f_symbolic, D, J)),
-    Ju_f(build_Ju_f(Ju_f_symbolic, D, J)){
-}
+    Ju_f(build_Ju_f(Ju_f_symbolic, D, J)),
+    F({f, U, tt}) {}
 
 void Wendy::build_full_test_function_matrices(){
 

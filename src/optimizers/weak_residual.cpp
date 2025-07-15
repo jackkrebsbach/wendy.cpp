@@ -16,8 +16,8 @@ xt::xtensor<double, 1> g(
     std::vector<SymEngine::LambdaRealDoubleVisitor>& dx
     ) {
 
-    const double n_points = U.shape()[0];
-    const double D = U.shape()[1];
+    const size_t n_points = U.shape()[0];
+    const size_t D = U.shape()[1];
 
     xt::xtensor<double, 1> F_eval = xt::empty<double>({n_points, D});
 
@@ -31,23 +31,4 @@ xt::xtensor<double, 1> g(
     auto V_F_eval = xt::linalg::dot(V, F_eval);
 
     return xt::ravel<xt::layout_type::column_major>(V_F_eval);
-}
-// r(p) = g(p) - b
-// b = vec[\dot{Phi}U]
-
-template <typename F>
-xt::xtensor<double,1> r(
-    std::vector<double>& p,
-    xt::xtensor<double, 2>& U,
-    xt::xtensor<double, 1>& tt,
-    xt::xtensor<double, 2>& V,
-    xt::xtensor<double, 2>& V_prime,
-    F& f,
-    std::vector<SymEngine::LambdaRealDoubleVisitor>& dx
-    ) {
-    auto V_prime_U = xt::linalg::dot(V_prime, U);
-    auto b = xt::ravel<xt::layout_type::column_major>(V_prime_U);
-    auto g_vec = g(p, U, tt, V, f,dx);
-    auto r = g_vec-b;
-    return r;
 }

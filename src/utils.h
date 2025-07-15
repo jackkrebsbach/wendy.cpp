@@ -1,4 +1,5 @@
 #pragma once
+#include "./optimizers/weak_residual.h"
 #include "symbolic_utils.h"
 #include <xtensor/misc/xsort.hpp>
 #include <symengine/expression.h>
@@ -22,62 +23,12 @@ make_scalar_function(const SymEngine::Expression& expr, const SymEngine::RCP<con
     };
 }
 
-struct f {
-    std::vector<std::unique_ptr<LambdaRealDoubleVisitor>> dx;
-    size_t D;
-    f(
-        std::vector<std::unique_ptr<LambdaRealDoubleVisitor>> dx_,
-        const size_t D_
-    ) : dx(std::move(dx_)), D(D_) {}
-
-    xt::xtensor<double, 2> operator()(
-        const std::vector<double>& p,
-        const xt::xtensor<double, 1>& u,
-        const double& t
-    ) {
-        std::vector<double> inputs = p;
-        inputs.insert(inputs.end(), u.begin(), u.end());
-        inputs.emplace_back(t);
-        xt::xtensor<double, 1> out = xt::empty<double>({D});
-        for (std::size_t i = 0; i < D; ++i) {
-                out[i] = dx[i]->call(inputs);
-        }
-        return out;
-    }
-};
-
 
 inline f build_f(const std::vector<SymEngine::Expression>& f_symbolic, const size_t D, const size_t J) {
     auto dx = build_f_visitors(f_symbolic, D, J); // Symengine object to call numerical input
     return {std::move(dx),D};
 
 }
-
-struct Ju_f {
-    std::vector<std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>> dx;
-    size_t D;
-    Ju_f(
-        std::vector<std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>> dx_,
-        const size_t D_
-    ) : dx(std::move(dx_)), D(D_) {}
-
-    xt::xtensor<double, 2> operator()(
-        const std::vector<double>& p,
-        const xt::xtensor<double, 1>& u,
-        const double& t
-    ) {
-        std::vector<double> inputs = p;
-        inputs.insert(inputs.end(), u.begin(), u.end());
-        inputs.emplace_back(t);
-        xt::xtensor<double, 2> out = xt::empty<double>({D, D});
-        for (std::size_t i = 0; i < D; ++i) {
-            for (std::size_t j = 0; j < D; ++j) {
-                out(i, j) = dx[i][j]->call(inputs);
-            }
-        }
-        return out;
-    }
-};
 
 
 inline Ju_f build_Ju_f(const std::vector<std::vector<SymEngine::Expression>>& Ju_f_symbolic, const size_t D, const size_t J) {
