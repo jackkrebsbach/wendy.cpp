@@ -32,9 +32,10 @@ public:
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
     xt::xtensor<double,1> b; //b = - vec[ϕ'U]
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
-    std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs
-    f f; // u' = f(p,u,t)
-    Ju_f Ju_f; // J_uf(p,u,t) Jacobian w.r.t state variable u
+    std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
+    std::vector<std::vector<SymEngine::Expression>> Jp_f_symbolic; // Symbolic jacobian of the rhs w.r.t p⃗
+    f_functor f; // u' = f(p,u,t)
+    Ju_f_functor Ju_f; // J_uf(p,u,t) Jacobian w.r.t state variable u
     F_functor F; // matrix valued function of rhs evalueation at all points f(p⃗, U, t⃗)
 
     // Input parameters for solving wendy system

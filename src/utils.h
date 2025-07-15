@@ -24,14 +24,14 @@ make_scalar_function(const SymEngine::Expression& expr, const SymEngine::RCP<con
 }
 
 
-inline f build_f(const std::vector<SymEngine::Expression>& f_symbolic, const size_t D, const size_t J) {
+inline f_functor build_f(const std::vector<SymEngine::Expression>& f_symbolic, const size_t D, const size_t J) {
     auto dx = build_f_visitors(f_symbolic, D, J); // Symengine object to call numerical input
     return {std::move(dx),D};
 
 }
 
 
-inline Ju_f build_Ju_f(const std::vector<std::vector<SymEngine::Expression>>& Ju_f_symbolic, const size_t D, const size_t J) {
+inline Ju_f_functor build_Ju_f(const std::vector<std::vector<SymEngine::Expression>>& Ju_f_symbolic, const size_t D, const size_t J) {
     auto dx = build_jacobian_visitors(Ju_f_symbolic, D, J); // Symengine object to call numerical input
     return {std::move(dx),D};
 

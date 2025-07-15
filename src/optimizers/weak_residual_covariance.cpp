@@ -19,10 +19,11 @@ CovarianceFactor::CovarianceFactor(
         const xt::xtensor<double, 2>& V_,
         const xt::xtensor<double, 2>& V_prime_,
         const xt::xtensor<double, 2>& Sigma_,
-        Ju_f& Ju_f_
+        Ju_f_functor& Ju_f_
     )
-    : U(U_), tt(tt_), V(V_), V_prime(V_prime_), Sigma(Sigma_),
-      gradU_g({U_, tt_, V_, Ju_f_}), D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0])
+    : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
+      Sigma(Sigma_), gradU_g(JU_g_functor(U_, tt_, V_, Ju_f_)),
+      D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0])
     {
         // Precompute square root of Sigma (Sigma is diagonal)
         const auto sqrt_Sigma = xt::linalg::cholesky(Sigma);
@@ -36,10 +37,10 @@ CovarianceFactor::CovarianceFactor(
         const std::vector<double>& p
     ) const {
 
-        auto Ju_F = gradU_g(p);                                                                 // gradient information for a given set of parameters p
-        auto Ju_F_expanded = xt::expand_dims(Ju_F, 0);                                        // (1, mp1, D, D)
+        auto Ju_g_eval = gradU_g(p);                                                                 // gradient information for a given set of parameters p
+        auto Ju_g_expanded = xt::expand_dims(Ju_g_eval, 0);                                        // (1, mp1, D, D)
         auto V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);    // (K, mp1, 1, 1)
-        auto Jug = V_expanded * Ju_F_expanded;                                                 // (K, mp1, D, D)
+        auto Jug = V_expanded * Ju_g_expanded;                                                 // (K, mp1, D, D)
         auto Ju_g_t = xt::transpose(xt::eval(Jug), {0, 2, 1, 3});                    // (K, D, mp1, D)
         auto Ju_g = xt::reshape_view(Ju_g_t, {K*D, D*mp1});                                  //  ∇ᵤg ∈ ℝ^(K*D, D*mp1)
 

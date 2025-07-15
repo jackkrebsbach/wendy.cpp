@@ -52,13 +52,13 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
   return basics;
 }
 
-std::vector<std::unique_ptr<LambdaRealDoubleVisitor>>
+std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>
 build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 
   const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
-  std::vector<std::unique_ptr<LambdaRealDoubleVisitor>> visitors;
+  std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> visitors;
   visitors.reserve(dx.size());
 
   for (const auto &i: dx) {

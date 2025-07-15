@@ -7,11 +7,11 @@
 #include <xtensor-blas/xlinalg.hpp>
 
 // u' = f(p u, t) rhs of system, function of all variables
-struct f {
-    std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>> dx;
+struct f_functor {
+    std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx;
     size_t D;
-    f(
-        std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>> dx_,
+    f_functor(
+        std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx_,
         const size_t D_
     ) : dx(std::move(dx_)), D(D_) {}
 
@@ -19,7 +19,7 @@ struct f {
         const std::vector<double>& p,
         const xt::xtensor<double, 1>& u,
         const double& t
-    ) {
+    ) const {
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
@@ -32,10 +32,10 @@ struct f {
 };
 
 // J_u f(p u, t)  Jacobian of rhs of system w.r.t state variable, function of all variables
-struct Ju_f {
+struct Ju_f_functor {
     std::vector<std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
     size_t D;
-    Ju_f(
+    Ju_f_functor(
         std::vector<std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_,
         const size_t D_
     ) : dx(std::move(dx_)), D(D_) {}
@@ -60,22 +60,22 @@ struct Ju_f {
 
 // Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
 struct F_functor {
-    f f_;
+    f_functor f;
     xt::xtensor<double, 2> U;
     xt::xtensor<double, 1> tt;
 
-    F_functor(const f& _f ,
+    F_functor(const f_functor& f_ ,
       const xt::xtensor<double,2> &U_,
       const xt::xtensor<double,1> &tt_
-      ) : f_(_f), U(U_), tt(tt_) {}
+      ) : f(f_), U(U_), tt(tt_) {}
 
-    xt::xtensor<double, 2> operator()(const std::vector<double> &p){
+    xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
     auto F_eval =  xt::zeros_like(U);
     for (int i = 0; i< U.shape()[1]; ++i){
           auto row = xt::view(F_eval, i, xt::all());
           auto u = xt::view(U, i, xt::all());
           auto t = tt[i];
-          row = f_(p,u,t);
+          row = f(p,u,t);
       }
       return F_eval;
     }
@@ -85,7 +85,7 @@ struct F_functor {
 struct g_functor {
     xt::xtensor<double,2> V_prime;
     F_functor F;
-    g(const F_functor &F_,
+    g_functor(const F_functor &F_,
       const xt::xtensor<double,2> &V_prime_ ):
         V_prime(V_prime_), F(F_){
     }
@@ -97,24 +97,24 @@ struct g_functor {
 };
 
 
-// ∇ᵤ g(p) Jacobian of g w.r.t state variables, function of p. The data are known.
-struct JU_g {
+// ∇ᵤ g(p) Jacobian of g w.r.t state variables at all the time points, function of p. The data are known.
+struct JU_g_functor {
     xt::xtensor<double, 2> U;
     xt::xtensor<double, 1> tt;
     xt::xtensor<double, 2> V;
-    Ju_f& Jacu_f;
+    Ju_f_functor& Ju_f;
     size_t D;
     size_t mp1;
     size_t K;
     xt::xtensor<double,2> V_expanded;
 
-    JU_g(
+    JU_g_functor(
         const xt::xtensor<double, 2>& U_,
         const xt::xtensor<double, 1>& tt_,
         const xt::xtensor<double, 2>& V_,
-        Ju_f& Ju_f_
+        Ju_f_functor& Ju_f_
     )
-    : U(U_), tt(tt_), V(V_), Jacu_f(Ju_f_),
+    : U(U_), tt(tt_), V(V_), Ju_f(Ju_f_),
       D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
          V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);  // (K, mp1, 1, 1)
     }
@@ -126,9 +126,9 @@ struct JU_g {
         xt::xtensor<double, 3> Ju_F({mp1, D, D});
         for (size_t i = 0; i < mp1; ++i) {
             const double& t = tt[i];
-            const auto u = xt::view(U, i, xt::all());
+            const auto&u = xt::view(U, i, xt::all());
             auto JuFi = xt::view(Ju_F, i, xt::all(), xt::all());
-            JuFi = Jacu_f(p, u, t);
+            JuFi = Ju_f(p, u, t);
         }
                                                                                      //V_expanded has dimension (K, mp1, 1, 1)
         auto Ju_F_expanded = xt::expand_dims(Ju_F, 0);                                      // (1, mp1, D, D)
