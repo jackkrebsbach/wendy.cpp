@@ -22,7 +22,7 @@ CovarianceFactor::CovarianceFactor(
         Ju_f_functor& Ju_f_
     )
     : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
-      Sigma(Sigma_), gradU_g(JU_g_functor(U_, tt_, V_, Ju_f_)),
+      Sigma(Sigma_), JU_g(JU_g_functor(U_, tt_, V_, Ju_f_)),
       D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0])
     {
         // Precompute square root of Sigma (Sigma is diagonal)
@@ -37,7 +37,7 @@ CovarianceFactor::CovarianceFactor(
         const std::vector<double>& p
     ) const {
 
-        auto Ju_g_eval = gradU_g(p);                                                                 // gradient information for a given set of parameters p
+        auto Ju_g_eval = JU_g(p);                                                                 // gradient information for a given set of parameters p
         auto Ju_g_expanded = xt::expand_dims(Ju_g_eval, 0);                                        // (1, mp1, D, D)
         auto V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);    // (K, mp1, 1, 1)
         auto Jug = V_expanded * Ju_g_expanded;                                                 // (K, mp1, D, D)

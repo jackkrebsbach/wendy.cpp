@@ -11,7 +11,7 @@ struct CovarianceFactor {
     xt::xtensor<double, 2> V;
     xt::xtensor<double, 2> V_prime;
     xt::xtensor<double, 2> Sigma;
-    JU_g_functor gradU_g;
+    JU_g_functor JU_g;
     size_t D;
     size_t mp1;
     size_t K;
