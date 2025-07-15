@@ -44,6 +44,21 @@ build_symbolic_f(const std::vector<std::string> &f) {
   return dx;
 }
 
+std::vector<std::vector<SymEngine::Expression>>
+build_symbolic_partial_f(const std::vector<SymEngine::Expression> &f, const std::vector<SymEngine::Expression> &vars) {
+  std::vector<std::vector<SymEngine::Expression>> pr;
+  pr.reserve(f.size());
+  for (const auto &s: f) {
+    std::vector<SymEngine::Expression> row;
+    row.reserve(vars.size());
+    for (const auto  &v : vars) {
+      row.emplace_back(s.diff(v));
+    }
+    pr.emplace_back(row);
+  }
+  return pr;
+}
+
 vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
   vec_basic basics;
   basics.reserve(exprs.size());

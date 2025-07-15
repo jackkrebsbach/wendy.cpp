@@ -11,9 +11,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <fmt/ranges.h>
 
-
-Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) :
-    tt(tt),
+Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U, const std::vector<float> &p0, const xt::xtensor<double,1> &tt) : tt(tt),
     U(U),
     D(U.shape()[1]),
     J(p0.size()),
@@ -21,9 +19,11 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U,
     Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
     Jp_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
     f(build_f(f_symbolic, D, J)),
+    // partial_p_f(build_f(build_symbolic_partial_f(f_symbolic, create_symbolic_vars("p", J)), D, J)),TODO finish
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
-    F({f, U, tt}) {}
+    F({f, U, tt}) {
+}
 
 void Wendy::build_full_test_function_matrices(){
 

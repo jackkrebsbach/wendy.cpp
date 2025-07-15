@@ -1,12 +1,13 @@
 #ifndef WEAK_RESIDUAL_H
 #define WEAK_RESIDUAL_H
 
+#include <utility>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
 #include <symengine/lambda_double.h>
 #include <xtensor-blas/xlinalg.hpp>
 
-// u' = f(p u, t) rhs of system, function of all variables
+// f(p u, t) rhs of system, function of all variables
 struct f_functor {
     std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx;
     size_t D;
@@ -30,6 +31,8 @@ struct f_functor {
         return out;
     }
 };
+
+
 
 struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
@@ -65,10 +68,11 @@ struct F_functor {
     xt::xtensor<double, 2> U;
     xt::xtensor<double, 1> tt;
 
-    F_functor(const f_functor& f_ ,
+    F_functor(
+      const f_functor  &f_ ,
       const xt::xtensor<double,2> &U_,
       const xt::xtensor<double,1> &tt_
-      ) : f(f_), U(U_), tt(tt_) {}
+      ) : f(std::move(f_)), U(U_), tt(tt_) {}
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
     auto F_eval =  xt::zeros_like(U);

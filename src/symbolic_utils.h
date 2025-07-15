@@ -9,6 +9,10 @@ using namespace SymEngine;
 std::vector<SymEngine::Expression>
 build_symbolic_f(const std::vector<std::string> &f);
 
+std::vector<std::vector<SymEngine::Expression>>
+build_symbolic_partial_f(const std::vector<SymEngine::Expression> &f, const std::vector<SymEngine::Expression> &vars);
+
+
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              size_t count);
 

@@ -39,6 +39,7 @@ public:
     std::vector<std::vector<SymEngine::Expression>> Jp_f_symbolic; // Symbolic jacobian of the rhs w.r.t p⃗
     // Callable functions
     f_functor f; // u' = f(p,u,t)
+    // f_functor partial_p_f; // 𝜕f
     J_f_functor Ju_f; // Ju_f(p,u,t) Jacobian w.r.t state variable u
     J_f_functor Jp_f; // Jp_f(p,u,t) Jacobian w.r.t parameters p⃗
     F_functor F; // matrix valued function of rhs evalueation at all points f(p⃗, U, t⃗)
