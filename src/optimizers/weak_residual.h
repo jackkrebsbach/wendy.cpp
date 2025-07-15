@@ -33,10 +33,10 @@ struct f_functor {
 
 // J_u f(p u, t)  Jacobian of rhs of system w.r.t state variable, function of all variables
 struct Ju_f_functor {
-    std::vector<std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
+    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
     size_t D;
     Ju_f_functor(
-        std::vector<std::vector<std::unique_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_,
+        std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_,
         const size_t D_
     ) : dx(std::move(dx_)), D(D_) {}
 
