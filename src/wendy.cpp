@@ -96,6 +96,11 @@ void Wendy::build_full_test_function_matrices(){
     this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse ,UtV_prime), xt::range(0,K), xt::all());
 }
 
+void Wendy::build_b() {
+    this->b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime,U)));
+}
+
+
 
 void Wendy::log_details() const {
     logger->info("Wendy class details:");
@@ -107,7 +112,6 @@ void Wendy::log_details() const {
     for (size_t i = 0; i < f_symbolic.size(); ++i) {
         logger->info("      [{}]: {}", i, str(f_symbolic[i]));
     }
-
 
     logger->info("  sym_system_jac (Symbolic Jacobian):");
     logger->info("    Size: {}", Ju_f_symbolic.size());

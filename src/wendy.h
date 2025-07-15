@@ -32,7 +32,7 @@ public:
     size_t J; // Number of parameters
     xt::xtensor<double,2> V; // Test Function Matrix
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
-    xt::xtensor<double,1> b; //b = - vec[ϕ'U]
+    xt::xtensor<double,1> b; // b = - vec[ϕ'U]
     // Symbolics
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
     std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
@@ -53,6 +53,7 @@ public:
         const xt::xtensor<double,1> &tt);
 
     void  build_full_test_function_matrices();
+    void  build_b();
     void log_details() const;
 
     [[nodiscard]] const xt::xtensor<double,2>& getV() const { return this->V; }
