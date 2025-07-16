@@ -22,7 +22,7 @@ CovarianceFactor::CovarianceFactor(
     const J_f_functor &Ju_f_
 )
     : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
-      Sigma(Sigma_), JU_g(J_g_functor(U_, tt_, V_, Ju_f_)) {
+      Sigma(Sigma_), JU_g(JU_g_functor(U_, tt_, V_, Ju_f_)) {
 
 
     const auto mp1 = U.shape()[0];

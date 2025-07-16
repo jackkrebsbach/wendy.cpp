@@ -35,27 +35,29 @@ struct wnll {
 struct J_wnll {
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
+    const xt::xtensor<double, 2> &V;
     const xt::xtensor<double, 2> &V_prime;
     const CovarianceFactor &L;
     const g_functor &g;
     const xt::xtensor<double, 1> &b;
-    const J_g_functor &JU_g;
-    const J_g_functor &Jp_g;
+    const JU_g_functor &JU_g;
+    const JU_g_functor &Jp_g;
     const J_f_functor &Jp_f;
     const S_inv_r_functor S_inv_r;
 
     J_wnll(
         const xt::xtensor<double, 2> &U_,
         const xt::xtensor<double, 1> &tt_,
+        const xt::xtensor<double, 2> &V_,
         const xt::xtensor<double, 2> &V_prime_,
         const CovarianceFactor &L_,
         const g_functor &g_,
         const xt::xtensor<double, 1> &b_,
-        const J_g_functor &JU_g_,
-        const J_g_functor &Jp_g_,
+        const J_f_functor &Ju_f_,
         const J_f_functor &Jp_f_
-    ): U(U_), tt(tt_), V_prime(V_prime_), L(L_), g(g_), b(b_), JU_g(JU_g_), Jp_g(Jp_g_), Jp_f(Jp_f_),
-       S_inv_r(S_inv_r_functor({L, g, b})) {
+    ): U(U_), tt(tt_), V(V_), V_prime(V_prime_), L(L_), g(g_), b(b_),
+       JU_g(JU_g_functor(U, tt, V, Ju_f_)), Jp_g(JU_g_functor(U, tt, V, Ju_f_)),
+       Jp_f(Jp_f_), S_inv_r(S_inv_r_functor({L, g, b})) {
     }
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
@@ -76,6 +78,8 @@ struct J_wnll {
 
             // 3
         }
+
+        return(V_prime);
     }
 };
 

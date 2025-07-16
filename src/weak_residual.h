@@ -1,7 +1,6 @@
 #ifndef WEAK_RESIDUAL_H
 #define WEAK_RESIDUAL_H
 
-#include <utility>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
 #include <symengine/lambda_double.h>
@@ -65,9 +64,10 @@ struct J_f_functor final {
 };
 
 struct H_f_functor final {
-    std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > >dx;
+    std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx;
 
-    explicit H_f_functor(std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > >dx_) : dx(
+    explicit H_f_functor(
+        std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx_) : dx(
         std::move(dx_)) {
     }
 
@@ -85,7 +85,7 @@ struct H_f_functor final {
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
-        xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
+        xt::xtensor<double, 3> out = xt::empty<double>({nrows, ncols, ndepth});
         for (std::size_t i = 0; i < ncols; ++i) {
             for (std::size_t j = 0; j < nrows; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
@@ -140,8 +140,8 @@ struct g_functor {
 };
 
 
-// ∇g(p) Jacobian of g w.r.t which variable J_f is respect to at all the time points, function of p. The data are known.
-struct J_g_functor {
+// ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
+struct JU_g_functor {
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
@@ -151,13 +151,13 @@ struct J_g_functor {
     const size_t &K;
     xt::xtensor<double, 2> V_expanded;
 
-    J_g_functor(
+    JU_g_functor(
         const xt::xtensor<double, 2> &U_,
         const xt::xtensor<double, 1> &tt_,
         const xt::xtensor<double, 2> &V_,
-        const J_f_functor &Ju_f_
+        const J_f_functor &J_f_
     )
-        : U(U_), tt(tt_), V(V_), J_f(Ju_f_),
+        : U(U_), tt(tt_), V(V_), J_f(J_f_),
           D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
         V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
     }
@@ -165,7 +165,6 @@ struct J_g_functor {
     xt::xtensor<double, 2> operator()(
         const std::vector<double> &p
     ) const {
-
         xt::xtensor<double, 3> J_F({mp1, D, D}); // Compute J_F: (mp1, D, D)
         for (size_t i = 0; i < mp1; ++i) {
             const double &t = tt[i];
@@ -182,6 +181,49 @@ struct J_g_functor {
         return Ju_g;
     }
 };
+
+// ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
+struct Jp_g_functor {
+    const xt::xtensor<double, 2> &U;
+    const xt::xtensor<double, 1> &tt;
+    const xt::xtensor<double, 2> &V;
+    const J_f_functor &Jp_f;
+    const size_t &D;
+    const size_t &mp1;
+    const size_t &K;
+    xt::xtensor<double, 2> V_expanded;
+
+    Jp_g_functor(
+        const xt::xtensor<double, 2> &U_,
+        const xt::xtensor<double, 1> &tt_,
+        const xt::xtensor<double, 2> &V_,
+        const J_f_functor &Jp_f_
+    )
+        : U(U_), tt(tt_), V(V_), Jp_f(Jp_f_),
+          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
+    }
+
+    xt::xtensor<double, 2> operator()(
+        const std::vector<double> &p
+    ) const {
+        xt::xtensor<double, 3> J_F({mp1, D, D}); // Compute J_F: (mp1, D, D)
+        for (size_t i = 0; i < mp1; ++i) {
+            const double &t = tt[i];
+            const auto &u = xt::view(U, i, xt::all());
+            auto JFi = xt::view(J_F, i, xt::all(), xt::all());
+            JFi = Jp_f(p, u, t);
+        }
+        //V_expanded has dimension (K, mp1, 1, 1)
+        auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, D)
+        auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, D)
+        auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3}); // (K, D, mp1, D)
+        xt::xtensor<double, 2> Ju_g = xt::reshape_view(J_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
+
+        return Ju_g;
+    }
+};
+
 
 
 // ∇∇g(p) gradient with respect to two difference variables

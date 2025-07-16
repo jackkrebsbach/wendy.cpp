@@ -103,7 +103,6 @@ int main() {
 
        w.build_full_test_function_matrices(); // Builds both full V and V_prime
        w.build_b(); // Buils g = -vec[ϕ'U]
-       w.log_details();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());
