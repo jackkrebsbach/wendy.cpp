@@ -25,8 +25,8 @@ struct wnll {
         const auto x = xt::linalg::solve(xt::transpose(Lp), y); // Solve L^T x = y
         const auto logdetS = std::log(xt::linalg::det(S));
         const auto quad = xt::linalg::dot(diff, x)();
-        const auto likelihood = logdetS + quad;
-        return(likelihood);
+        const auto wnll = logdetS + quad;
+        return(wnll);
     }
 
 };
@@ -50,6 +50,13 @@ struct S_inv_g_minus_b {
         const auto x = xt::linalg::solve(xt::transpose(Lp), y); // Solve L^T x = y
         return(x);
     }
+};
+
+
+
+// ∇ₚ wnll(p) first derivative of the weak negative log likelihood (Jacobian <=> ∇ᵀ)
+struct J_wnll {
+
 
 };
 
