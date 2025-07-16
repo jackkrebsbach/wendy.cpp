@@ -22,14 +22,14 @@ CovarianceFactor::CovarianceFactor(
     const J_f_functor &Ju_f_
 )
     : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
-      Sigma(Sigma_), JU_g(J_g_functor(U_, tt_, V_, Ju_f_)),
-      D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0]) {
-    // Precompute square root of Sigma (Sigma is diagonal)
-    const auto sqrt_Sigma = xt::linalg::cholesky(Sigma);
-    // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
-    sqrt_Sigma_I_D = xt::linalg::kron(sqrt_Sigma, xt::eye(D));
-    // ϕ'x I_d
-    phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D));
+      Sigma(Sigma_), JU_g(J_g_functor(U_, tt_, V_, Ju_f_)) {
+
+
+    const auto mp1 = U.shape()[0];
+    const auto D = U.shape()[1];
+    const auto sqrt_Sigma = xt::linalg::cholesky(Sigma);// Precompute square root of Sigma (Sigma is diagonal)
+    sqrt_Sigma_I_D = xt::linalg::kron(sqrt_Sigma, xt::eye(mp1));     // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
+    phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D));      // ϕ'x I_d
 }
 
 xt::xtensor<double, 2> CovarianceFactor::operator()(

@@ -12,18 +12,29 @@
 #include <fmt/ranges.h>
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U_, const std::vector<float> &p0_, const xt::xtensor<double,1> &tt_) :
+    // Data
     tt(tt_),
     U(U_),
     D(U.shape()[1]),
     J(p0_.size()),
+
+    // Symbolics
     f_symbolic(build_symbolic_f(f_)),
     Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
     Jp_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
+
+    // Callable functions
     f(build_f(f_symbolic, D, J)),
+    F({f, U, tt}),
+
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
-    F({f, U, tt}) {
-}
+
+    Ju_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)), D, J)),
+    Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", D)), D, J)),
+    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", D)), D, J)),
+    Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J))
+{}
 
 void Wendy::build_full_test_function_matrices(){
 

@@ -24,24 +24,35 @@ struct TestFunctionParams {
  */
 class Wendy {
 public:
+
     // Input Data
     xt::xtensor<double,1> tt; // Time array (should be equispaced)
     xt::xtensor<double, 2> U; //Noisy data
+
     // Internal
     size_t D; // Dimension of system
     size_t J; // Number of parameters
     xt::xtensor<double,2> V; // Test Function Matrix
     xt::xtensor<double,2> V_prime; //  Derivative of Test Function Matrix
     xt::xtensor<double,1> b; // b = - vec[ϕ'U]
+
     // Symbolics
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
     std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
     std::vector<std::vector<SymEngine::Expression>> Jp_f_symbolic; // Symbolic jacobian of the rhs w.r.t p⃗
+
     // Callable functions
     f_functor f; // u⃗' = f(p,u,t)
-    J_f_functor Ju_f; // Ju_f(p,u,t) Jacobian w.r.t state variable u⃗
-    J_f_functor Jp_f; // Jp_f(p,u,t) Jacobian w.r.t parameters p⃗
-    F_functor F; // matrix valued function of rhs evaluation at all points f(p⃗, U, t⃗)
+    F_functor F; // matrix valued function of rhs evaluation at all points F(p⃗, U, t⃗)
+
+    J_f_functor Ju_f; // ∇ᵤf(p,u,t) Jacobian w.r.t state variable u⃗
+    J_f_functor Jp_f; // ∇ₚf(p,u,t) Jacobian w.r.t parameters p⃗
+
+    H_f_functor Ju_Ju_f; // Hᵤf(p,u,t) 3D Hessian w.r.t u⃗
+    H_f_functor Jp_Jp_f; // Hₚf(p,u,t) 3D Hessian w.r.t p⃗
+    H_f_functor Jp_Ju_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
+    H_f_functor Ju_Jp_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
+
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;

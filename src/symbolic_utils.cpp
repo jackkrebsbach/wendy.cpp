@@ -70,6 +70,7 @@ build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t
   return visitors;
 }
 
+// Matrix input
 std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > >
 build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const size_t D, const size_t J) {
   const size_t n_row = J_f.size();
@@ -98,6 +99,45 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const 
   }
 
   return visitors;
+}
+
+// 3-D Tensor input
+std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>
+build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression>>> &H_f, const size_t D, const size_t J) {
+    const size_t n_row = H_f.size();
+    const size_t n_col = n_row > 0 ? H_f[0].size() : 0;
+    const size_t n_dep = (n_col > 0) ? H_f[0][0].size() : 0;
+
+    const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
+    const vec_basic inputs = expressions_to_vec_basic(input_exprs);
+
+    std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>> visitors;
+    visitors.reserve(n_row);
+
+    for (size_t i = 0; i < n_row; ++i) {
+        std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>> row;
+        row.reserve(n_col);
+        for (size_t j = 0; j < n_col; ++j) {
+            std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> dep;
+            dep.reserve(n_dep);
+            for (size_t k = 0; k < n_dep; ++k) {
+                dep.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
+            }
+            row.emplace_back(std::move(dep));
+        }
+        visitors.emplace_back(std::move(row));
+    }
+
+    for (size_t i = 0; i < n_row; ++i) {
+        for (size_t j = 0; j < n_col; ++j) {
+            for (size_t k = 0; k < n_dep; ++k) {
+                auto basic = H_f[i][j][k].get_basic();
+                visitors[i][j][k]->init(inputs, *basic);
+            }
+        }
+    }
+
+    return visitors;
 }
 
 // For vector input

@@ -37,7 +37,7 @@ struct f_functor {
 struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
 
-    J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
+    explicit J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
         std::move(dx_)) {
     }
 
@@ -65,9 +65,9 @@ struct J_f_functor final {
 };
 
 struct H_f_functor final {
-    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
+    std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > >dx;
 
-    H_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
+    explicit H_f_functor(std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > >dx_) : dx(
         std::move(dx_)) {
     }
 
@@ -80,6 +80,7 @@ struct H_f_functor final {
     ) const {
         const size_t nrows = dx.size();
         const size_t ncols = dx[0].size();
+        const size_t ndepth = dx[0][0].size();
 
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
@@ -87,30 +88,15 @@ struct H_f_functor final {
         xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
         for (std::size_t i = 0; i < ncols; ++i) {
             for (std::size_t j = 0; j < nrows; ++j) {
-                out(i, j) = dx[i][j]->call(inputs);
+                for (std::size_t k = 0; k < ndepth; ++k) {
+                    out(i, j, k) = dx[i][j][k]->call(inputs);
+                }
             }
         }
         return out;
     }
 };
 
-inline xt::xtensor<double, 3> Jp_F3(
-    const J_f_functor &Jp_f,
-    const xt::xtensor<double, 2> &U,
-    const xt::xtensor<double, 1> &tt,
-    const std::vector<double> &p
-) {
-    auto Jp_F = xt::xtensor<double, 3>({U.shape()[0], U.shape()[1], p.size()});
-    for (std::size_t i = 0; i < U.shape()[0]; ++i) {
-        for (std::size_t j = 0; j < U.shape()[1]; ++j) {
-            const auto &u = xt::view(U, i, xt::all());
-            const auto &t = tt[i];
-            auto view = xt::view(Jp_F, i, j, xt::all());
-            view = Jp_f(p, u, t);
-        }
-    }
-    return Jp_F;
-}
 
 // Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
 struct F_functor {
@@ -179,8 +165,8 @@ struct J_g_functor {
     xt::xtensor<double, 2> operator()(
         const std::vector<double> &p
     ) const {
-        // Compute J_F: (mp1, D, D)
-        xt::xtensor<double, 3> J_F({mp1, D, D});
+
+        xt::xtensor<double, 3> J_F({mp1, D, D}); // Compute J_F: (mp1, D, D)
         for (size_t i = 0; i < mp1; ++i) {
             const double &t = tt[i];
             const auto &u = xt::view(U, i, xt::all());
