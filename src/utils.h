@@ -36,7 +36,6 @@ inline J_f_functor build_J_f(const std::vector<std::vector<SymEngine::Expression
 }
 
 
-
 inline size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1>* xx_in = nullptr) {
     auto N = yy.size();
 

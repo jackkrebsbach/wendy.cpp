@@ -59,9 +59,54 @@ struct J_f_functor final {
     }
 };
 
+struct H_f_functor final {
+    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
+    H_f_functor( std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_) : dx(std::move(dx_)) {}
+
+    ~H_f_functor() = default;
+    xt::xtensor<double, 3> operator()(
+         const std::vector<double>& p,
+         const xt::xtensor<double, 1>& u,
+         const double& t
+     ) const {
+
+        const size_t nrows = dx.size();
+        const size_t ncols = dx[0].size();
+
+        std::vector<double> inputs = p;
+        inputs.insert(inputs.end(), u.begin(), u.end());
+        inputs.emplace_back(t);
+        xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
+        for (std::size_t i = 0; i < ncols; ++i) {
+            for (std::size_t j = 0; j < nrows; ++j) {
+                out(i, j) = dx[i][j]->call(inputs);
+            }
+        }
+        return out;
+    }
+};
+
+inline xt::xtensor<double, 3> Jp_F3(
+    const J_f_functor& Jp_f,
+    const xt::xtensor<double, 2>& U,
+    const xt::xtensor<double, 1>& tt,
+    const std::vector<double>& p
+) {
+    auto Jp_F = xt::xtensor<double, 3>({U.shape()[0], U.shape()[1], p.size()});
+    for (std::size_t i = 0; i < U.shape()[0]; ++i) {
+        for (std::size_t j = 0; j < U.shape()[1]; ++j) {
+            const auto& u = xt::view(U, i, xt::all());
+            const auto& t = tt[i];
+            auto view = xt::view(Jp_F, i, j, xt::all());
+            view = Jp_f(p, u, t);
+        }
+    }
+    return Jp_F;
+}
+
 // Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
 struct F_functor {
-    const f_functor &f;
+    const f_functor  &f;
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
 
