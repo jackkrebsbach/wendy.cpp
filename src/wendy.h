@@ -4,7 +4,7 @@
 #include <variant>
 
 #include "utils.h"
-#include "./optimizers/weak_residual.h"
+#include "weak_residual.h"
 #include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>

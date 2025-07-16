@@ -1,11 +1,10 @@
-#include <iostream>
+#include "src/wendy.h"
+#include "src/logger.h"
 #include <vector>
 #include <string>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
-#include "src/wendy.h"
-#include "src/logger.h"
 #include <random>
 #include <cmath>
 #include <xtensor-blas/xlinalg.hpp>

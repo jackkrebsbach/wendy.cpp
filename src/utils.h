@@ -1,5 +1,5 @@
 #pragma once
-#include "./optimizers/weak_residual.h"
+#include "weak_residual.h"
 #include "symbolic_utils.h"
 #include <xtensor/misc/xsort.hpp>
 #include <symengine/expression.h>

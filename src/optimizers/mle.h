@@ -1,8 +1,8 @@
 #ifndef MLE_H
 #define MLE_H
 
-#include "weak_residual_covariance.h"
-#include "weak_residual.h"
+#include "../weak_residual_covariance.h"
+#include "../weak_residual.h"
 
 // Weak negative log-likelihood
 // The first term is constant so it is neglected in optimization
