@@ -9,17 +9,19 @@
 
 // f(p u, t) rhs of system, function of all variables
 struct f_functor {
-    std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx;
+    std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > dx;
     size_t D;
+
     f_functor(
-        std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx_,
+        std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > dx_,
         const size_t D_
-    ) : dx(std::move(dx_)), D(D_) {}
+    ) : dx(std::move(dx_)), D(D_) {
+    }
 
     xt::xtensor<double, 1> operator()(
-        const std::vector<double>& p,
-        const xt::xtensor<double, 1>& u,
-        const double& t
+        const std::vector<double> &p,
+        const xt::xtensor<double, 1> &u,
+        const double &t
     ) const {
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
@@ -33,18 +35,21 @@ struct f_functor {
 };
 
 struct J_f_functor final {
-    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
-    J_f_functor( std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_) : dx(std::move(dx_)) {}
+    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
 
-   ~J_f_functor() = default;
-   xt::xtensor<double, 2> operator()(
-        const std::vector<double>& p,
-        const xt::xtensor<double, 1>& u,
-        const double& t
+    J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
+        std::move(dx_)) {
+    }
+
+    ~J_f_functor() = default;
+
+    xt::xtensor<double, 2> operator()(
+        const std::vector<double> &p,
+        const xt::xtensor<double, 1> &u,
+        const double &t
     ) const {
-
-       const size_t nrows = dx.size();
-       const size_t ncols = dx[0].size();
+        const size_t nrows = dx.size();
+        const size_t ncols = dx[0].size();
 
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
@@ -60,16 +65,19 @@ struct J_f_functor final {
 };
 
 struct H_f_functor final {
-    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
-    H_f_functor( std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_) : dx(std::move(dx_)) {}
+    std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
+
+    H_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
+        std::move(dx_)) {
+    }
 
     ~H_f_functor() = default;
-    xt::xtensor<double, 3> operator()(
-         const std::vector<double>& p,
-         const xt::xtensor<double, 1>& u,
-         const double& t
-     ) const {
 
+    xt::xtensor<double, 3> operator()(
+        const std::vector<double> &p,
+        const xt::xtensor<double, 1> &u,
+        const double &t
+    ) const {
         const size_t nrows = dx.size();
         const size_t ncols = dx[0].size();
 
@@ -87,16 +95,16 @@ struct H_f_functor final {
 };
 
 inline xt::xtensor<double, 3> Jp_F3(
-    const J_f_functor& Jp_f,
-    const xt::xtensor<double, 2>& U,
-    const xt::xtensor<double, 1>& tt,
-    const std::vector<double>& p
+    const J_f_functor &Jp_f,
+    const xt::xtensor<double, 2> &U,
+    const xt::xtensor<double, 1> &tt,
+    const std::vector<double> &p
 ) {
     auto Jp_F = xt::xtensor<double, 3>({U.shape()[0], U.shape()[1], p.size()});
     for (std::size_t i = 0; i < U.shape()[0]; ++i) {
         for (std::size_t j = 0; j < U.shape()[1]; ++j) {
-            const auto& u = xt::view(U, i, xt::all());
-            const auto& t = tt[i];
+            const auto &u = xt::view(U, i, xt::all());
+            const auto &t = tt[i];
             auto view = xt::view(Jp_F, i, j, xt::all());
             view = Jp_f(p, u, t);
         }
@@ -106,42 +114,42 @@ inline xt::xtensor<double, 3> Jp_F3(
 
 // Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
 struct F_functor {
-    const f_functor  &f;
+    const f_functor &f;
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
 
     F_functor(
-      const f_functor  &f_ ,
-      const xt::xtensor<double,2> &U_,
-      const xt::xtensor<double,1> &tt_
-      ) : f(f_), U(U_), tt(tt_) {}
+        const f_functor &f_,
+        const xt::xtensor<double, 2> &U_,
+        const xt::xtensor<double, 1> &tt_
+    ) : f(f_), U(U_), tt(tt_) {
+    }
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
-    auto F_eval =  xt::zeros_like(U);
-    for (int i = 0; i< U.shape()[1]; ++i){
-          auto row = xt::view(F_eval, i, xt::all());
-          auto u = xt::view(U, i, xt::all());
-          auto t = tt[i];
-          row = f(p,u,t);
-      }
-      return F_eval;
+        auto F_eval = xt::zeros_like(U);
+        for (int i = 0; i < U.shape()[1]; ++i) {
+            auto row = xt::view(F_eval, i, xt::all());
+            auto u = xt::view(U, i, xt::all());
+            auto t = tt[i];
+            row = f(p, u, t);
+        }
+        return F_eval;
     }
 };
 
 
 // g(p) = vec[Phi F(p,U,t)] column wise vectorization
 struct g_functor {
-    const xt::xtensor<double,2> &V_prime;
+    const xt::xtensor<double, 2> &V_prime;
     const F_functor &F;
 
     g_functor(const F_functor &F_,
-      const xt::xtensor<double,2> &V_prime_ ):
-        V_prime(V_prime_), F(F_){
+              const xt::xtensor<double, 2> &V_prime_): V_prime(V_prime_), F(F_) {
     }
 
-    xt::xtensor<double,1> operator()(const std::vector<double> &p) const {
+    xt::xtensor<double, 1> operator()(const std::vector<double> &p) const {
         const auto F_eval = F(p);
-        return(xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(F_eval, V_prime) ));
+        return (xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(F_eval, V_prime)));
     }
 };
 
@@ -155,35 +163,35 @@ struct J_g_functor {
     const size_t &D;
     const size_t &mp1;
     const size_t &K;
-    xt::xtensor<double,2> V_expanded;
+    xt::xtensor<double, 2> V_expanded;
 
     J_g_functor(
-        const xt::xtensor<double, 2>& U_,
-        const xt::xtensor<double, 1>& tt_,
-        const xt::xtensor<double, 2>& V_,
-        const J_f_functor& Ju_f_
+        const xt::xtensor<double, 2> &U_,
+        const xt::xtensor<double, 1> &tt_,
+        const xt::xtensor<double, 2> &V_,
+        const J_f_functor &Ju_f_
     )
-    : U(U_), tt(tt_), V(V_), J_f(Ju_f_),
-      D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
-         V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);  // (K, mp1, 1, 1)
+        : U(U_), tt(tt_), V(V_), J_f(Ju_f_),
+          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
     }
 
     xt::xtensor<double, 2> operator()(
-        const std::vector<double>& p
+        const std::vector<double> &p
     ) const {
         // Compute J_F: (mp1, D, D)
         xt::xtensor<double, 3> J_F({mp1, D, D});
         for (size_t i = 0; i < mp1; ++i) {
-            const double& t = tt[i];
-            const auto&u = xt::view(U, i, xt::all());
+            const double &t = tt[i];
+            const auto &u = xt::view(U, i, xt::all());
             auto JFi = xt::view(J_F, i, xt::all(), xt::all());
             JFi = J_f(p, u, t);
         }
-                                                                                     //V_expanded has dimension (K, mp1, 1, 1)
-        auto J_F_expanded = xt::expand_dims(J_F, 0);                                      // (1, mp1, D, D)
-        auto Jg = V_expanded * J_F_expanded;                                               // (K, mp1, D, D)
-        auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3});                  // (K, D, mp1, D)
-        xt::xtensor<double, 2> Ju_g = xt::reshape_view(J_g_t, {K*D, D*mp1});                       // (K*D, D*mp1)
+        //V_expanded has dimension (K, mp1, 1, 1)
+        auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, D)
+        auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, D)
+        auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3}); // (K, D, mp1, D)
+        xt::xtensor<double, 2> Ju_g = xt::reshape_view(J_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
 
         return Ju_g;
     }
@@ -192,42 +200,42 @@ struct J_g_functor {
 
 // ∇∇g(p) gradient with respect to two difference variables
 struct H_g_functor {
-  const  xt::xtensor<double, 2> &U;
-  const  xt::xtensor<double, 1> &tt;
-  const  xt::xtensor<double, 2> &V;
-  const  J_f_functor &Ju_f;
-  const  size_t &D;
-  const  size_t &mp1;
-  const  size_t &K;
-  xt::xtensor<double,2> V_expanded;
+    const xt::xtensor<double, 2> &U;
+    const xt::xtensor<double, 1> &tt;
+    const xt::xtensor<double, 2> &V;
+    const J_f_functor &Ju_f;
+    const size_t &D;
+    const size_t &mp1;
+    const size_t &K;
+    xt::xtensor<double, 2> V_expanded;
 
     H_g_functor(
-        const xt::xtensor<double, 2>& U_,
-        const xt::xtensor<double, 1>& tt_,
-        const xt::xtensor<double, 2>& V_,
-        J_f_functor& Ju_f_
+        const xt::xtensor<double, 2> &U_,
+        const xt::xtensor<double, 1> &tt_,
+        const xt::xtensor<double, 2> &V_,
+        J_f_functor &Ju_f_
     )
-    : U(U_), tt(tt_), V(V_), Ju_f(Ju_f_),
-      D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
-        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3);  // (K, mp1, 1, 1)
+        : U(U_), tt(tt_), V(V_), Ju_f(Ju_f_),
+          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
     }
 
     xt::xtensor<double, 2> operator()(
-        const std::vector<double>& p
+        const std::vector<double> &p
     ) const {
         // Compute Ju_F: (mp1, D, D)
         xt::xtensor<double, 3> Ju_F({mp1, D, D});
         for (size_t i = 0; i < mp1; ++i) {
-            const double& t = tt[i];
-            const auto&u = xt::view(U, i, xt::all());
+            const double &t = tt[i];
+            const auto &u = xt::view(U, i, xt::all());
             auto JuFi = xt::view(Ju_F, i, xt::all(), xt::all());
             JuFi = Ju_f(p, u, t);
         }
         //V_expanded has dimension (K, mp1, 1, 1)
-        auto Ju_F_expanded = xt::expand_dims(Ju_F, 0);                                      // (1, mp1, D, D)
-        auto Jug = V_expanded * Ju_F_expanded;                                               // (K, mp1, D, D)
-        auto Ju_g_t = xt::transpose(xt::eval(Jug), {0, 2, 1, 3});                  // (K, D, mp1, D)
-        xt::xtensor<double, 2> Ju_g = xt::reshape_view(Ju_g_t, {K*D, D*mp1});                       // (K*D, D*mp1)
+        auto Ju_F_expanded = xt::expand_dims(Ju_F, 0); // (1, mp1, D, D)
+        auto Jug = V_expanded * Ju_F_expanded; // (K, mp1, D, D)
+        auto Ju_g_t = xt::transpose(xt::eval(Jug), {0, 2, 1, 3}); // (K, D, mp1, D)
+        xt::xtensor<double, 2> Ju_g = xt::reshape_view(Ju_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
 
         return Ju_g;
     }

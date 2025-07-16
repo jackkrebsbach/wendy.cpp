@@ -14,30 +14,29 @@
  **/
 
 CovarianceFactor::CovarianceFactor(
-        const xt::xtensor<double, 2>& U_,
-        const xt::xtensor<double, 1>& tt_,
-        const xt::xtensor<double, 2>& V_,
-        const xt::xtensor<double, 2>& V_prime_,
-        const xt::xtensor<double, 2>& Sigma_,
-        const J_f_functor& Ju_f_
-    )
+    const xt::xtensor<double, 2> &U_,
+    const xt::xtensor<double, 1> &tt_,
+    const xt::xtensor<double, 2> &V_,
+    const xt::xtensor<double, 2> &V_prime_,
+    const xt::xtensor<double, 2> &Sigma_,
+    const J_f_functor &Ju_f_
+)
     : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
       Sigma(Sigma_), JU_g(J_g_functor(U_, tt_, V_, Ju_f_)),
-      D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0])
-    {
-        // Precompute square root of Sigma (Sigma is diagonal)
-        const auto sqrt_Sigma = xt::linalg::cholesky(Sigma);
-        // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
-        sqrt_Sigma_I_D = xt::linalg::kron(sqrt_Sigma, xt::eye(D));
-        // ϕ'x I_d
-        phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D));
-    }
+      D(U_.shape()[1]), mp1(U_.shape()[1]), K(V_.shape()[0]) {
+    // Precompute square root of Sigma (Sigma is diagonal)
+    const auto sqrt_Sigma = xt::linalg::cholesky(Sigma);
+    // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
+    sqrt_Sigma_I_D = xt::linalg::kron(sqrt_Sigma, xt::eye(D));
+    // ϕ'x I_d
+    phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D));
+}
 
-    xt::xtensor<double, 2> CovarianceFactor::operator()(
-        const std::vector<double>& p
-    ) const {
-        const auto JU_gp = JU_g(p);  // gradient information for a given set of parameters p
-        assert(JU_gp.shape() == phi_prime_I_D.shape() && JU_gp.shape()[1] == sqrt_Sigma_I_D.shape()[0]);
-        auto L = xt::linalg::dot((JU_gp + phi_prime_I_D), sqrt_Sigma_I_D);
-        return(L);
-    };
+xt::xtensor<double, 2> CovarianceFactor::operator()(
+    const std::vector<double> &p
+) const {
+    const auto JU_gp = JU_g(p); // gradient information for a given set of parameters p
+    assert(JU_gp.shape() == phi_prime_I_D.shape() && JU_gp.shape()[1] == sqrt_Sigma_I_D.shape()[0]);
+    auto L = xt::linalg::dot((JU_gp + phi_prime_I_D), sqrt_Sigma_I_D);
+    return (L);
+};

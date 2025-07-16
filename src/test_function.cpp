@@ -15,31 +15,32 @@
 using namespace xt;
 
 double phi(const double &t, const double &eta) {
-  return (std::exp(-eta * std::pow((1 -std::pow(t,2)), -1 )));
+    return (std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
 }
 
-std::vector<double> phi(const std::vector<double>& t_vec, double eta) {
+std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
     std::vector<double> result;
     result.reserve(t_vec.size());
-    for (const auto& t : t_vec) {
+    for (const auto &t: t_vec) {
         result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
     }
     return result;
 }
 
 auto test_function_derivative(const int radius, const double dt, const int order) {
-    const auto scale_factor = std::pow(radius*dt, -1*order); // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
+    const auto scale_factor = std::pow(radius * dt, -1 * order);
+    // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
     const SymEngine::RCP<const SymEngine::Symbol> t = SymEngine::symbol("t");
-    const SymEngine::Expression expression = SymEngine::exp(-9 * SymEngine::pow((1 -SymEngine::pow(SymEngine::Expression(t),2 )), -1 ));
-    const auto derivative = SymEngine::expand(scale_factor*expression.diff(t));
-    return(make_scalar_function(derivative, t));
+    const SymEngine::Expression expression = SymEngine::exp(
+        -9 * SymEngine::pow((1 - SymEngine::pow(SymEngine::Expression(t), 2)), -1));
+    const auto derivative = SymEngine::expand(scale_factor * expression.diff(t));
+    return (make_scalar_function(derivative, t));
 }
 
 
-std::vector<std::vector<std::size_t>> get_test_function_support_indices(const int &radius, const int len_tt,
-    const std::optional<int> n_test_functions) {
-
-    const int diameter =  2 * radius + 1;
+std::vector<std::vector<std::size_t> > get_test_function_support_indices(const int &radius, const int len_tt,
+                                                                         const std::optional<int> n_test_functions) {
+    const int diameter = 2 * radius + 1;
     const int len_interior = len_tt - 2;
 
     int n; // number of test functions actually used
@@ -49,25 +50,24 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
     }
     if (n_test_functions == std::nullopt) {
         gap = 1; // Pack as many test functions as we can
-         n = ((len_interior - diameter) / gap) +1;
-
+        n = ((len_interior - diameter) / gap) + 1;
     } else {
         n = n_test_functions.value();
         if (n < 1) {
             throw std::invalid_argument("n_test_functions must be positive");
         }
         if (n == 1) {
-             gap = (len_interior - diameter) / 2;
+            gap = (len_interior - diameter) / 2;
         } else {
             const int max_start = len_interior - diameter;
-             gap = max_start / (n - 1);
+            gap = max_start / (n - 1);
         }
     }
 
-   std::vector<std::vector<std::size_t>> indices_list;
+    std::vector<std::vector<std::size_t> > indices_list;
 
-    for (int i = 0; i < n ; ++i) {
-        auto start = i*gap+1; // Offset by 1 to skip the boundary
+    for (int i = 0; i < n; ++i) {
+        auto start = i * gap + 1; // Offset by 1 to skip the boundary
         auto end = start + diameter;
 
         if (n == 1) {
@@ -75,9 +75,9 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
             end = start + diameter;
         }
 
-        if (end > len_tt -1) {
+        if (end > len_tt - 1) {
             start = len_tt - 1 - diameter;
-            end = len_tt -1;
+            end = len_tt - 1;
         }
         std::vector<std::size_t> indices_k(end - start);
         std::iota(indices_k.begin(), indices_k.end(), static_cast<std::size_t>(start));
@@ -87,16 +87,16 @@ std::vector<std::vector<std::size_t>> get_test_function_support_indices(const in
 }
 
 // Builds a test function matrix for one radius value.
-xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int radius, int order) {
-   const auto len_tt = tt.size();
-   const double dt =xt::mean(xt::diff(tt))();
+xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int radius, int order) {
+    const auto len_tt = tt.size();
+    const double dt = xt::mean(xt::diff(tt))();
 
     // Diameter can not be larger than the interior of the domain update the radius if it is
-    auto diameter = 2*radius +1;
+    auto diameter = 2 * radius + 1;
 
     if (len_tt < diameter) {
-         radius = static_cast<int>((len_tt - 2) / 2);
-         diameter = 2*radius +1;
+        radius = static_cast<int>((len_tt - 2) / 2);
+        diameter = 2 * radius + 1;
     }
     // For one radius get the support indices for all phi_k (different centers)
     auto indices = get_test_function_support_indices(radius, len_tt);
@@ -107,10 +107,10 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int r
 
     auto f = [order,radius,dt](const double t) -> double {
         if (order == 0) {
-            return(phi(t, 9));
+            return (phi(t, 9));
         }
-        const std::function<double(double)> phi_deriv = test_function_derivative(radius,dt,order);
-        return(phi_deriv(t));
+        const std::function<double(double)> phi_deriv = test_function_derivative(radius, dt, order);
+        return (phi_deriv(t));
     };
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
     auto phi_vec = xt::vectorize(f);
@@ -118,12 +118,12 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int r
     v_row /= xt::norm_l2(v_row)();
 
     // Add back in zero on the endpoints
-    xt::xtensor<double,1> v_row_padded = xt::zeros<double>({v_row.size() + 2});
+    xt::xtensor<double, 1> v_row_padded = xt::zeros<double>({v_row.size() + 2});
     xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
-    xt::xtensor<double,2> V = xt::zeros<double>({indices.size(), len_tt});
+    xt::xtensor<double, 2> V = xt::zeros<double>({indices.size(), len_tt});
 
     for (size_t i = 0; i < indices.size() - 1; i++) {
-        const auto& support_indices = indices[i];
+        const auto &support_indices = indices[i];
         auto n_support = support_indices.size();
         xt::view(V, i, xt::keep(support_indices)) = xt::view(v_row_padded, xt::range(0, n_support));
     }
@@ -131,48 +131,48 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double,1> &tt, int r
     return V;
 }
 
-xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double,1> &tt, const xt::xtensor<int,1> &radii, const int order) {
-
+xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> &tt, const xt::xtensor<int, 1> &radii,
+                                                   const int order) {
     // Vector containing test matrices for one radius
-   std::vector<xt::xtensor<double,2>> test_matrices;
-   for (int i = 0; i < radii.shape()[0]; ++i) {
+    std::vector<xt::xtensor<double, 2> > test_matrices;
+    for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
-        xt::xtensor<double,2> V_k = build_test_function_matrix(tt, radii[i], order);
+        xt::xtensor<double, 2> V_k = build_test_function_matrix(tt, radii[i], order);
         test_matrices.emplace_back(std::move(V_k));
     }
-    xt::xtensor<double,2> V_full = test_matrices[0];
+    xt::xtensor<double, 2> V_full = test_matrices[0];
 
     for (size_t i = 1; i < test_matrices.size(); ++i) {
         //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
-        V_full = xt::xtensor<double,2>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]),0));
+        V_full = xt::xtensor<double, 2>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]), 0));
     }
 
     return V_full;
 }
 
 
-int find_min_radius_int_error(xtensor<double,2> &U, xtensor<double, 1> &tt,
-    double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
-    auto Mp1  = U.shape()[0]; // Number of data points
+int find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
+                              double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
+    auto Mp1 = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
 
     int step = std::max(1, static_cast<int>(std::ceil((radius_max - radius_min) / static_cast<double>(num_radii))));
-    const xtensor<int,1> radii = xt::arange(radius_min, radius_max, step);
+    const xtensor<int, 1> radii = xt::arange(radius_min, radius_max, step);
     xarray<double> errors = xt::zeros<double>({radii.size()});
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
-    for (int i=0; i < radii.size(); ++i) {
+    for (int i = 0; i < radii.size(); ++i) {
         auto radius = static_cast<int>(radii[i]);
         auto V_r = build_test_function_matrix(tt, radius);
         auto K = V_r.shape()[0]; // Number of test functions for a given radius
 
         // (K, Mp1, D)  Element wise for each dimension phi(t_i) and u(t_i) for all phi_k
-        auto G = xt::expand_dims(V_r,2) * xt::expand_dims(U, 0);
+        auto G = xt::expand_dims(V_r, 2) * xt::expand_dims(U, 0);
         // (K, D, Mp1) Need this so reshaping works the way we want
-        auto GT = xt::xarray<double>(xt::transpose(xt::xarray<double>(G), std::vector<std::size_t>{0,2,1}));
+        auto GT = xt::xarray<double>(xt::transpose(xt::xarray<double>(G), std::vector<std::size_t>{0, 2, 1}));
         //For column i (index time), one row is phi_k(t_i)u(t_i)[D] <- Dth dimension
-        auto GT_reshaped = xt::reshape_view(GT, {K*D, Mp1});
+        auto GT_reshaped = xt::reshape_view(GT, {K * D, Mp1});
 
         //Fast Fourier Transform
         auto f_hat_G = calculate_fft(GT_reshaped);
