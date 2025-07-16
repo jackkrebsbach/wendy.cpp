@@ -38,25 +38,22 @@ public:
     std::vector<std::vector<SymEngine::Expression>> Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
     std::vector<std::vector<SymEngine::Expression>> Jp_f_symbolic; // Symbolic jacobian of the rhs w.r.t p⃗
     // Callable functions
-    f_functor f; // u' = f(p,u,t)
-    // f_functor partial_p_f; // 𝜕f
-    J_f_functor Ju_f; // Ju_f(p,u,t) Jacobian w.r.t state variable u
+    f_functor f; // u⃗' = f(p,u,t)
+    J_f_functor Ju_f; // Ju_f(p,u,t) Jacobian w.r.t state variable u⃗
     J_f_functor Jp_f; // Jp_f(p,u,t) Jacobian w.r.t parameters p⃗
-    F_functor F; // matrix valued function of rhs evalueation at all points f(p⃗, U, t⃗)
+    F_functor F; // matrix valued function of rhs evaluation at all points f(p⃗, U, t⃗)
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
     bool compute_svd = true; // If true then the test function matrices are orthonormal
 
-    Wendy(const std::vector<std::string> &f_,
-        const xt::xtensor<double,2> &U,
-        const std::vector<float> &p0,
-        const xt::xtensor<double,1> &tt);
+    Wendy(const std::vector<std::string> &f_, const xt::xtensor<double,2> &U_, const std::vector<float> &p0_, const xt::xtensor<double,1> &tt_);
 
     void  build_full_test_function_matrices();
     void  build_b();
     void log_details() const;
 
+    [[nodiscard]] const xt::xtensor<double,2>& getU() const { return this->U; }
     [[nodiscard]] const xt::xtensor<double,2>& getV() const { return this->V; }
     [[nodiscard]] const xt::xtensor<double,2>& getV_prime() const { return this->V_prime; }
 };

@@ -32,29 +32,53 @@ struct f_functor {
     }
 };
 
+struct _f_functor {
+    std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx;
+    size_t D;
+    _f_functor(
+        std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>> dx_,
+        const size_t D_
+    ) : dx(std::move(dx_)), D(D_) {}
+
+    xt::xtensor<double, 1> operator()(
+        const std::vector<double>& p,
+        const xt::xtensor<double, 1>& u,
+        const double& t
+    ) const {
+        std::vector<double> inputs = p;
+        inputs.insert(inputs.end(), u.begin(), u.end());
+        inputs.emplace_back(t);
+        xt::xtensor<double, 1> out = xt::empty<double>({D});
+        for (std::size_t i = 0; i < D; ++i) {
+            out[i] = dx[i]->call(inputs);
+        }
+        return out;
+    }
+};
+
+
 
 
 struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx;
-    size_t D;
-    J_f_functor(
-        std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_,
-        const size_t D_
-    ) : dx(std::move(dx_)), D(D_) {}
-    
+    J_f_functor( std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor>>> dx_) : dx(std::move(dx_)) {}
+
    ~J_f_functor() = default;
-    
    xt::xtensor<double, 2> operator()(
         const std::vector<double>& p,
         const xt::xtensor<double, 1>& u,
         const double& t
-    ) {
+    ) const {
+
+       const size_t nrows = dx.size();
+       const size_t ncols = dx[0].size();
+
         std::vector<double> inputs = p;
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
-        xt::xtensor<double, 2> out = xt::empty<double>({D, D});
-        for (std::size_t i = 0; i < D; ++i) {
-            for (std::size_t j = 0; j < D; ++j) {
+        xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
+        for (std::size_t i = 0; i < ncols; ++i) {
+            for (std::size_t j = 0; j < nrows; ++j) {
                 out(i, j) = dx[i][j]->call(inputs);
             }
         }

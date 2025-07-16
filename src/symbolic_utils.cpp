@@ -16,7 +16,7 @@ for (int i = 0; i < count; i++) {
 }
 
 // Inputs includes both the parameters, p1, p2,... and the state variables u1, ..., and t
-std::vector<SymEngine::Expression> create_all_symbolic_inputs(const size_t D, const size_t J) {
+std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(const size_t D, const size_t J) {
   const std::vector<SymEngine::Expression> u_symbols = create_symbolic_vars("u", D);
   const std::vector<SymEngine::Expression> p_symbols = create_symbolic_vars("p", J);
   const auto t_symbol =
@@ -44,20 +44,6 @@ build_symbolic_f(const std::vector<std::string> &f) {
   return dx;
 }
 
-std::vector<std::vector<SymEngine::Expression>>
-build_symbolic_partial_f(const std::vector<SymEngine::Expression> &f, const std::vector<SymEngine::Expression> &vars) {
-  std::vector<std::vector<SymEngine::Expression>> pr;
-  pr.reserve(f.size());
-  for (const auto &s: f) {
-    std::vector<SymEngine::Expression> row;
-    row.reserve(vars.size());
-    for (const auto  &v : vars) {
-      row.emplace_back(s.diff(v));
-    }
-    pr.emplace_back(row);
-  }
-  return pr;
-}
 
 vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
   vec_basic basics;
@@ -70,7 +56,7 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression>& exprs) {
 std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>
 build_f_visitors(const std::vector<Expression> &dx, const size_t D, const size_t J) {
 
-  const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
+  const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
   std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> visitors;
@@ -91,7 +77,7 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const 
   const size_t n_row = J_f.size();
   const size_t n_col = J_f[0].size();
 
-  const std::vector<Expression> input_exprs = create_all_symbolic_inputs(D, J);
+  const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
   const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
   std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>> visitors;
@@ -117,7 +103,7 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const 
 }
 
 // For vector input
-std::vector<std::vector<Expression> >
+std::vector<std::vector<Expression>>
 build_symbolic_jacobian(const std::vector<Expression> &system,
                  const std::vector<Expression> &inputs) {
   std::vector<std::vector<Expression> > jacobian(
@@ -135,8 +121,8 @@ build_symbolic_jacobian(const std::vector<Expression> &system,
 std::vector<std::vector<std::vector<Expression> > >
 build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,
                  const std::vector<Expression> &inputs) {
-  size_t rows = matrix.size();
-  size_t cols = rows > 0 ? matrix[0].size() : 0;
+  const size_t rows = matrix.size();
+  const size_t cols = rows > 0 ? matrix[0].size() : 0;
   std::vector<std::vector<std::vector<Expression> > > jacobian(
     rows, std::vector<std::vector<Expression> >(
       cols, std::vector<Expression>(inputs.size())));

@@ -9,14 +9,10 @@ using namespace SymEngine;
 std::vector<SymEngine::Expression>
 build_symbolic_f(const std::vector<std::string> &f);
 
-std::vector<std::vector<SymEngine::Expression>>
-build_symbolic_partial_f(const std::vector<SymEngine::Expression> &f, const std::vector<SymEngine::Expression> &vars);
-
-
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              size_t count);
 
-std::vector<SymEngine::Expression> create_all_symbolic_inputs(size_t J, size_t D);
+std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(size_t J, size_t D);
 
 std::vector<std::vector<Expression> >
 build_symbolic_jacobian(const std::vector<Expression> &system,
