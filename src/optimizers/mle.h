@@ -70,9 +70,11 @@ struct J_wnll {
         const auto S_inv_rp = S_inv_r(p);
         const auto r = g(p) - b;
 
-        // Precomputed Partial information w.r.t p⃗ and U⃗
+        // Precomputed partial information w.r.t p⃗ and U⃗
         const auto  JU_gp = xt::reshape_view(JU_g(p), {K*D, D*mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
-        const auto Jp_gp = xt::reshape_view( xt::sum(Jp_g(p),{2}),{K*D,D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+        const auto Jp_gp = xt::reshape_view( xt::sum(Jp_g(p),{3}),{K*D,D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+
+        // Precomputed mixed partials w.r.t p⃗ and U⃗
 
         for (int i = 0; i < p.size(); ++i) {
             // 1

@@ -51,7 +51,7 @@ public:
     H_f_functor Ju_Ju_f; // Hᵤf(p,u,t) 3D Hessian w.r.t u⃗
     H_f_functor Jp_Jp_f; // Hₚf(p,u,t) 3D Hessian w.r.t p⃗
     H_f_functor Jp_Ju_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
-    H_f_functor Ju_Jp_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
+    H_f_functor Ju_Jp_f; // ∇ᵤ∇ₚf(p,u,t) 3D Tensor with mixed partials
 
 
     // Input parameters for solving wendy system
