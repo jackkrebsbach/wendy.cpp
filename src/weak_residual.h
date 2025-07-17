@@ -190,7 +190,6 @@ struct H_g_functor {
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
     const H_f_functor &H_f;
-    const size_t J;
     const size_t D;
     const size_t mp1;
     const size_t K;
@@ -202,12 +201,10 @@ struct H_g_functor {
         const xt::xtensor<double, 2> &U_,
         const xt::xtensor<double, 1> &tt_,
         const xt::xtensor<double, 2> &V_,
-        const size_t &J_,
-        H_f_functor &H_f_
+        const H_f_functor &H_f_
     )
-        : U(U_), tt(tt_), V(V_), H_f(H_f_), J(J_),
-          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0])
-   {
+        : U(U_), tt(tt_), V(V_), H_f(H_f_), D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+
         V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3),4); // (K, mp1, 1, 1, 1)
         grad1_len = H_f.dx[0].size();
         grad2_len = H_f.dx[0][0].size();
@@ -224,12 +221,11 @@ struct H_g_functor {
             auto H_Fi = xt::view(H_F, i, xt::all(), xt::all(), xt::all());
             H_Fi = H_f(p, u, t);
         }
-        // V_expanded has dimension (K, mp1, 1, 1, 1)
-        auto Ju_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂)
-        auto Jug = V_expanded * Ju_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂)  )
-        auto Ju_g_t = xt::transpose(xt::eval(Jug), {0, 3, 2, 1, 4});
-        return Ju_g_t;
-
+                                                                          // V_expanded has dimension (K, mp1, 1, 1, 1)
+        const auto H_F_expanded = xt::expand_dims(H_F, 0);    // (1, mp1, D, len(∇₁), len(∇₂)
+        const auto Hg = V_expanded * H_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂)  )
+        const auto Hgt = xt::transpose(xt::eval(Hg), {0, 3, 2, 1, 4});
+        return Hgt;
     }
 };
 
