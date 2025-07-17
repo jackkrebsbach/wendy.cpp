@@ -40,10 +40,12 @@ struct J_wnll {
     const CovarianceFactor &L;
     const g_functor &g;
     const xt::xtensor<double, 1> &b;
-    const JU_g_functor &JU_g;
-    const JU_g_functor &Jp_g;
-    const J_f_functor &Jp_f;
+    const J_g_functor &JU_g;
+    const J_g_functor &Jp_g;
     const S_inv_r_functor S_inv_r;
+    size_t K;
+    size_t mp1;
+    size_t D;
 
     J_wnll(
         const xt::xtensor<double, 2> &U_,
@@ -56,8 +58,8 @@ struct J_wnll {
         const J_f_functor &Ju_f_,
         const J_f_functor &Jp_f_
     ): U(U_), tt(tt_), V(V_), V_prime(V_prime_), L(L_), g(g_), b(b_),
-       JU_g(JU_g_functor(U, tt, V, Ju_f_)), Jp_g(JU_g_functor(U, tt, V, Ju_f_)),
-       Jp_f(Jp_f_), S_inv_r(S_inv_r_functor({L, g, b})) {
+       JU_g(J_g_functor(U, tt, V, Ju_f_)), Jp_g(J_g_functor(U, tt, V, Jp_f_)),
+       S_inv_r(S_inv_r_functor({L, g, b})), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1])  {
     }
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
@@ -67,9 +69,10 @@ struct J_wnll {
         const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
         const auto S_inv_rp = S_inv_r(p);
         const auto r = g(p) - b;
-        const auto Jp_gp = Jp_g(p); // ∇ₚg(p)
 
-        // Precomputed Partial information w.r.t p
+        // Precomputed Partial information w.r.t p⃗ and U⃗
+        const auto  JU_gp = xt::reshape_view(JU_g(p), {K*D, D*mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
+        const auto Jp_gp = xt::reshape_view( xt::sum(Jp_g(p),{2}),{K*D,D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
 
         for (int i = 0; i < p.size(); ++i) {
             // 1

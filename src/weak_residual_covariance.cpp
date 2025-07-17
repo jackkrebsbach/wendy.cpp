@@ -22,7 +22,7 @@ CovarianceFactor::CovarianceFactor(
     const J_f_functor &Ju_f_
 )
     : U(U_), tt(tt_), V(V_), V_prime(V_prime_),
-      Sigma(Sigma_), JU_g(JU_g_functor(U_, tt_, V_, Ju_f_)) {
+      Sigma(Sigma_), JU_g(J_g_functor(U_, tt_, V_, Ju_f_)) {
 
 
     const auto mp1 = U.shape()[0];
@@ -35,7 +35,8 @@ CovarianceFactor::CovarianceFactor(
 xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
-    const auto JU_gp = JU_g(p); // gradient information for a given set of parameters p
+    const auto JU_gp_ = JU_g(p); // gradient information for a given set of parameters p
+    const auto  JU_gp = xt::reshape_view(JU_gp_, {U.shape()[0]*V.shape()[0], U.shape()[1]*U.shape()[0]});  // (K*D, D*Mp1)
     assert(JU_gp.shape() == phi_prime_I_D.shape() && JU_gp.shape()[1] == sqrt_Sigma_I_D.shape()[0]);
     auto L = xt::linalg::dot((JU_gp + phi_prime_I_D), sqrt_Sigma_I_D);
     return (L);

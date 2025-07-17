@@ -1,6 +1,7 @@
 #ifndef WEAK_RESIDUAL_H
 #define WEAK_RESIDUAL_H
 
+#include <utility>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
 #include <symengine/lambda_double.h>
@@ -139,19 +140,18 @@ struct g_functor {
     }
 };
 
-
 // ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
-struct JU_g_functor {
+struct J_g_functor {
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
     const J_f_functor &J_f;
-    const size_t &D;
-    const size_t &mp1;
-    const size_t &K;
+    const size_t D;
+    const size_t mp1;
+    const size_t K;
     xt::xtensor<double, 2> V_expanded;
 
-    JU_g_functor(
+    J_g_functor(
         const xt::xtensor<double, 2> &U_,
         const xt::xtensor<double, 1> &tt_,
         const xt::xtensor<double, 2> &V_,
@@ -162,7 +162,7 @@ struct JU_g_functor {
         V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
     }
 
-    xt::xtensor<double, 2> operator()(
+    xt::xtensor<double, 4> operator()(
         const std::vector<double> &p
     ) const {
         xt::xtensor<double, 3> J_F({mp1, D, D}); // Compute J_F: (mp1, D, D)
@@ -176,55 +176,10 @@ struct JU_g_functor {
         auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, D)
         auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, D)
         auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3}); // (K, D, mp1, D)
-        xt::xtensor<double, 2> Ju_g = xt::reshape_view(J_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
 
-        return Ju_g;
+        return J_g_t;
     }
 };
-
-// ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
-struct Jp_g_functor {
-    const xt::xtensor<double, 2> &U;
-    const xt::xtensor<double, 1> &tt;
-    const xt::xtensor<double, 2> &V;
-    const J_f_functor &Jp_f;
-    const size_t &D;
-    const size_t &mp1;
-    const size_t &K;
-    xt::xtensor<double, 2> V_expanded;
-
-    Jp_g_functor(
-        const xt::xtensor<double, 2> &U_,
-        const xt::xtensor<double, 1> &tt_,
-        const xt::xtensor<double, 2> &V_,
-        const J_f_functor &Jp_f_
-    )
-        : U(U_), tt(tt_), V(V_), Jp_f(Jp_f_),
-          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
-        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
-    }
-
-    xt::xtensor<double, 2> operator()(
-        const std::vector<double> &p
-    ) const {
-        xt::xtensor<double, 3> J_F({mp1, D, D}); // Compute J_F: (mp1, D, D)
-        for (size_t i = 0; i < mp1; ++i) {
-            const double &t = tt[i];
-            const auto &u = xt::view(U, i, xt::all());
-            auto JFi = xt::view(J_F, i, xt::all(), xt::all());
-            JFi = Jp_f(p, u, t);
-        }
-        //V_expanded has dimension (K, mp1, 1, 1)
-        auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, D)
-        auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, D)
-        auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3}); // (K, D, mp1, D)
-        xt::xtensor<double, 2> Ju_g = xt::reshape_view(J_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
-
-        return Ju_g;
-    }
-};
-
-
 
 // ∇∇g(p) gradient with respect to two difference variables
 struct H_g_functor {
@@ -232,10 +187,13 @@ struct H_g_functor {
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
     const J_f_functor &Ju_f;
-    const size_t &D;
-    const size_t &mp1;
-    const size_t &K;
+    const size_t D;
+    const size_t mp1;
+    const size_t K;
     xt::xtensor<double, 2> V_expanded;
+
+    std::optional<std::vector<size_t>> transpose_axes;
+    std::optional<std::vector<size_t>> reshape_shape;
 
     H_g_functor(
         const xt::xtensor<double, 2> &U_,
@@ -244,7 +202,8 @@ struct H_g_functor {
         J_f_functor &Ju_f_
     )
         : U(U_), tt(tt_), V(V_), Ju_f(Ju_f_),
-          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+          D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0])
+   {
         V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
     }
 
@@ -266,6 +225,7 @@ struct H_g_functor {
         xt::xtensor<double, 2> Ju_g = xt::reshape_view(Ju_g_t, {K * D, D * mp1}); // (K*D, D*mp1)
 
         return Ju_g;
+
     }
 };
 
