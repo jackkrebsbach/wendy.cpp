@@ -45,6 +45,7 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
 // TODO: Implement we want ∇ₚL(p)
 xt::xtensor<double, 2> CovarianceFactor::Jacobian( const std::vector<double> &p) const {
     const auto H_g = Jp_JU_g(p);
+    // TODO: First we need to reshape H_g before performing the operation
     const auto Jp_L =  xt::linalg::dot((H_g + phi_prime_I_D), sqrt_Sigma_I_mp1);
     return(Jp_L);
 };
