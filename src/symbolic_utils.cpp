@@ -159,6 +159,7 @@ build_jacobian_visitors(
   std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > > visitors;
   visitors.reserve(n_row);
 
+  #pragma omp parallel for
   for (size_t i = 0; i < n_row; ++i) {
     std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > row;
     row.reserve(n_col);
@@ -178,6 +179,7 @@ build_jacobian_visitors(
     visitors.emplace_back(std::move(row));
   }
 
+  #pragma omp parallel for
   for (size_t i = 0; i < n_row; ++i) {
     for (size_t j = 0; j < n_col; ++j) {
       for (size_t k = 0; k < n_dep1; ++k) {
@@ -245,6 +247,7 @@ build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression> > 
     )
   );
 
+  #pragma omp parallel for
   for (size_t i = 0; i < rows; ++i) {
     for (size_t j = 0; j < cols; ++j) {
       for (size_t k = 0; k < ndepth; ++k) {

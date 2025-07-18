@@ -27,7 +27,6 @@ struct f_functor {
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
         xt::xtensor<double, 1> out = xt::empty<double>({D});
-        #pragma omp parallel for
         for (std::size_t i = 0; i < D; ++i) {
             out[i] = dx[i]->call(inputs);
         }
@@ -57,6 +56,7 @@ struct J_f_functor final {
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
         xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
+        #pragma omp parallel for
         for (std::size_t i = 0; i < ncols; ++i) {
             for (std::size_t j = 0; j < nrows; ++j) {
                 out(i, j) = dx[i][j]->call(inputs);
@@ -90,6 +90,7 @@ struct H_f_functor final {
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
         xt::xtensor<double, 3> out = xt::empty<double>({nrows, ncols, ndepth});
+        #pragma omp parallel for
         for (std::size_t i = 0; i < ncols; ++i) {
             for (std::size_t j = 0; j < nrows; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
@@ -127,6 +128,8 @@ struct T_f_functor final {
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
         xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
+
+        #pragma omp parallel for
         for (std::size_t i = 0; i < ncols; ++i) {
             for (std::size_t j = 0; j < nrows; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
@@ -210,6 +213,7 @@ struct J_g_functor {
         const std::vector<double> &p
     ) const {
         xt::xtensor<double, 3> J_F({mp1, D, grad_len}); // Compute J_F: (mp1, D, gradient_len)
+
         for (size_t i = 0; i < mp1; ++i) {
             const double &t = tt[i];
             const auto &u = xt::view(U, i, xt::all());
