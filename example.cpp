@@ -102,7 +102,7 @@ int main() {
        Wendy w(system_eqs, U, p0, tt);
 
        w.build_full_test_function_matrices(); // Builds both full V and V_prime
-       w.build_b(); // Buils g = -vec[ϕ'U]
+       w.build_objective_function();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());

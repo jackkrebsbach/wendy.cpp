@@ -31,8 +31,8 @@ struct CovarianceFactor {
     );
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
-    xt::xtensor<double, 2> Jacobian(const std::vector<double> &p) const;
 
+    xt::xtensor<double, 2> Jacobian(const std::vector<double> &p) const;
 };
 
 
