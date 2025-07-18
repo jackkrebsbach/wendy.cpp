@@ -72,5 +72,43 @@ xt::xtensor<double, 1> MLE::Jacobian(const std::vector<double> &p) const {
 
 //TODO: Finish implementation
 xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
-    return V_prime;
+    // Precomputions
+    const auto Lp = L(p); // L(p)
+    const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
+    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
+
+    const auto r = g(p) - b; // r(p) = g(p) - b
+    const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
+
+    // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
+    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
+    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+
+    // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
+    const auto Jp_LLT = xt::linalg::dot(Jp_Lp, xt::transpose(Lp)); //∇ₚLLᵀ
+    const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
+
+
+    // Output
+    xt::xtensor<double, 2> H_wnn = xt::zeros<double>({p.size(), p.size()});
+    for (int i = 0; i < p.size(); ++i) {
+        // Extract partial information for each p_i from the gradients
+        const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
+        const auto Jp_gp_i = xt::view(Jp_gp, xt::all(), i);
+        const auto JU_gp_i = xt::view(JU_gp, xt::all(), i);
+
+        // Compute  ∇ₚS(p)^(-1) = -S(p)^(-1)∇ₚS(p)S(p)^(-1) from L and  ∇ₚS(p)
+        const auto Y = xt::linalg::solve(S, Jp_Sp_i); // S^(-1)𝜕pᵢS(p)
+        const auto Xt = xt::linalg::solve(xt::transpose(S), xt::transpose(Y));
+        const auto Jp_Sp_inv = -1 * xt::transpose(Xt);
+
+        const double prt1 = 0.5 * xt::linalg::trace(Y)();
+        const double prt2 = 2 * xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_i)), S_inv_rp)();
+        const double prt3 = xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Sp_inv), r)();
+
+        for (int j = 0; j < p.size(); ++i) {
+            H_wnn(i,j) = prt1 + prt2 + prt3;
+        }
+    }
+    return H_wnn;
 }
