@@ -55,7 +55,7 @@ public:
     H_f_functor Jp_Ju_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
     H_f_functor Ju_Jp_f; // ∇ᵤ∇ₚf(p,u,t) 3D Tensor with mixed partials
 
-    T_f_functor  Jp_Ju_Jp_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
+    T_f_functor  Jp_Jp_JU_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
 
     xt::xtensor<double, 2> Sigma; // Variance estimates for each dimension diagonal Matrix (D x D)
 

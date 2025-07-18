@@ -249,7 +249,7 @@ struct H_g_functor {
         grad2_len = H_f.dx[0][0].size();
     }
 
-    xt::xtensor<double, 4> operator()(
+    xt::xtensor<double, 5> operator()(
         const std::vector<double> &p
     ) const {
         // Compute H_F with dimension (mp1, D, len(∇₁), len(∇₂))
@@ -261,9 +261,55 @@ struct H_g_functor {
         }
         //Compute Hg                                                         // V_expanded has dimension (K, mp1, 1, 1, 1)
         const auto H_F_expanded = xt::expand_dims(H_F, 0);    // (1, mp1, D, len(∇₁), len(∇₂)
-        const auto Hg = V_expanded * H_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂)  )
+        const auto Hg = V_expanded * H_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂))
         const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 3, 1, 4}); // (K, D, len(∇₁), mp1, len(∇₂))
         return Hgt;
+    }
+};
+
+// ∇∇∇g(p) with respect to three difference variables
+struct T_g_functor {
+    const xt::xtensor<double, 2> &U;
+    const xt::xtensor<double, 1> &tt;
+    const xt::xtensor<double, 2> &V;
+    const T_f_functor T_f;
+    const size_t D;
+    const size_t mp1;
+    const size_t K;
+    xt::xtensor<double, 2> V_expanded;
+    size_t grad1_len;
+    size_t grad2_len;
+    size_t grad3_len;
+
+    T_g_functor(
+        const xt::xtensor<double, 2> &U_,
+        const xt::xtensor<double, 1> &tt_,
+        const xt::xtensor<double, 2> &V_,
+        const T_f_functor &T_f_
+    )
+        : U(U_), tt(tt_), V(V_), T_f(T_f_), D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
+
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3),4), 5); // (K, mp1, 1, 1, 1 ,1)
+        grad1_len = T_f.dx[0].size();
+        grad2_len = T_f.dx[0][0].size();
+        grad3_len = T_f.dx[0][0][0].size();
+    }
+
+    xt::xtensor<double, 6> operator()(
+        const std::vector<double> &p
+    ) const {
+        // Compute H_F with dimension (mp1, D, len(∇₁), len(∇₂) len(∇₃))
+        xt::xtensor<double, 5> H_F({mp1, D, grad1_len, grad2_len, grad3_len});
+        for (size_t i = 0; i < mp1; ++i) {
+            const double &t = tt[i];
+            const auto &u = xt::view(U, i, xt::all());
+            xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = T_f(p, u, t);
+        }
+        //Compute Tg                                                         // V_expanded has dimension (K, mp1, 1, 1, 1)
+        const auto T_F_expanded = xt::expand_dims(H_F, 0);    // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
+        const auto Tg = V_expanded * T_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
+        const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, len(∇₁), mp1, len(∇₂), len(∇₃))
+        return Tgt;
     }
 };
 

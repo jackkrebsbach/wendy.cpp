@@ -13,6 +13,7 @@ struct CovarianceFactor {
     const xt::xtensor<double, 2> &Sigma;
     J_g_functor JU_g;
     H_g_functor Jp_JU_g;
+    T_g_functor Jp_Jp_JU_g;
     size_t D;
     size_t mp1;
     size_t K;
@@ -27,12 +28,15 @@ struct CovarianceFactor {
         const xt::xtensor<double, 2> &V_prime_,
         const xt::xtensor<double, 2> &Sigma_,
         const J_f_functor &Ju_f_,
-        const H_f_functor &Jp_Ju_f_
+        const H_f_functor &Jp_Ju_f_,
+        const T_f_functor &Jp_Jp_Ju_f_
     );
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
 
     xt::xtensor<double, 2> Jacobian(const std::vector<double> &p) const;
+
+    xt::xtensor<double, 3> Hessian(const std::vector<double> &p) const;
 };
 
 

@@ -10,9 +10,11 @@ MLE::MLE(
     const xt::xtensor<double, 1> &b_,
     const J_f_functor &Ju_f_,
     const J_f_functor &Jp_f_,
-    const H_f_functor &Jp_JU_f_
+    const H_f_functor &Jp_JU_f_,
+    const T_f_functor &Jp_Jp_JU_f_
+
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
-   JU_g(J_g_functor(U, tt, V, Ju_f_)), Jp_g(J_g_functor(U, tt, V, Jp_f_)), Jp_JU_g(H_g_functor(U, tt, V, Jp_JU_f_)),
+   JU_g(J_g_functor(U, tt, V, Ju_f_)), Jp_g(J_g_functor(U, tt, V, Jp_f_)), Jp_JU_g(H_g_functor(U, tt, V, Jp_JU_f_)), Jp_Jp_JU_g(T_g_functor({U, tt, V, Jp_Jp_JU_f_})),
    S_inv_r(S_inv_r_functor({L, g, b})), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
    J = Jp_JU_g.grad2_len;
 }
@@ -75,6 +77,7 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
     // Precomputions
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
+    const auto Hp_Lp = L.Hessian(p); // ∇ₚ∇ₚL(p)
     const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
 
     const auto r = g(p) - b; // r(p) = g(p) - b
