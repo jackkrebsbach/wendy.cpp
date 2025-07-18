@@ -68,7 +68,7 @@ public:
 
     void build_full_test_function_matrices();
 
-    void build_objective_function();
+    void build_objective_function() const;
 
     void log_details() const;
 

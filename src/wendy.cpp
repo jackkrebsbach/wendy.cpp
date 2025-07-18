@@ -132,7 +132,7 @@ void Wendy::build_full_test_function_matrices() {
 }
 
 
-void Wendy::build_objective_function() {
+void Wendy::build_objective_function() const {
     const auto L = CovarianceFactor({U, tt, V, V_prime, Sigma, Ju_f, Jp_Ju_f, Jp_Jp_JU_f});
     const auto g = g_functor({F, V_prime});
     const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
