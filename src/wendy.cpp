@@ -127,8 +127,11 @@ void Wendy::build_objective_function() {
     const auto L = CovarianceFactor({U, tt, V, V_prime, Sigma, Ju_f, Jp_Ju_f});
     const auto g = g_functor({F, V_prime});
     const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
-    const auto f = wnll({L, g, b});
-    const auto fprime = J_wnll({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f});
+
+    // weak negative log-likelihood as a loss function
+    const auto mle = MLE({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f});
+    const auto f = [&](const std::vector<double>& p) { return mle(p); };
+    const auto fprime = [&](const std::vector<double>& p) { return mle.Jacobian(p); };
 }
 
 void Wendy::log_details() const {
