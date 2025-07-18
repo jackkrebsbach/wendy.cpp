@@ -91,6 +91,10 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
     const auto Jp_LLT = xt::linalg::dot(Jp_Lp, xt::transpose(Lp)); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
 
+    // Precomputed HₚS(p) Hessian of the covariance matrix, 4D Tensor
+    const auto Hp_LLT = xt::linalg::dot(Hp_Lp, xt::transpose(Lp)); //∇ₚLLᵀ
+    const auto Hp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
+
     // Output
     xt::xtensor<double, 2> H_wnn = xt::zeros<double>({p.size(), p.size()});
     for (int i = 0; i < p.size(); ++i) {
@@ -109,6 +113,8 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
         const double prt3 = xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Sp_inv), r)();
 
         for (int j = 0; j < p.size(); ++i) {
+            const auto Hp_ij_S  = Hp_Sp(i,j);
+
             H_wnn(i,j) = prt1 + prt2 + prt3;
         }
     }
