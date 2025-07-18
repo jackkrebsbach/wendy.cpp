@@ -86,10 +86,10 @@ struct J_wnll {
         // Output
         xt::xtensor<double, 1> J_wnn_eval = xt::zeros<double>({p.size()});
         for (int i = 0; i < p.size(); ++i) {
-            // Extract components of gradient
+            // Extract partial information for each p_i from the gradients
             const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
-            const auto Jp_gp_i = xt::view(Jp_gp, i, xt::all());
-            const auto JU_gp_i = xt::view(JU_gp, i, xt::all());
+            const auto Jp_gp_i = xt::view(Jp_gp, xt::all(), i);
+            const auto JU_gp_i = xt::view(JU_gp, xt::all(), i);
 
             // Compute  ∇ₚS(p)^(-1) = -S(p)^(-1)∇ₚS(p)S(p)^(-1) from L and  ∇ₚS(p)
             const auto Y = xt::linalg::solve(S, Jp_Sp_i); // S^(-1)𝜕pᵢS(p)
