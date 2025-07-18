@@ -172,8 +172,7 @@ struct J_g_functor {
         for (size_t i = 0; i < mp1; ++i) {
             const double &t = tt[i];
             const auto &u = xt::view(U, i, xt::all());
-            auto JFi = xt::view(J_F, i, xt::all(), xt::all());
-            JFi = J_f(p, u, t);
+            xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
         }
         // V_expanded has dimension (K, mp1, 1, 1)
         auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
@@ -218,13 +217,12 @@ struct H_g_functor {
         for (size_t i = 0; i < mp1; ++i) {
             const double &t = tt[i];
             const auto &u = xt::view(U, i, xt::all());
-            auto H_Fi = xt::view(H_F, i, xt::all(), xt::all(), xt::all());
-            H_Fi = H_f(p, u, t);
+            xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = H_f(p, u, t);
         }
                                                                           // V_expanded has dimension (K, mp1, 1, 1, 1)
         const auto H_F_expanded = xt::expand_dims(H_F, 0);    // (1, mp1, D, len(∇₁), len(∇₂)
         const auto Hg = V_expanded * H_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂)  )
-        const auto Hgt = xt::transpose(xt::eval(Hg), {0, 3, 2, 1, 4});
+        const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 3, 1, 4});
         return Hgt;
     }
 };

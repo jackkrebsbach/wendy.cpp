@@ -30,8 +30,7 @@ struct wnll {
     }
 };
 
-
-// ∇ wnll(p) first derivative of the weak negative log likelihood (Jacobian <=> ∇ᵀ)
+// ∇ₚwnll(p) first derivative of the weak negative log likelihood (Jacobian <=> ∇ᵀ)
 struct J_wnll {
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
@@ -67,17 +66,19 @@ struct J_wnll {
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
         xt::xtensor<double, 1> J_wnn_eval = xt::zeros<double>({p.size()});
         // Precomputions
-        const auto Lp = L(p);
-        const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
-        const auto S_inv_rp = S_inv_r(p);
-        const auto r = g(p) - b;
+        const auto Lp = L(p); //L(p)
+        const auto Jp_Lp = L.Jacobian(p);  //∇ₚL(p)
+        const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
+        const auto r = g(p) - b; // r(p) = g(p) - b
+        const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
 
-        // Precomputed partial information w.r.t p⃗ and U⃗
+        // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
         const auto  JU_gp = xt::reshape_view(JU_g(p), {K*D, D*mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
         const auto Jp_gp = xt::reshape_view( xt::sum(Jp_g(p),{3}),{K*D,D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
 
-        // Precomputed mixed partials w.r.t p⃗ and U⃗
-        const auto Jp_JU_gp = Jp_JU_g(p);
+        // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
+        const auto Jp_LLT = xt::linalg::dot(Jp_Lp, xt::transpose(Lp)); //∇ₚLLᵀ
+        const auto Jp_Sp =  Jp_LLT + xt::transpose(Jp_LLT, {1,0,2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 
         for (int i = 0; i < p.size(); ++i) {
             // 1
@@ -92,4 +93,3 @@ struct J_wnll {
 };
 
 #endif //MLE_H
-

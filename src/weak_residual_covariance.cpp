@@ -31,7 +31,7 @@ CovarianceFactor::CovarianceFactor(
     sqrt_Sigma_I_mp1 = xt::linalg::kron(sqrt_Sigma, xt::eye(mp1));     // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
     phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D));      // ϕ'x I_d
 }
-
+// L(p) where Covariance = S(p) = L(p)L(p)ᵀ
 xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
@@ -41,12 +41,12 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
     return (L);
 };
 
-
-// TODO: Implement we want ∇ₚL(p)
+// ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 xt::xtensor<double, 2> CovarianceFactor::Jacobian( const std::vector<double> &p) const {
     const auto H_g = Jp_JU_g(p);
-    // TODO: First we need to reshape H_g before performing the operation
+
     const auto Jp_L =  xt::linalg::dot((H_g + phi_prime_I_D), sqrt_Sigma_I_mp1);
+
     return(Jp_L);
 };
 
