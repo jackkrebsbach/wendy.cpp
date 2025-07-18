@@ -88,7 +88,6 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
     const auto Jp_LLT = xt::linalg::dot(Jp_Lp, xt::transpose(Lp)); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
 
-
     // Output
     xt::xtensor<double, 2> H_wnn = xt::zeros<double>({p.size(), p.size()});
     for (int i = 0; i < p.size(); ++i) {

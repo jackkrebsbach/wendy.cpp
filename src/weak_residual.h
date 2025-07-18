@@ -33,6 +33,7 @@ struct f_functor {
         return out;
     }
 };
+
 // ∇f(p,u,t) ∈ ℝᴺ
 struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
@@ -92,6 +93,45 @@ struct H_f_functor final {
             for (std::size_t j = 0; j < nrows; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
                     out(i, j, k) = dx[i][j][k]->call(inputs);
+                }
+            }
+        }
+        return out;
+    }
+};
+
+
+// ∇∇∇f(p,u,t) ∈ ℝᵐ x ℝᴺ x ℝᴹ x ℝᵁ
+struct T_f_functor final {
+    std::vector<std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > >dx;
+
+    explicit T_f_functor(
+        std::vector<std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > > dx_) : dx(
+        std::move(dx_)) {
+    }
+
+    ~T_f_functor() = default;
+
+    xt::xtensor<double, 3> operator()(
+        const std::vector<double> &p,
+        const xt::xtensor<double, 1> &u,
+        const double &t
+    ) const {
+        const size_t nrows = dx.size();
+        const size_t ncols = dx[0].size();
+        const size_t ndepth = dx[0][0].size();
+        const size_t ndepth2 = dx[0][0][0].size();
+
+        std::vector<double> inputs = p;
+        inputs.insert(inputs.end(), u.begin(), u.end());
+        inputs.emplace_back(t);
+        xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
+        for (std::size_t i = 0; i < ncols; ++i) {
+            for (std::size_t j = 0; j < nrows; ++j) {
+                for (std::size_t k = 0; k < ndepth; ++k) {
+                    for (std::size_t l = 0; l < ndepth; ++l) {
+                        out(i, j, k, l) = dx[i][j][k][l]->call(inputs);
+                    }
                 }
             }
         }

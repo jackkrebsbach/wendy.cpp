@@ -14,10 +14,6 @@ std::vector<Expression> create_symbolic_vars(const std::string &base_name,
 
 std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(size_t J, size_t D);
 
-std::vector<std::vector<Expression> >
-build_symbolic_jacobian(const std::vector<Expression> &system,
-                        const std::vector<Expression> &inputs);
-
 vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs);
 
 std::vector<std::shared_ptr<LambdaRealDoubleVisitor> >
@@ -29,7 +25,19 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, size_t
 std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>
 build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression>>> &H_f,  size_t D, size_t J);
 
+std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>>
+build_jacobian_visitors(const std::vector<std::vector<std::vector<std::vector<Expression>>>> &T_f, size_t D, size_t J);
+
+std::vector<std::vector<Expression> >
+build_symbolic_jacobian(const std::vector<Expression> &system,
+                        const std::vector<Expression> &inputs);
+
 std::vector<std::vector<std::vector<Expression> > >
 build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,
                         const std::vector<Expression> &inputs);
+
+std::vector<std::vector<std::vector<std::vector<Expression>>>>
+build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression>>> &T,
+                        const std::vector<Expression> &inputs);
+
 #endif

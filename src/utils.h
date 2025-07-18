@@ -42,6 +42,12 @@ inline H_f_functor build_H_f(const std::vector<std::vector<std::vector<SymEngine
     return H_f_functor(dx);
 }
 
+inline T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymEngine::Expression> > > >&T_f_symbolic,
+                             const size_t &D,
+                             const size_t &J) {
+    const auto dx = build_jacobian_visitors(T_f_symbolic, D, J); // Symengine object to call numerical input
+    return T_f_functor(dx);
+}
 
 inline size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1> *xx_in = nullptr) {
     auto N = yy.size();
