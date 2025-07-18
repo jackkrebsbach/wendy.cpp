@@ -61,7 +61,7 @@ public:
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
-    bool compute_svd = true; // If true then the test function matrices are orthonormal
+    bool compute_svd = false; // If true then the test function matrices are orthonormal
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<float> &p0_,
           const xt::xtensor<double, 1> &tt_);

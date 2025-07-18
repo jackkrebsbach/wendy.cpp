@@ -1,6 +1,8 @@
 #pragma once
+
 #include "weak_residual.h"
 #include "symbolic_utils.h"
+
 #include <xtensor/misc/xsort.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>

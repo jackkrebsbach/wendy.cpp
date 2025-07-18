@@ -102,93 +102,94 @@ build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, const 
 }
 
 // 3-D Tensor input
-std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>
-build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression>>> &H_f, const size_t D, const size_t J) {
-    const size_t n_row = H_f.size();
-    const size_t n_col = n_row > 0 ? H_f[0].size() : 0;
-    const size_t n_dep = (n_col > 0) ? H_f[0][0].size() : 0;
+std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > >
+build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression> > > &H_f, const size_t D,
+                        const size_t J) {
+  const size_t n_row = H_f.size();
+  const size_t n_col = n_row > 0 ? H_f[0].size() : 0;
+  const size_t n_dep = (n_col > 0) ? H_f[0][0].size() : 0;
 
-    const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
-    const vec_basic inputs = expressions_to_vec_basic(input_exprs);
+  const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
+  const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
-    std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>> visitors;
-    visitors.reserve(n_row);
+  std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > visitors;
+  visitors.reserve(n_row);
 
-    for (size_t i = 0; i < n_row; ++i) {
-        std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>> row;
-        row.reserve(n_col);
-        for (size_t j = 0; j < n_col; ++j) {
-            std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> dep;
-            dep.reserve(n_dep);
-            for (size_t k = 0; k < n_dep; ++k) {
-                dep.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
-            }
-            row.emplace_back(std::move(dep));
-        }
-        visitors.emplace_back(std::move(row));
+  for (size_t i = 0; i < n_row; ++i) {
+    std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > row;
+    row.reserve(n_col);
+    for (size_t j = 0; j < n_col; ++j) {
+      std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > dep;
+      dep.reserve(n_dep);
+      for (size_t k = 0; k < n_dep; ++k) {
+        dep.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
+      }
+      row.emplace_back(std::move(dep));
     }
+    visitors.emplace_back(std::move(row));
+  }
 
-    for (size_t i = 0; i < n_row; ++i) {
-        for (size_t j = 0; j < n_col; ++j) {
-            for (size_t k = 0; k < n_dep; ++k) {
-                auto basic = H_f[i][j][k].get_basic();
-                visitors[i][j][k]->init(inputs, *basic);
-            }
-        }
+  for (size_t i = 0; i < n_row; ++i) {
+    for (size_t j = 0; j < n_col; ++j) {
+      for (size_t k = 0; k < n_dep; ++k) {
+        auto basic = H_f[i][j][k].get_basic();
+        visitors[i][j][k]->init(inputs, *basic);
+      }
     }
+  }
 
-    return visitors;
+  return visitors;
 }
 
 // 4-D Tensor input
-std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>>
+std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > >
 build_jacobian_visitors(
-    const std::vector<std::vector<std::vector<std::vector<Expression>>>> &T_f,
-    const size_t D,
-    const size_t J
+  const std::vector<std::vector<std::vector<std::vector<Expression> > > > &T_f,
+  const size_t D,
+  const size_t J
 ) {
-    const size_t n_row  = T_f.size();
-    const size_t n_col  = n_row > 0 ? T_f[0].size() : 0;
-    const size_t n_dep1 = n_col > 0 ? T_f[0][0].size() : 0;
-    const size_t n_dep2 = n_dep1 > 0 ? T_f[0][0][0].size() : 0;
+  const size_t n_row = T_f.size();
+  const size_t n_col = n_row > 0 ? T_f[0].size() : 0;
+  const size_t n_dep1 = n_col > 0 ? T_f[0][0].size() : 0;
+  const size_t n_dep2 = n_dep1 > 0 ? T_f[0][0][0].size() : 0;
 
-    const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
-    const vec_basic inputs = expressions_to_vec_basic(input_exprs);
+  const std::vector<Expression> input_exprs = create_all_ode_symbolic_inputs(D, J);
+  const vec_basic inputs = expressions_to_vec_basic(input_exprs);
 
-    std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>> visitors;
-    visitors.reserve(n_row);
+  std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > > visitors;
+  visitors.reserve(n_row);
 
-    for (size_t i = 0; i < n_row; ++i) {
-        std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>> row;
-        row.reserve(n_col);
-        for (size_t j = 0; j < n_col; ++j) {
-            std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>> plane;
-            plane.reserve(n_dep1);
-            for (size_t k = 0; k < n_dep1; ++k) {
-                std::vector<std::shared_ptr<LambdaRealDoubleVisitor>> line;
-                line.reserve(n_dep2);
-                for (size_t l = 0; l < n_dep2; ++l) {
-                    line.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
-                }
-                plane.emplace_back(std::move(line));
-            }
-            row.emplace_back(std::move(plane));
+  for (size_t i = 0; i < n_row; ++i) {
+    std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > row;
+    row.reserve(n_col);
+    for (size_t j = 0; j < n_col; ++j) {
+      std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > plane;
+      plane.reserve(n_dep1);
+      for (size_t k = 0; k < n_dep1; ++k) {
+        std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > line;
+        line.reserve(n_dep2);
+        for (size_t l = 0; l < n_dep2; ++l) {
+          line.emplace_back(std::make_unique<LambdaRealDoubleVisitor>());
         }
-        visitors.emplace_back(std::move(row));
+        plane.emplace_back(std::move(line));
+      }
+      row.emplace_back(std::move(plane));
     }
+    visitors.emplace_back(std::move(row));
+  }
 
-    for (size_t i = 0; i < n_row; ++i) {
-        for (size_t j = 0; j < n_col; ++j) {
-            for (size_t k = 0; k < n_dep1; ++k) {
-                for (size_t l = 0; l < n_dep2; ++l) {
-                    auto basic = T_f[i][j][k][l].get_basic();
-                    visitors[i][j][k][l]->init(inputs, *basic);
-                }
-            }
+  for (size_t i = 0; i < n_row; ++i) {
+    for (size_t j = 0; j < n_col; ++j) {
+      for (size_t k = 0; k < n_dep1; ++k) {
+        for (size_t l = 0; l < n_dep2; ++l) {
+          auto basic = T_f[i][j][k][l].get_basic();
+          visitors[i][j][k][l]->init(inputs, *basic);
         }
+      }
     }
+  }
 
-    return visitors;
+  return visitors;
 }
 
 
@@ -228,17 +229,17 @@ build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,
 }
 
 // For 3D tensor input
-std::vector<std::vector<std::vector<std::vector<Expression>>>>
-build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression>>> &T,
+std::vector<std::vector<std::vector<std::vector<Expression> > > >
+build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression> > > &T,
                         const std::vector<Expression> &inputs) {
   const size_t rows = T.size();
   const size_t cols = rows > 0 ? T[0].size() : 0;
   const size_t ndepth = cols > 0 ? T[0][0].size() : 0;
 
   // 4D jacobian: [rows][cols][ndepth][inputs.size()]
-  std::vector<std::vector<std::vector<std::vector<Expression>>>> jacobian(
-    rows, std::vector<std::vector<std::vector<Expression>>>(
-      cols, std::vector<std::vector<Expression>>(
+  std::vector<std::vector<std::vector<std::vector<Expression> > > > jacobian(
+    rows, std::vector<std::vector<std::vector<Expression> > >(
+      cols, std::vector<std::vector<Expression> >(
         ndepth, std::vector<Expression>(inputs.size())
       )
     )

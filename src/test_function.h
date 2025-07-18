@@ -1,6 +1,5 @@
 #pragma once
 #include <xtensor/containers/xarray.hpp>
-#include <symengine/parser.h>
 
 //Default test function used, eta controls the shape
 double phi(const double &t, const double &eta = 9);

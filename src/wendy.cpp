@@ -39,12 +39,12 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
 
     Jp_Jp_JU_f(build_T_f(
-        build_symbolic_jacobian(
-            build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
+            build_symbolic_jacobian(
+                build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
                 create_symbolic_vars("p", J)
-               ), D, J
-            )
-        ),
+            ), D, J
+        )
+    ),
 
     // Variance of the data
     Sigma(xt::diag(xt::ones<double>({J}))) {
@@ -119,6 +119,8 @@ void Wendy::build_full_test_function_matrices() {
 
     auto K = std::min({k1, k2, k_max});
 
+    std::cout << K << std::endl;
+
     logger->info("Condition Number is now: {}", condition_numbers[K]);
 
     this->V = xt::view(Vᵀ, xt::range(0, K), xt::all());
@@ -140,9 +142,9 @@ void Wendy::build_objective_function() const {
     // weak negative log-likelihood as a loss function
     const auto mle = MLE({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f, Jp_Jp_JU_f});
 
-    const auto f = [&](const std::vector<double>& p) { return mle(p); }; // f
-    const auto J_f = [&](const std::vector<double>& p) { return mle.Jacobian(p); }; // ∇f
-    const auto H_f = [&](const std::vector<double>& p) { return mle.Hessian(p); }; // Hf (Hessian of f)
+    const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
+    const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
+    const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
 }
 
 void Wendy::log_details() const {

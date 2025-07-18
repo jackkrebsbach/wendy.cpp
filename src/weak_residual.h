@@ -27,6 +27,7 @@ struct f_functor {
         inputs.insert(inputs.end(), u.begin(), u.end());
         inputs.emplace_back(t);
         xt::xtensor<double, 1> out = xt::empty<double>({D});
+        #pragma omp parallel for
         for (std::size_t i = 0; i < D; ++i) {
             out[i] = dx[i]->call(inputs);
         }
@@ -190,7 +191,7 @@ struct J_g_functor {
     const size_t D;
     const size_t mp1;
     const size_t K;
-    xt::xtensor<double, 2> V_expanded;
+    xt::xtensor<double, 4> V_expanded;
     size_t grad_len;
 
     J_g_functor(
@@ -201,7 +202,7 @@ struct J_g_functor {
     )
         : U(U_), tt(tt_), V(V_), J_f(J_f_),
           D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
-        V_expanded = xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3); // (K, mp1, 1, 1)
+        V_expanded = xt::expand_dims(xt::expand_dims(V, 2), 3); // (K, mp1, 1, 1)
         grad_len = J_f.dx[0].size();
     }
 
@@ -232,7 +233,7 @@ struct H_g_functor {
     const size_t D;
     const size_t mp1;
     const size_t K;
-    xt::xtensor<double, 2> V_expanded;
+    xt::xtensor<double, 5> V_expanded;
     size_t grad1_len;
     size_t grad2_len;
 
@@ -244,7 +245,7 @@ struct H_g_functor {
     )
         : U(U_), tt(tt_), V(V_), H_f(H_f_), D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
 
-        V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3),4); // (K, mp1, 1, 1, 1)
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(V, 2), 3),4); // (K, mp1, 1, 1, 1)
         grad1_len = H_f.dx[0].size();
         grad2_len = H_f.dx[0][0].size();
     }
@@ -276,7 +277,7 @@ struct T_g_functor {
     const size_t D;
     const size_t mp1;
     const size_t K;
-    xt::xtensor<double, 2> V_expanded;
+    xt::xtensor<double, 6> V_expanded;
     size_t grad1_len;
     size_t grad2_len;
     size_t grad3_len;
@@ -289,7 +290,7 @@ struct T_g_functor {
     )
         : U(U_), tt(tt_), V(V_), T_f(T_f_), D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
 
-        V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::transpose(V), 2), 3),4), 5); // (K, mp1, 1, 1, 1 ,1)
+        V_expanded = xt::expand_dims(xt::expand_dims(xt::expand_dims(xt::expand_dims(V, 2), 3),4), 5); // (K, mp1, 1, 1, 1 ,1)
         grad1_len = T_f.dx[0].size();
         grad2_len = T_f.dx[0][0].size();
         grad3_len = T_f.dx[0][0][0].size();
