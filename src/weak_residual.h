@@ -188,7 +188,7 @@ struct H_g_functor {
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
-    const H_f_functor &H_f;
+    const H_f_functor H_f;
     const size_t D;
     const size_t mp1;
     const size_t K;
@@ -219,10 +219,10 @@ struct H_g_functor {
             const auto &u = xt::view(U, i, xt::all());
             xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = H_f(p, u, t);
         }
-                                                                          // V_expanded has dimension (K, mp1, 1, 1, 1)
+        //Compute Hg                                                         // V_expanded has dimension (K, mp1, 1, 1, 1)
         const auto H_F_expanded = xt::expand_dims(H_F, 0);    // (1, mp1, D, len(∇₁), len(∇₂)
         const auto Hg = V_expanded * H_F_expanded;             //  (K, mp1, D, len(∇₁), len(∇₂)  )
-        const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 3, 1, 4});
+        const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 3, 1, 4}); // (K, D, len(∇₁), mp1, len(∇₂))
         return Hgt;
     }
 };

@@ -13,6 +13,10 @@ struct CovarianceFactor {
     const xt::xtensor<double, 2> &Sigma;
     J_g_functor JU_g;
     H_g_functor Jp_JU_g;
+    size_t D;
+    size_t mp1;
+    size_t K;
+    size_t J;
     xt::xtensor<double, 2> sqrt_Sigma_I_mp1;
     xt::xtensor<double, 2> phi_prime_I_D;
 
@@ -30,6 +34,7 @@ struct CovarianceFactor {
     xt::xtensor<double, 2> Jacobian(const std::vector<double> &p) const;
 
 };
+
 
 // S(p)^-1(g(p) - b) is a function of the parameters p⃗
 struct S_inv_r_functor {
