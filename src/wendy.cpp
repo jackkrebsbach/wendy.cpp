@@ -40,8 +40,8 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     Jp_Jp_JU_f(build_T_f(
         build_symbolic_jacobian(
-            build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)),
-                create_symbolic_vars("u", D)
+            build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
+                create_symbolic_vars("p", J)
                ), D, J
             )
         ),
