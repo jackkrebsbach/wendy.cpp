@@ -8,6 +8,7 @@
 #include <random>
 #include <cmath>
 #include <xtensor-blas/xlinalg.hpp>
+#include <omp.h>
 
 std::vector<double> goodwin_3d(double t, const std::vector<double> &u, const std::vector<double> &p) {
     double du1 = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
@@ -72,7 +73,7 @@ int main() {
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    int num_samples = 250;
+    constexpr int num_samples = 1000;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
     constexpr double noise_ratio = 0.15;
@@ -99,10 +100,9 @@ int main() {
     try {
        logger->set_level(spdlog::level::debug);
 
-       Wendy w(system_eqs, U, p0, tt);
-
-       w.build_full_test_function_matrices(); // Builds both full V and V_prime
-       w.build_objective_function();
+       Wendy wendy(system_eqs, U, p0, tt);
+       wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
+       wendy.build_objective_function();
 
     } catch (const std::exception &e) {
         logger->error("Exception occurred: {}", e.what());

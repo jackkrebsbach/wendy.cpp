@@ -122,6 +122,7 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
     xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
     xt::xtensor<double, 2> V = xt::zeros<double>({indices.size(), len_tt});
 
+    #pragma omp parallel for
     for (size_t i = 0; i < indices.size() - 1; i++) {
         const auto &support_indices = indices[i];
         auto n_support = support_indices.size();
@@ -134,11 +135,13 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
 xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> &tt, const xt::xtensor<int, 1> &radii,
                                                    const int order) {
     // Vector containing test matrices for one radius
-    std::vector<xt::xtensor<double, 2> > test_matrices;
+    std::vector<xt::xtensor<double, 2> > test_matrices(radii.shape()[0]);
+
+    #pragma omp parallel for
     for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
-        xt::xtensor<double, 2> V_k = build_test_function_matrix(tt, radii[i], order);
-        test_matrices.emplace_back(std::move(V_k));
+        const xt::xtensor<double, 2> V_k = build_test_function_matrix(tt, radii[i], order);
+        test_matrices[i] = V_k;
     }
     xt::xtensor<double, 2> V_full = test_matrices[0];
 
@@ -162,6 +165,7 @@ int find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
+    #pragma omp parallel for
     for (int i = 0; i < radii.size(); ++i) {
         auto radius = static_cast<int>(radii[i]);
         auto V_r = build_test_function_matrix(tt, radius);
