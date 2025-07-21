@@ -15,6 +15,7 @@ struct MLE {
     const J_g_functor JU_g;
     const J_g_functor Jp_g;
     const H_g_functor Jp_JU_g;
+    const H_g_functor Jp_Jp_g;
     const T_g_functor Jp_Jp_JU_g;
     const S_inv_r_functor S_inv_r;
     size_t K;
@@ -33,6 +34,7 @@ struct MLE {
         const J_f_functor &Ju_f_,
         const J_f_functor &Jp_f_,
         const H_f_functor &Jp_JU_f_,
+        const H_f_functor &Jp_Jp_f_,
         const T_f_functor &Jp_Jp_JU_f_);
 
    double operator()(const std::vector<double> &p) const;
