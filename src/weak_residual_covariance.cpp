@@ -63,7 +63,7 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
 // ∇ₚ∇ₚL(p) Hessain of the Covariance factor where
 xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
     const auto Jp_Jp_JU_gp = xt::reshape_view(Jp_Jp_JU_g(p), {D * K, D * mp1, J, J});
-    const auto A = Jp_Jp_JU_gp + phi_prime_I_D; // shape: (D*K, D*mp1, J, J)
+    const auto A = Jp_Jp_JU_gp + xt::broadcast(xt::expand_dims(xt::expand_dims( phi_prime_I_D, 2),3), {D *K, D*mp1, J, J}); // shape: (D*K, D*mp1, J)
     const auto& B = sqrt_Sigma_I_mp1;        // shape: (D*mp1 D*mp1)
     const auto Jp_H_ = xt::linalg::tensordot(A, B, {1}, {0}); // shape: (D*K,J, J, D*mp1)
     const auto Jp_H = xt::transpose(Jp_H_, {0, 3, 1, 2}); // shape: (D*K, D*mp1, J, J)

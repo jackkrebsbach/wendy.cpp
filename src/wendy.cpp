@@ -160,9 +160,6 @@ void Wendy::build_objective_function() const {
     const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
     const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
     const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
-
-    const auto test = J_f(p0) ;
-    std::cout << test << std::endl;
 }
 
 void Wendy::log_details() const {
