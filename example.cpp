@@ -95,7 +95,7 @@ int main() {
     };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
-    const std::vector<float> p0(p_star.begin(), p_star.end());
+    const std::vector<double> p0(p_star.begin(), p_star.end());
     try {
        logger->set_level(spdlog::level::debug);
 

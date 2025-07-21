@@ -1,8 +1,6 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#include <variant>
-
 #include "utils.h"
 #include "weak_residual.h"
 #include <xtensor/views/xview.hpp>
@@ -31,6 +29,7 @@ public:
     // Input Data
     xt::xtensor<double, 1> tt; // Time array (should be equispaced)
     xt::xtensor<double, 2> U; //Noisy data
+    std::vector<double> p0; // Initial guess of the parameters
 
     // Internal
     size_t D; // Dimension of system
@@ -57,13 +56,15 @@ public:
 
     T_f_functor  Jp_Jp_JU_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
 
+    // Weak residual functors and related objects
+
     xt::xtensor<double, 2> Sigma; // Variance estimates for each dimension diagonal Matrix (D x D)
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
-    bool compute_svd = false; // If true then the test function matrices are orthonormal
+    bool compute_svd = true; // If true then the test function matrices are orthonormal
 
-    Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<float> &p0_,
+    Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
           const xt::xtensor<double, 1> &tt_);
 
     void build_full_test_function_matrices();

@@ -11,9 +11,9 @@ struct CovarianceFactor {
     const xt::xtensor<double, 2> &V;
     const xt::xtensor<double, 2> &V_prime;
     const xt::xtensor<double, 2> &Sigma;
-    J_g_functor JU_g;
-    H_g_functor Jp_JU_g;
-    T_g_functor Jp_Jp_JU_g;
+    const J_g_functor &JU_g;
+    const H_g_functor &Jp_JU_g;
+    const T_g_functor &Jp_Jp_JU_g;
     size_t D;
     size_t mp1;
     size_t K;
@@ -27,16 +27,16 @@ struct CovarianceFactor {
         const xt::xtensor<double, 2> &V_,
         const xt::xtensor<double, 2> &V_prime_,
         const xt::xtensor<double, 2> &Sigma_,
-        const J_f_functor &Ju_f_,
-        const H_f_functor &Jp_Ju_f_,
-        const T_f_functor &Jp_Jp_Ju_f_
+        const J_g_functor &Ju_g_,
+        const H_g_functor &Jp_Ju_g_,
+        const T_g_functor &Jp_Jp_Ju_g_
     );
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
 
-    xt::xtensor<double, 2> Jacobian(const std::vector<double> &p) const;
+    xt::xtensor<double, 3> Jacobian(const std::vector<double> &p) const;
 
-    xt::xtensor<double, 3> Hessian(const std::vector<double> &p) const;
+    xt::xtensor<double, 4> Hessian(const std::vector<double> &p) const;
 };
 
 
@@ -53,11 +53,10 @@ struct S_inv_r_functor {
     ): L(L_), g(g_), b(b_) {
     }
 
-    // TODO: Investigate in using solve_triangular to take advantage of structure of L
     xt::xtensor<double, 1> operator()(const std::vector<double> &p) const {
         const auto Lp = L(p);
-        const auto y = xt::linalg::solve(Lp, g(p) - b); // Solve Ly = g(p) - b;
-        const auto x = xt::linalg::solve(xt::transpose(Lp), y); // Solve L^T x = y
+        const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+        const auto x = xt::linalg::solve(S, g(p) - b); // Solve Sx = g(p) - b;
         return (x);
     }
 };

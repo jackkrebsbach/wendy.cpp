@@ -1,5 +1,10 @@
 #include "mle.h"
 
+#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/views/xview.hpp>
+#include <xtensor/containers/xtensor.hpp>
+#include <xtensor-blas/xlinalg.hpp>
+
 MLE::MLE(
     const xt::xtensor<double, 2> &U_,
     const xt::xtensor<double, 1> &tt_,
@@ -8,15 +13,16 @@ MLE::MLE(
     const CovarianceFactor &L_,
     const g_functor &g_,
     const xt::xtensor<double, 1> &b_,
-    const J_f_functor &Ju_f_,
-    const J_f_functor &Jp_f_,
-    const H_f_functor &Jp_JU_f_,
-    const H_f_functor &Jp_Jp_f_,
-    const T_f_functor &Jp_Jp_JU_f_
+    const J_g_functor &Ju_g_,
+    const J_g_functor &Jp_g_,
+    const H_g_functor &Jp_JU_g_,
+    const H_g_functor &Jp_Jp_g_,
+    const T_g_functor &Jp_Jp_JU_g_,
+    const S_inv_r_functor &S_inv_r_
 
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
-   JU_g(J_g_functor(U, tt, V, Ju_f_)), Jp_g(J_g_functor(U, tt, V, Jp_f_)), Jp_JU_g(H_g_functor(U, tt, V, Jp_JU_f_)), Jp_Jp_g(H_g_functor(U, tt, V, Jp_Jp_f_)), Jp_Jp_JU_g(T_g_functor({U, tt, V, Jp_Jp_JU_f_})),
-   S_inv_r(S_inv_r_functor({L, g, b})), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
+   JU_g(Ju_g_), Jp_g(Jp_g_), Jp_JU_g(Jp_JU_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_JU_g(Jp_Jp_JU_g_),
+   S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
    J = Jp_JU_g.grad2_len;
 }
 
@@ -24,8 +30,7 @@ double MLE::operator()(const std::vector<double> &p) const {
     const auto Lp = L(p);
     const auto r = g(p) - b;
     const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
-    const auto y = xt::linalg::solve(Lp, r); // Solve Ly = g(p) - b;
-    const auto x = xt::linalg::solve(xt::transpose(Lp), y); // Solve L^T x = y
+    const auto x = xt::linalg::solve(S, r); // Solve Sy = g(p) - b;
     const auto logdetS = std::log(xt::linalg::det(S));
     const auto quad = xt::linalg::dot(r, x)();
     const auto wnll = logdetS + quad;
@@ -43,11 +48,12 @@ xt::xtensor<double, 1> MLE::Jacobian(const std::vector<double> &p) const {
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
     const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
-    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+    const auto Jp_gp = xt::reshape_view(Jp_g(p), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
-    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1},{0}), {0,2,1}); //∇ₚLLᵀ
+    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1},{0}),{0,2,1}); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
+
 
     // Output
     xt::xtensor<double, 1> J_wnn = xt::zeros<double>({p.size()});

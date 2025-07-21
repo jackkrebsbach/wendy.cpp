@@ -5,6 +5,7 @@
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
 #include <symengine/lambda_double.h>
+#include <xtensor/containers/xadapt.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 
 // f(p u, t) rhs of system, function of all variables
@@ -58,8 +59,8 @@ struct J_f_functor final {
         inputs.emplace_back(t);
         xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
 
-        for (std::size_t i = 0; i < ncols; ++i) {
-            for (std::size_t j = 0; j < nrows; ++j) {
+        for (std::size_t i = 0; i < nrows; ++i) {
+            for (std::size_t j = 0; j < ncols; ++j) {
                 out(i, j) = dx[i][j]->call(inputs);
             }
         }
@@ -92,8 +93,8 @@ struct H_f_functor final {
         inputs.emplace_back(t);
         xt::xtensor<double, 3> out = xt::empty<double>({nrows, ncols, ndepth});
 
-        for (std::size_t i = 0; i < ncols; ++i) {
-            for (std::size_t j = 0; j < nrows; ++j) {
+        for (std::size_t i = 0; i < nrows; ++i) {
+            for (std::size_t j = 0; j < ncols; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
                     out(i, j, k) = dx[i][j][k]->call(inputs);
                 }
@@ -115,7 +116,7 @@ struct T_f_functor final {
 
     ~T_f_functor() = default;
 
-    xt::xtensor<double, 3> operator()(
+    xt::xtensor<double, 4> operator()(
         const std::vector<double> &p,
         const xt::xtensor<double, 1> &u,
         const double &t
@@ -130,10 +131,10 @@ struct T_f_functor final {
         inputs.emplace_back(t);
         xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
 
-        for (std::size_t i = 0; i < ncols; ++i) {
-            for (std::size_t j = 0; j < nrows; ++j) {
+        for (std::size_t i = 0; i < nrows; ++i) {
+            for (std::size_t j = 0; j < ncols ; ++j) {
                 for (std::size_t k = 0; k < ndepth; ++k) {
-                    for (std::size_t l = 0; l < ndepth; ++l) {
+                    for (std::size_t l = 0; l < ndepth2; ++l) {
                         out(i, j, k, l) = dx[i][j][k][l]->call(inputs);
                     }
                 }
@@ -173,16 +174,16 @@ struct F_functor {
 
 // g(p) = vec[Phi F(p,U,t)] ∈ ℝ^(mp1 x D) column wise vectorization
 struct g_functor {
-    const xt::xtensor<double, 2> &V_prime;
+    const xt::xtensor<double, 2> &V;
     const F_functor &F;
 
     g_functor(const F_functor &F_,
-              const xt::xtensor<double, 2> &V_prime_): V_prime(V_prime_), F(F_) {
+              const xt::xtensor<double, 2> &V_): V(V_), F(F_) {
     }
 
     xt::xtensor<double, 1> operator()(const std::vector<double> &p) const {
         const auto F_eval = F(p);
-        return (xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(F_eval, V_prime)));
+        return(xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, F_eval)));
     }
 };
 

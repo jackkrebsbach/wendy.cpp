@@ -14,12 +14,13 @@
 
 #include "optimizers/mle.h"
 
-Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<float> &p0_,
+Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_) :
     // Data
     tt(tt_),
     U(U_),
-    D(U.shape()[1]),
+    p0(p0_),
+    D(U_.shape()[1]),
     J(p0_.size()),
 
     // Symbolics
@@ -29,7 +30,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     // Callable functions
     f(build_f(f_symbolic, D, J)),
-    F({f, U, tt}),
+    F(f, U, tt),
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
 
@@ -47,13 +48,13 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     ),
 
     // Variance of the data
-    Sigma(xt::diag(xt::ones<double>({J}))) {
+    Sigma(xt::diag(xt::ones<double>({D}))) {
 }
 
 void Wendy::build_full_test_function_matrices() {
     const double dt = xt::mean(xt::diff(tt))();
-    const auto k_full = static_cast<double>(V.shape()[0]); // Number of test functions (# of rows)
     const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
+
 
     auto radii = test_function_params.radius_params;
     auto radius_min_time = test_function_params.radius_min_time;
@@ -82,6 +83,8 @@ void Wendy::build_full_test_function_matrices() {
         this->V_prime = V_prime;
         return;
     }
+
+    const auto k_full = static_cast<double>(V.shape()[0]);
 
     constexpr bool COMPUTE_FULL_MATRICES = false;
     const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
@@ -119,7 +122,6 @@ void Wendy::build_full_test_function_matrices() {
 
     auto K = std::min({k1, k2, k_max});
 
-    std::cout << K << std::endl;
 
     logger->info("Condition Number is now: {}", condition_numbers[K]);
 
@@ -135,16 +137,32 @@ void Wendy::build_full_test_function_matrices() {
 
 
 void Wendy::build_objective_function() const {
-    const auto L = CovarianceFactor({U, tt, V, V_prime, Sigma, Ju_f, Jp_Ju_f, Jp_Jp_JU_f});
-    const auto g = g_functor({F, V_prime});
+
+    const auto&u = xt::view(U,0, xt::all());
+    const auto&t = xt::view(tt,0);
+
+    const auto g = g_functor(F, V);
+    const auto JU_g = J_g_functor(U, tt, V, Ju_f);
+    const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
+    const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
+    const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
+    const auto Jp_Jp_JU_g = T_g_functor(U, tt, V, Jp_Jp_JU_f);
+
+    const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
+
     const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+    const auto S_inv_r = S_inv_r_functor(L, g, b);
+
 
     // weak negative log-likelihood as a loss function
-    const auto mle = MLE({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f,Jp_Jp_f, Jp_Jp_JU_f});
+    const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
 
     const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
     const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
     const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
+
+    const auto test = J_f(p0) ;
+    std::cout << test << std::endl;
 }
 
 void Wendy::log_details() const {
