@@ -37,7 +37,7 @@ double MLE::operator()(const std::vector<double> &p) const {
     return (wnll);
 }
 
-xt::xtensor<double, 1> MLE::Jacobian(const std::vector<double> &p) const {
+std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
     // Precomputions
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
@@ -56,7 +56,7 @@ xt::xtensor<double, 1> MLE::Jacobian(const std::vector<double> &p) const {
 
 
     // Output
-    xt::xtensor<double, 1> J_wnn = xt::zeros<double>({p.size()});
+    std::vector<double> J_wnn(p.size());
     for (int i = 0; i < p.size(); ++i) {
         // Extract partial information for each p_i from the gradients
         const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
@@ -78,7 +78,7 @@ xt::xtensor<double, 1> MLE::Jacobian(const std::vector<double> &p) const {
     return (J_wnn);
 }
 
-xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
+std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) const {
     // Precomputions
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
@@ -111,7 +111,7 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
     auto Jp_Lp_Jp_LpT = xt::transpose(Jp_Lp_Jp_LpT_, {0, 2, 1, 3});
 
     // Output
-    xt::xtensor<double, 2> H_wnn = xt::zeros<double>({p.size(), p.size()});
+    std::vector<std::vector<double>> H_wnn(p.size(), std::vector<double>(p.size()));
     for (int i = 0; i < p.size(); ++i) {
         // Extract partial information for each p_i from the gradients
         const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
@@ -169,7 +169,7 @@ xt::xtensor<double, 2> MLE::Hessian(const std::vector<double> &p) const {
             //prt6
             const auto prt6 = 0.5*(xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Jp_S_inv_ji), r)());
 
-            H_wnn(i,j)= prt1 + prt2 + prt3 + prt4 + prt5 + prt6;
+            H_wnn[i][j]= prt1 + prt2 + prt3 + prt4 + prt5 + prt6;
 
         }
     }

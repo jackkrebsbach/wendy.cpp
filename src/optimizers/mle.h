@@ -41,9 +41,9 @@ struct MLE {
 
    double operator()(const std::vector<double> &p) const;
 
-   xt::xtensor<double,1> Jacobian(const std::vector<double> &p) const;
+   std::vector<double> Jacobian(const std::vector<double> &p) const;
 
-   xt::xtensor<double,2> Hessian(const std::vector<double> &p) const;
+   std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
 
 };
 
