@@ -20,7 +20,9 @@ double phi(const double &t, const double &eta) {
 
 std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
     std::vector<double> result;
+
     result.reserve(t_vec.size());
+
     for (const auto &t: t_vec) {
         result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
     }
@@ -122,7 +124,7 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
     xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
     xt::xtensor<double, 2> V = xt::zeros<double>({indices.size(), len_tt});
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (size_t i = 0; i < indices.size() - 1; i++) {
         const auto &support_indices = indices[i];
         auto n_support = support_indices.size();
@@ -137,7 +139,7 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> 
     // Vector containing test matrices for one radius
     std::vector<xt::xtensor<double, 2> > test_matrices(radii.shape()[0]);
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
         const xt::xtensor<double, 2> V_k = build_test_function_matrix(tt, radii[i], order);
@@ -165,7 +167,7 @@ int find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < radii.size(); ++i) {
         auto radius = static_cast<int>(radii[i]);
         auto V_r = build_test_function_matrix(tt, radius);

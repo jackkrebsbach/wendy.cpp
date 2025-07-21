@@ -160,7 +160,7 @@ struct F_functor {
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const {
         auto F_eval = xt::zeros_like(U);
 
-        for (int i = 0; i < U.shape()[1]; ++i) {
+        for (int i = 0; i < U.shape()[0]; ++i) {
             auto row = xt::view(F_eval, i, xt::all());
             auto u = xt::view(U, i, xt::all());
             auto t = tt[i];

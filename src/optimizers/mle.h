@@ -36,8 +36,10 @@ struct MLE {
         const T_f_functor &Jp_Jp_JU_f_);
 
    double operator()(const std::vector<double> &p) const;
-   [[nodiscard]] xt::xtensor<double,1> Jacobian(const std::vector<double> &p) const;
-   [[nodiscard]] xt::xtensor<double,2> Hessian(const std::vector<double> &p) const;
+
+   xt::xtensor<double,1> Jacobian(const std::vector<double> &p) const;
+
+   xt::xtensor<double,2> Hessian(const std::vector<double> &p) const;
 
 };
 
