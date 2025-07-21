@@ -140,7 +140,7 @@ void Wendy::build_objective_function() const {
     const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
 
     // weak negative log-likelihood as a loss function
-    const auto mle = MLE({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f, Jp_Jp_JU_f});
+    const auto mle = MLE({U, tt, V, V_prime, L, g, b, Ju_f, Jp_f, Jp_Ju_f,Jp_Jp_f, Jp_Jp_JU_f});
 
     const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
     const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
