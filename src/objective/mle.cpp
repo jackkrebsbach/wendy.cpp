@@ -48,7 +48,8 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
     const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
-    const auto Jp_gp = xt::reshape_view(Jp_g(p), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
+
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
     const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1}, {0}), {0, 2, 1}); //∇ₚLLᵀ
@@ -89,10 +90,10 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
     const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
-    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
+    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     // Precomputed Hessian information of ∇p∇pg(p) w.r.t p⃗ and U⃗
-    const auto Hp_gp = xt::reshape_view(xt::sum(Jp_Jp_g(p), {3}), {K * D, D, J});
+    const auto Hp_gp = xt::reshape_view(xt::sum(Jp_Jp_g(p), {3}), {K * D, J, J});
 
     // Precompute S(p) = LLᵀ
     const auto Sp = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
@@ -106,7 +107,6 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
     // ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ 4D tensor where Lᵀ is broadcasted
     const auto Hp_LLT = xt::transpose(xt::linalg::tensordot(Hp_Lp, xt::transpose(Lp), {1}, {0}), {0, 3, 1, 2});
     //∇ₚ∇ₚLLᵀ
-    // ∇ₚL∇ₚLᵀ
     auto Jp_LpT = xt::transpose(Jp_Lp, {1, 0, 2});
     auto Jp_Lp_Jp_LpT_ = xt::linalg::tensordot(Jp_Lp, Jp_LpT, {1}, {0});
     auto Jp_Lp_Jp_LpT = xt::transpose(Jp_Lp_Jp_LpT_, {0, 2, 1, 3});
