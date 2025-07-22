@@ -1,6 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
 #include "../src/symbolic_utils.h"
 #include "./doctest.h"
+
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 #include <symengine/parser.h>
@@ -25,19 +27,19 @@ TEST_CASE("create_symbolic_vars creates correct variable names") {
 
 TEST_CASE("create_all_symbolic_inputs creates u, p, t symbols") {
   int D = 2, J = 3;
-  auto inputs = create_all_symbolic_inputs(D, J);
+  auto inputs = create_all_ode_symbolic_inputs(D, J);
   REQUIRE(inputs.size() == D + J + 1);
-  CHECK(expr_equal(inputs[0], Expression(symbol("u1"))));
-  CHECK(expr_equal(inputs[1], Expression(symbol("u2"))));
-  CHECK(expr_equal(inputs[2], Expression(symbol("p1"))));
-  CHECK(expr_equal(inputs[3], Expression(symbol("p2"))));
-  CHECK(expr_equal(inputs[4], Expression(symbol("p3"))));
+  CHECK(expr_equal(inputs[0], Expression(symbol("p1"))));
+  CHECK(expr_equal(inputs[1], Expression(symbol("p2"))));
+  CHECK(expr_equal(inputs[2], Expression(symbol("p3"))));
+  CHECK(expr_equal(inputs[3], Expression(symbol("u1"))));
+  CHECK(expr_equal(inputs[4], Expression(symbol("u2"))));
   CHECK(expr_equal(inputs[5], Expression(symbol("t"))));
 }
 
 TEST_CASE("create_symbolic_system parses character vector to expressions") {
   std::vector<std::string> f = {"p1 - p3 / (36 + p2 * u2)", "p4 * u1 - p5"};
-  auto dx = create_symbolic_system(f);
+  auto dx = build_symbolic_f(f);
   REQUIRE(dx.size() == 2);
   CHECK(SymEngine::str(*dx[0].get_basic()).find("p1") != std::string::npos);
   CHECK(SymEngine::str(*dx[1].get_basic()).find("p4") != std::string::npos);
@@ -82,10 +84,10 @@ TEST_CASE("Jacobian of a linear system with respect to all variables") {
     u[0] * u[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1], p[0], p[1]};
-  auto jac = compute_symbolic_jacobian(system, inputs);
+  auto jac = build_symbolic_jacobian(system, inputs);
 
-  print_system(system);
-  print_jacobian(jac);
+  // print_system(system);
+  // print_jacobian(jac);
 
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 4);
@@ -111,10 +113,10 @@ TEST_CASE("Jacobian of a nonlinear system (sin, cos, exp) with respect to all "
     SymEngine::add(sin(u[0]), exp(p[0] * u[1])), cos(u[1]) * p[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1], p[0], p[1]};
-  auto jac = compute_symbolic_jacobian(system, inputs);
+  auto jac = build_symbolic_jacobian(system, inputs);
 
-  print_system(system);
-  print_jacobian(jac);
+  // print_system(system);
+  // print_jacobian(jac);
 
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 4);
@@ -147,10 +149,10 @@ TEST_CASE("Jacobian with respect to only u variables") {
     SymEngine::add(sin(u[0]), exp(p[0] * u[1])), u[0] * u[1] + p[1]
   };
   std::vector<SymEngine::Expression> inputs = {u[0], u[1]};
-  auto jac = compute_symbolic_jacobian(system, inputs);
+  auto jac = build_symbolic_jacobian(system, inputs);
 
-  print_system(system);
-  print_jacobian(jac);
+  // print_system(system);
+  // print_jacobian(jac);
 
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 2);
@@ -173,10 +175,10 @@ TEST_CASE("Jacobian with respect to only p variables") {
     u[0] * u[1] + p[1]
   };
   std::vector<SymEngine::Expression> inputs = {p[0], p[1]};
-  auto jac = compute_symbolic_jacobian(system, inputs);
+  auto jac = build_symbolic_jacobian(system, inputs);
 
-  print_system(system);
-  print_jacobian(jac);
+  // print_system(system);
+  // print_jacobian(jac);
 
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 2);
@@ -193,7 +195,7 @@ TEST_CASE("compute_jacobian (matrix version) computes derivatives") {
     {u[1] * u[0], u[1] * u[1]}
   };
   std::vector<Expression> inputs = {u[0], u[1]};
-  auto jac = compute_symbolic_jacobian(matrix, inputs);
+  auto jac = build_symbolic_jacobian(matrix, inputs);
   REQUIRE(jac.size() == 2);
   REQUIRE(jac[0].size() == 2);
   REQUIRE(jac[0][0].size() == 2);

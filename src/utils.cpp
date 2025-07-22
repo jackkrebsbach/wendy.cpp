@@ -18,7 +18,7 @@ make_scalar_function(const SymEngine::Expression &expr, const SymEngine::RCP<con
 
 f_functor build_f(const std::vector<SymEngine::Expression> &f_symbolic, const size_t D, const size_t J) {
     const auto dx = build_f_visitors(f_symbolic, D, J); // Symengine object to call numerical input
-    return f_functor(dx, D);
+    return {dx, D};
 }
 
 J_f_functor build_J_f(const std::vector<std::vector<SymEngine::Expression> > &J_f_symbolic, const size_t D,

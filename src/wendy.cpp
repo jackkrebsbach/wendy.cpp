@@ -138,7 +138,7 @@ void Wendy::build_full_test_function_matrices() {
 }
 
 bool is_symmetric(const std::vector<std::vector<double>>& H, double tol = 1e-10) {
-    size_t n = H.size();
+    const size_t n = H.size();
     for (size_t i = 0; i < n; ++i) {
         if (H[i].size() != n) return false; // Not square
         for (size_t j = 0; j < n; ++j) {
@@ -154,8 +154,8 @@ bool is_symmetric(const std::vector<std::vector<double>>& H, double tol = 1e-10)
 void print_matrix(const std::vector<std::vector<double>>& mat, int precision = 6) {
     size_t n = mat.size();
     for (size_t i = 0; i < n; ++i) {
-        for (size_t j = 0; j < mat[i].size(); ++j) {
-            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << mat[i][j] << " ";
+        for (const double j : mat[i]) {
+            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
         }
         std::cout << std::endl;
     }

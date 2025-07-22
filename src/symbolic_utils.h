@@ -12,7 +12,7 @@ build_symbolic_f(const std::vector<std::string> &f);
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              size_t count);
 
-std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(size_t J, size_t D);
+std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(size_t D, size_t J);
 
 vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs);
 
