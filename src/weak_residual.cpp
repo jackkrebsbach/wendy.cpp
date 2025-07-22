@@ -178,7 +178,7 @@ xt::xtensor<double, 4> J_g_functor::operator()(
         const auto &u = xt::view(U, i, xt::all());
         xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
     }
-    // V_expanded has dimension (K, mp1, 1, 1)
+    // // V_expanded has dimension (K, mp1, 1, 1)
     auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
     auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, len(∇))
     auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 3, 1}); // (K, D, len(∇), mp1)

@@ -106,9 +106,9 @@ struct J_g_functor {
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
     const J_f_functor &J_f;
-    const size_t D;
-    const size_t mp1;
-    const size_t K;
+    size_t D;
+    size_t mp1;
+    size_t K;
     xt::xtensor<double, 4> V_expanded;
     size_t grad_len;
 

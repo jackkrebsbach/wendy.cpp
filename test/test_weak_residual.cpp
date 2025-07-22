@@ -12,7 +12,14 @@
 
 constexpr auto J =  5;
 constexpr auto D =  2;
+constexpr auto K = 3;
+constexpr auto mp1 = 4;
 
+const auto tt = xt::linspace<double>(0, mp1 -1, mp1);
+const auto V = xt::reshape_view( xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1});
+
+
+const auto u0  = xt::xtensor<double,1>({2,3});
 const auto p =  std::vector<double>({1,2,3,4,5});
 const auto u =  xt::xtensor<double,1>({2,3});
 constexpr double t = 5;
@@ -34,6 +41,47 @@ const auto Jp_Jp_Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic)
 const auto f = build_f(f_symbolic, D, J);
 const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
 const auto Jp_Ju_f = build_H_f(Jp_Ju_f_symbolic, D, J);
+
+
+xt::xtensor<double,2> integrate_(
+    const std::vector<double> &p,
+    const xt::xtensor<double,1> &u0,
+    const double t0, const double t1, int npoints,
+    std::function<xt::xtensor<double,1>(const std::vector<double>&, const xt::xtensor<double,1>&, double)> f_
+) {
+    const int dim = u0.size();
+    xt::xtensor<double,2> result = xt::zeros<double>({npoints, dim});
+    const double dt = (t1 - t0) / (npoints - 1);
+    xt::xtensor<double,1> u = u0;
+    double t = t0;
+
+    for (int i = 0; i < npoints; ++i) {
+        xt::row(result, i) = u;
+        auto du = f_(p, u, t);
+        for (int d = 0; d < dim; ++d) {
+            u[d] += du[d] * dt;
+        }
+        t += dt;
+    }
+    return result;
+}
+template <typename T>
+void print_xtensor2d(const T& tensor) {
+    auto shape = tensor.shape();
+    if (shape.size() != 2) {
+        std::cerr << "Tensor is not 2D!" << std::endl;
+        return;
+    }
+    for (std::size_t i = 0; i < shape[0]; ++i) {
+        for (std::size_t j = 0; j < shape[1]; ++j) {
+            std::cout << tensor(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+
+
 
 TEST_CASE("f_functor takes in RealLambdaDouble Visitors Evaluation") {
 
@@ -125,3 +173,33 @@ TEST_CASE("Jp_Ju_f_functor computes correct Hessian with respect to p and u") {
     }
 }
 
+TEST_CASE("Ju_g_functor computes correct Jacobian with respect to all state variables u") {
+
+    constexpr auto J =  5;
+    constexpr auto D =  2;
+    constexpr auto K = 3;
+    constexpr auto mp1 = 4;
+
+    const std::vector<std::string> f_string = {"p1 - p3 / (36 + p2 * u2)", "p4 * u1 - p5"};
+
+    const auto f_symbolic = build_symbolic_f(f_string);
+    const auto u_symbolic =  create_symbolic_vars("u", 2);
+    const auto Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, u_symbolic);
+
+    const auto f = build_f(f_symbolic, D, J);
+    const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
+
+    const xt::xtensor<double,1> tt = xt::eval(xt::reshape_view(xt::linspace<double>(0, mp1 -1, mp1), {mp1}));
+
+    const auto p =  std::vector<double>({1,2,3,4,5});
+    const auto V = xt::eval(xt::reshape_view( xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1}));
+
+    const auto u0  = xt::xtensor<double,1>({2,3});
+    const auto U = integrate_(p,u0, 0.0, 4.0, mp1, f);
+
+    const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
+
+    const auto Ju_gp = Ju_g(p);
+
+
+}
