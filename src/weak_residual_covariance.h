@@ -3,6 +3,7 @@
 
 #include "weak_residual.h"
 #include <xtensor/containers/xtensor.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 
 // Weak residual covariance struct is a functor with parameters of the ode: p⃗
 struct CovarianceFactor {
