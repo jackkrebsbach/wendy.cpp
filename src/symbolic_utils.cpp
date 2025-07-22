@@ -34,15 +34,6 @@ std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(const size_t D
   return input_symbols;
 }
 
-std::vector<SymEngine::Expression>
-build_symbolic_f(const std::vector<std::string> &f) {
-  std::vector<SymEngine::Expression> dx;
-  dx.reserve(f.size());
-  for (const auto &s: f) {
-    dx.emplace_back(SymEngine::parse(s));
-  }
-  return dx;
-}
 
 
 vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
@@ -190,6 +181,16 @@ build_jacobian_visitors(
   }
 
   return visitors;
+}
+
+std::vector<SymEngine::Expression>
+build_symbolic_f(const std::vector<std::string> &f) {
+  std::vector<SymEngine::Expression> dx;
+  dx.reserve(f.size());
+  for (const auto &s: f) {
+    dx.emplace_back(SymEngine::parse(s));
+  }
+  return dx;
 }
 
 

@@ -2,11 +2,13 @@
 #include "../src/weak_residual.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
-
+#include <iostream>
 #include <xtensor/containers/xtensor.hpp>
 #include <symengine/parser.h>
 #include <string>
 #include <vector>
+
+
 
 constexpr auto J =  5;
 constexpr auto D =  2;
@@ -18,19 +20,20 @@ constexpr double t = 5;
 const std::vector<std::string> f_string = {"p1 - p3 / (36 + p2 * u2)", "p4 * u1 - p5"};
 
 const auto u_symbolic =  create_symbolic_vars("u", 2);
-const auto p_symbolic =  create_symbolic_vars("u", 5);
+const auto p_symbolic =  create_symbolic_vars("p", 5);
 
 const auto f_symbolic = build_symbolic_f(f_string);
 
 const auto Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, u_symbolic);
 const auto Jp_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
 
-const auto Jp_Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
+const auto Jp_Ju_f_symbolic = build_symbolic_jacobian(Ju_f_symbolic, p_symbolic);
 
 const auto Jp_Jp_Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
 
 const auto f = build_f(f_symbolic, D, J);
 const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
+const auto Jp_Ju_f = build_H_f(Jp_Ju_f_symbolic, D, J);
 
 TEST_CASE("f_functor takes in RealLambdaDouble Visitors Evaluation") {
 
@@ -72,3 +75,53 @@ TEST_CASE("Ju_f_functor computes correct Jacobian with respect to u") {
     CHECK(jac(1,0) == doctest::Approx(df2_du1)); // df2/du1
     CHECK(jac(1,1) == doctest::Approx(df2_du2)); // df2/du2
 }
+
+
+TEST_CASE("Jp_Ju_f_functor computes correct Hessian with respect to p and u") {
+
+    const auto hess = Jp_Ju_f(p, u, t);
+
+    double denom = 36 + p[1] * u[1];
+    double denom2 = denom * denom;
+    double denom3 = denom2 * denom;
+
+    // f1
+    double d2f1_dp1_du1 = 0.0;
+    double d2f1_dp1_du2 = 0.0;
+    double d2f1_dp2_du1 = 0.0;
+    double d2f1_dp2_du2 = (p[2] / denom2) - (2*p[1]*p[2]*u[1])/denom3;
+    double d2f1_dp3_du1 = 0.0;
+    double d2f1_dp3_du2 = p[1] / denom2;
+    double d2f1_dp4_du1 = 0.0;
+    double d2f1_dp4_du2 = 0.0;
+    double d2f1_dp5_du1 = 0.0;
+    double d2f1_dp5_du2 = 0.0;
+
+    // f2
+    double d2f2_dp4_du1 = 1.0;
+
+    // Check f1
+    CHECK(hess(0,0,0) == doctest::Approx(d2f1_dp1_du1));
+    CHECK(hess(0,1,0) == doctest::Approx(d2f1_dp1_du2));
+    CHECK(hess(0,0,1) == doctest::Approx(d2f1_dp2_du1));
+    CHECK(hess(0,1,1) == doctest::Approx(d2f1_dp2_du2));
+    CHECK(hess(0,0,2) == doctest::Approx(d2f1_dp3_du1));
+    CHECK(hess(0,1,2) == doctest::Approx(d2f1_dp3_du2));
+    CHECK(hess(0,0,3) == doctest::Approx(d2f1_dp4_du1));
+    CHECK(hess(0,1,3) == doctest::Approx(d2f1_dp4_du2));
+    CHECK(hess(0,0,4) == doctest::Approx(d2f1_dp5_du1));
+    CHECK(hess(0,1,4) == doctest::Approx(d2f1_dp5_du2));
+
+    // Check f2
+    CHECK(hess(1,0,3) == doctest::Approx(d2f2_dp4_du1));
+
+    // All other entries for f2 should be zero
+    for (int j = 0; j < 5; ++j) {
+        for (int k = 0; k < 2; ++k) {
+            if (!(j == 3 && k == 0)) {
+                CHECK(hess(1,j,k) == doctest::Approx(0.0));
+            }
+        }
+    }
+}
+
