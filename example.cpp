@@ -89,9 +89,9 @@ int main() {
     const xt::xtensor<double,2> U = xt::adapt(u_flat, shape);
 
     const std::vector<std::string> system_eqs = {
-        "p0 / (2.15 + p2 * u2^p3) - p1 * u0",
-        "p4 * u0 - p5 * u1",
-        "p6 * u1 - p7 * u2"
+        "p1 / (2.15 + p3 * u3^p4) - p2 * u1",
+        "p5 * u1 - p6 * u2",
+        "p7 * u2 - p8 * u3"
     };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);

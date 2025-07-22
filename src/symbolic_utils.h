@@ -22,11 +22,12 @@ build_f_visitors(const std::vector<Expression> &dx, size_t D, size_t J);
 std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > >
 build_jacobian_visitors(const std::vector<std::vector<Expression> > &J_f, size_t D, size_t J);
 
-std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>
-build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression>>> &H_f,  size_t D, size_t J);
+std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > >
+build_jacobian_visitors(const std::vector<std::vector<std::vector<Expression> > > &H_f, size_t D, size_t J);
 
-std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor>>>>>
-build_jacobian_visitors(const std::vector<std::vector<std::vector<std::vector<Expression>>>> &T_f, size_t D, size_t J);
+std::vector<std::vector<std::vector<std::vector<std::shared_ptr<LambdaRealDoubleVisitor> > > > >
+build_jacobian_visitors(const std::vector<std::vector<std::vector<std::vector<Expression> > > > &T_f, size_t D,
+                        size_t J);
 
 std::vector<std::vector<Expression> >
 build_symbolic_jacobian(const std::vector<Expression> &system,
@@ -36,8 +37,8 @@ std::vector<std::vector<std::vector<Expression> > >
 build_symbolic_jacobian(const std::vector<std::vector<Expression> > &matrix,
                         const std::vector<Expression> &inputs);
 
-std::vector<std::vector<std::vector<std::vector<Expression>>>>
-build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression>>> &T,
+std::vector<std::vector<std::vector<std::vector<Expression> > > >
+build_symbolic_jacobian(const std::vector<std::vector<std::vector<Expression> > > &T,
                         const std::vector<Expression> &inputs);
 
 #endif

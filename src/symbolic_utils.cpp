@@ -17,8 +17,9 @@ std::vector<Expression> create_symbolic_vars(const std::string &base_name,
 
 // Inputs includes both the parameters, p1, p2,... and the state variables u1, ..., and t
 std::vector<SymEngine::Expression> create_all_ode_symbolic_inputs(const size_t D, const size_t J) {
-  const std::vector<SymEngine::Expression> p_symbols = create_symbolic_vars("p", J);
   const std::vector<SymEngine::Expression> u_symbols = create_symbolic_vars("u", D);
+  const std::vector<SymEngine::Expression> p_symbols = create_symbolic_vars("p", J);
+
   const auto t_symbol =
       SymEngine::Expression(SymEngine::symbol("t"));
 

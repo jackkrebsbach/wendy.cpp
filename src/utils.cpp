@@ -22,21 +22,21 @@ f_functor build_f(const std::vector<SymEngine::Expression> &f_symbolic, const si
 }
 
 J_f_functor build_J_f(const std::vector<std::vector<SymEngine::Expression> > &J_f_symbolic, const size_t D,
-                             const size_t J) {
+                      const size_t J) {
     const auto dx = build_jacobian_visitors(J_f_symbolic, D, J); // Symengine object to call numerical input
     return J_f_functor(dx);
 }
 
 H_f_functor build_H_f(const std::vector<std::vector<std::vector<SymEngine::Expression> > > &H_f_symbolic,
-                             const size_t D,
-                             const size_t J) {
+                      const size_t D,
+                      const size_t J) {
     const auto dx = build_jacobian_visitors(H_f_symbolic, D, J); // Symengine object to call numerical input
     return H_f_functor(dx);
 }
 
-T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymEngine::Expression> > > >&T_f_symbolic,
-                             const size_t D,
-                             const size_t J) {
+T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymEngine::Expression> > > > &T_f_symbolic,
+                      const size_t D,
+                      const size_t J) {
     const auto dx = build_jacobian_visitors(T_f_symbolic, D, J); // Symengine object to call numerical input
     return T_f_functor(dx);
 }

@@ -23,7 +23,7 @@ MLE::MLE(
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
    JU_g(Ju_g_), Jp_g(Jp_g_), Jp_JU_g(Jp_JU_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_JU_g(Jp_Jp_JU_g_),
    S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
-   J = Jp_JU_g.grad2_len;
+    J = Jp_JU_g.grad2_len;
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
@@ -51,7 +51,7 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
     const auto Jp_gp = xt::reshape_view(Jp_g(p), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
-    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1},{0}),{0,2,1}); //∇ₚLLᵀ
+    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1}, {0}), {0, 2, 1}); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
 
 
@@ -78,7 +78,7 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
     return (J_wnn);
 }
 
-std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) const {
+std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) const {
     // Precomputions
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
@@ -92,26 +92,27 @@ std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) cons
     const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, D}); // ∇ₚg(p) ∈ ℝ^(K*D x D)
 
     // Precomputed Hessian information of ∇p∇pg(p) w.r.t p⃗ and U⃗
-    const auto Hp_gp = xt::reshape_view( xt::sum(Jp_Jp_g(p), {3}), {K*D, D, J});
+    const auto Hp_gp = xt::reshape_view(xt::sum(Jp_Jp_g(p), {3}), {K * D, D, J});
 
     // Precompute S(p) = LLᵀ
     const auto Sp = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
     const auto F = xt::linalg::cholesky(Sp);
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
-    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1},{0}),{0,2,1}); //∇ₚLLᵀ
+    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1}, {0}), {0, 2, 1}); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
 
     // Precomputed first part of HₚS(p) Hessian of the covariance matrix, 4D Tensor
     // ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ 4D tensor where Lᵀ is broadcasted
-    const auto Hp_LLT = xt::transpose(xt::linalg::tensordot(Hp_Lp, xt::transpose(Lp), {1},{0}),{0,3,1,2}); //∇ₚ∇ₚLLᵀ
+    const auto Hp_LLT = xt::transpose(xt::linalg::tensordot(Hp_Lp, xt::transpose(Lp), {1}, {0}), {0, 3, 1, 2});
+    //∇ₚ∇ₚLLᵀ
     // ∇ₚL∇ₚLᵀ
     auto Jp_LpT = xt::transpose(Jp_Lp, {1, 0, 2});
     auto Jp_Lp_Jp_LpT_ = xt::linalg::tensordot(Jp_Lp, Jp_LpT, {1}, {0});
     auto Jp_Lp_Jp_LpT = xt::transpose(Jp_Lp_Jp_LpT_, {0, 2, 1, 3});
 
     // Output
-    std::vector<std::vector<double>> H_wnn(p.size(), std::vector<double>(p.size()));
+    std::vector<std::vector<double> > H_wnn(p.size(), std::vector<double>(p.size()));
     for (int i = 0; i < p.size(); ++i) {
         // Extract partial information for each p_i from the gradients
         const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
@@ -132,37 +133,36 @@ std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) cons
 
             // 𝜕ₚ𝜕ₚS(p) (Hessian information)
             const auto Hp_LLT_ji = xt::view(Hp_LLT, xt::all(), xt::all(), i, j);
-            const auto Jp_Lp_Jp_LpT_ji  = xt::view(Jp_Lp_Jp_LpT,xt::all(), xt::all(), i, j);
-            const auto H_ji =  Hp_LLT_ji + Jp_Lp_Jp_LpT_ji;            //𝜕ₚ𝜕ₚLLᵀ + 𝜕ₚL𝜕ₚLᵀ
-            const auto Hp_S_ji = H_ji  + xt::transpose(H_ji);       // 𝜕ₚ𝜕ₚS(p)
+            const auto Jp_Lp_Jp_LpT_ji = xt::view(Jp_Lp_Jp_LpT, xt::all(), xt::all(), i, j);
+            const auto H_ji = Hp_LLT_ji + Jp_Lp_Jp_LpT_ji; //𝜕ₚ𝜕ₚLLᵀ + 𝜕ₚL𝜕ₚLᵀ
+            const auto Hp_S_ji = H_ji + xt::transpose(H_ji); // 𝜕ₚ𝜕ₚS(p)
 
             // 𝜕ₚ𝜕ₚ g(p) (Hessian information)
             const auto Hp_gp_ji = xt::view(Hp_gp, xt::all(), xt::all(), i, j);
             //𝜕ₚ𝜕ₚS(p)^-1
             //prt1
-            const auto S_inv_Jp_Spj = xt::linalg::solve_cholesky(F,Jp_Sp_j);
-            const auto prt1_inv = xt::linalg::dot(S_inv_Jp_Spj,-1*Jp_Sp_inv_i);
+            const auto S_inv_Jp_Spj = xt::linalg::solve_cholesky(F, Jp_Sp_j);
+            const auto prt1_inv = xt::linalg::dot(S_inv_Jp_Spj, -1 * Jp_Sp_inv_i);
             //prt2
             const auto Y2 = xt::linalg::solve_cholesky(F, Hp_S_ji); // S^(-1)𝜕pᵢS(p)
             const auto Xt2 = xt::linalg::solve_cholesky(F, xt::transpose(Y2));
             const auto prt2_inv = -1 * xt::transpose(Xt2);
             // prt3
-            const auto x = xt::transpose( xt::linalg::solve_cholesky(F, xt::transpose(S_inv_Jp_Spj)));
-            const auto  prt3_inv = xt::linalg::dot(Sp, xt::linalg::dot(Jp_Sp_i, x));
-            const auto Jp_Jp_S_inv_ji = prt1_inv + prt2_inv +prt3_inv;
+            const auto x = xt::transpose(xt::linalg::solve_cholesky(F, xt::transpose(S_inv_Jp_Spj)));
+            const auto prt3_inv = xt::linalg::dot(Sp, xt::linalg::dot(Jp_Sp_i, x));
+            const auto Jp_Jp_S_inv_ji = prt1_inv + prt2_inv + prt3_inv;
 
             // 𝜕ₚ𝜕ₚ l(p) Weak negative log likelihood
             const auto x1 = xt::linalg::solve(Jp_Sp_j, Jp_Sp_i);
             const auto y1 = xt::linalg::solve_cholesky(F, Hp_S_ji);
-            const auto prt1 = 0.5*(xt::linalg::trace(x1 + y1)());
-            const auto prt2 = xt::linalg::dot(xt::transpose(Hp_gp_ji),S_inv_rp)();
-            const auto prt3 =  xt::linalg::dot(xt::transpose(Jp_gp_i), xt::linalg::solve(Jp_Sp_j, r))();
-            const auto prt4 = xt::linalg::dot( xt::transpose(Jp_gp_i), xt::linalg::solve_cholesky(F, Jp_gp_j))();
-            const auto prt5  = xt::linalg::dot(xt::linalg::dot( xt::transpose(Jp_gp_j), Jp_Sp_inv_i),r)();
-            const auto prt6 = 0.5*(xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Jp_S_inv_ji), r)());
+            const auto prt1 = 0.5 * (xt::linalg::trace(x1 + y1)());
+            const auto prt2 = xt::linalg::dot(xt::transpose(Hp_gp_ji), S_inv_rp)();
+            const auto prt3 = xt::linalg::dot(xt::transpose(Jp_gp_i), xt::linalg::solve(Jp_Sp_j, r))();
+            const auto prt4 = xt::linalg::dot(xt::transpose(Jp_gp_i), xt::linalg::solve_cholesky(F, Jp_gp_j))();
+            const auto prt5 = xt::linalg::dot(xt::linalg::dot(xt::transpose(Jp_gp_j), Jp_Sp_inv_i), r)();
+            const auto prt6 = 0.5 * (xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Jp_S_inv_ji), r)());
 
-            H_wnn[i][j]= prt1 + prt2 + prt3 + prt4 + prt5 + prt6;
-
+            H_wnn[i][j] = prt1 + prt2 + prt3 + prt4 + prt5 + prt6;
         }
     }
     return H_wnn;

@@ -231,13 +231,12 @@ TEST_CASE("Jp_g_functor computes correct Jacobian with respect to parameters p�
     const double x11 = xt::sum(phi * xt::view(J_F, xt::all(), 0, 0))();
     const double xKD1 = xt::sum(phik * xt::view(J_F, xt::all(), D - 1, 0))();
     const double xKDJ = xt::sum(phik * xt::view(J_F, xt::all(), D - 1, J - 1))();
+    const double xKDJm1 = xt::sum(phik * xt::view(J_F, xt::all(), D - 1, J - 2))();
 
     const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     CHECK(Jp_gp(0,0) == doctest::Approx(x11));
     CHECK(Jp_gp(K*D-1,0) == doctest::Approx(xKD1));
     CHECK(Jp_gp(K*D-1, J-1) == doctest::Approx(xKDJ));
+    CHECK(Jp_gp(K*D-1, J-2) == doctest::Approx(xKDJm1));
 }
-
-
-

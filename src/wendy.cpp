@@ -14,7 +14,6 @@
 #include <fmt/ranges.h>
 
 
-
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_) :
     // Data
@@ -137,24 +136,25 @@ void Wendy::build_full_test_function_matrices() {
     this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse, UtV_prime), xt::range(0, K), xt::all());
 }
 
-bool is_symmetric(const std::vector<std::vector<double>>& H, double tol = 1e-10) {
+bool is_symmetric(const std::vector<std::vector<double> > &H, double tol = 1e-10) {
     const size_t n = H.size();
     for (size_t i = 0; i < n; ++i) {
         if (H[i].size() != n) return false; // Not square
         for (size_t j = 0; j < n; ++j) {
             if (std::abs(H[i][j] - H[j][i]) > tol) {
                 std::cout << "Non-symmetric at (" << i << "," << j << "): "
-                          << H[i][j] << " vs " << H[j][i] << std::endl;
+                        << H[i][j] << " vs " << H[j][i] << std::endl;
                 return false;
             }
         }
     }
     return true;
 }
-void print_matrix(const std::vector<std::vector<double>>& mat, int precision = 6) {
+
+void print_matrix(const std::vector<std::vector<double> > &mat, int precision = 6) {
     size_t n = mat.size();
     for (size_t i = 0; i < n; ++i) {
-        for (const double j : mat[i]) {
+        for (const double j: mat[i]) {
             std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
         }
         std::cout << std::endl;
@@ -163,7 +163,6 @@ void print_matrix(const std::vector<std::vector<double>>& mat, int precision = 6
 
 
 void Wendy::build_objective_function() const {
-
     const auto g = g_functor(F, V);
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
     const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
