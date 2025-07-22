@@ -1,7 +1,6 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#include "utils.h"
 #include "weak_residual.h"
 #include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>

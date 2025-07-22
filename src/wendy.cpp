@@ -1,8 +1,10 @@
+#include "symbolic_utils.h"
+#include "utils.h"
 #include "wendy.h"
 #include "logger.h"
-#include "utils.h"
 #include "test_function.h"
-#include "symbolic_utils.h"
+#include "objective/mle.h"
+
 #include <symengine/expression.h>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
@@ -12,7 +14,6 @@
 #include <fmt/ranges.h>
 
 
-#include "objective/mle.h"
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_) :
