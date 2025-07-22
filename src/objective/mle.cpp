@@ -96,11 +96,11 @@ std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) cons
 
     // Precompute S(p) = LLᵀ
     const auto Sp = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
+    const auto F = xt::linalg::cholesky(Sp);
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
     const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1},{0}),{0,2,1}); //∇ₚLLᵀ
     const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
-
 
     // Precomputed first part of HₚS(p) Hessian of the covariance matrix, 4D Tensor
     // ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ 4D tensor where Lᵀ is broadcasted
@@ -119,8 +119,8 @@ std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) cons
         const auto JU_gp_i = xt::view(JU_gp, xt::all(), i);
 
         // Compute  ∇ₚS(p)^(-1) = -S(p)^(-1)∇ₚS(p)S(p)^(-1) from L and  ∇ₚS(p)
-        const auto Y = xt::linalg::solve(Sp, Jp_Sp_i); // S^(-1)𝜕pᵢS(p)
-        const auto Xt = xt::linalg::solve(xt::transpose(Sp), xt::transpose(Y));
+        const auto Y = xt::linalg::solve_cholesky(F, Jp_Sp_i); // S^(-1)𝜕pᵢS(p)
+        const auto Xt = xt::linalg::solve_cholesky(F, xt::transpose(Y));
         const auto Jp_Sp_inv_i = -1 * xt::transpose(Xt);
 
         const auto Jp_Lp_i = xt::view(Jp_Lp, xt::all(), xt::all(), i);
@@ -138,35 +138,27 @@ std::vector<std::vector<double>> MLE::Hessian(const std::vector<double> &p) cons
 
             // 𝜕ₚ𝜕ₚ g(p) (Hessian information)
             const auto Hp_gp_ji = xt::view(Hp_gp, xt::all(), xt::all(), i, j);
-
             //𝜕ₚ𝜕ₚS(p)^-1
             //prt1
-            const auto S_inv_Jp_Spj = xt::linalg::solve(Sp,Jp_Sp_j);
+            const auto S_inv_Jp_Spj = xt::linalg::solve_cholesky(F,Jp_Sp_j);
             const auto prt1_inv = xt::linalg::dot(S_inv_Jp_Spj,-1*Jp_Sp_inv_i);
             //prt2
-            const auto Y2 = xt::linalg::solve(Sp, Hp_S_ji); // S^(-1)𝜕pᵢS(p)
-            const auto Xt2 = xt::linalg::solve(Sp, xt::transpose(Y2));
+            const auto Y2 = xt::linalg::solve_cholesky(F, Hp_S_ji); // S^(-1)𝜕pᵢS(p)
+            const auto Xt2 = xt::linalg::solve_cholesky(F, xt::transpose(Y2));
             const auto prt2_inv = -1 * xt::transpose(Xt2);
             // prt3
-            const auto x = xt::transpose( xt::linalg::solve(Sp, xt::transpose(S_inv_Jp_Spj)));
+            const auto x = xt::transpose( xt::linalg::solve_cholesky(F, xt::transpose(S_inv_Jp_Spj)));
             const auto  prt3_inv = xt::linalg::dot(Sp, xt::linalg::dot(Jp_Sp_i, x));
             const auto Jp_Jp_S_inv_ji = prt1_inv + prt2_inv +prt3_inv;
 
-
             // 𝜕ₚ𝜕ₚ l(p) Weak negative log likelihood
-            //prt1
             const auto x1 = xt::linalg::solve(Jp_Sp_j, Jp_Sp_i);
-            const auto y1 = xt::linalg::solve(Sp, Hp_S_ji);
+            const auto y1 = xt::linalg::solve_cholesky(F, Hp_S_ji);
             const auto prt1 = 0.5*(xt::linalg::trace(x1 + y1)());
-            //prt2
             const auto prt2 = xt::linalg::dot(xt::transpose(Hp_gp_ji),S_inv_rp)();
-            //prt3
             const auto prt3 =  xt::linalg::dot(xt::transpose(Jp_gp_i), xt::linalg::solve(Jp_Sp_j, r))();
-            //prt4
-            const auto prt4 = xt::linalg::dot( xt::transpose(Jp_gp_i), xt::linalg::solve(Sp, Jp_gp_j))();
-            //prt5
+            const auto prt4 = xt::linalg::dot( xt::transpose(Jp_gp_i), xt::linalg::solve_cholesky(F, Jp_gp_j))();
             const auto prt5  = xt::linalg::dot(xt::linalg::dot( xt::transpose(Jp_gp_j), Jp_Sp_inv_i),r)();
-            //prt6
             const auto prt6 = 0.5*(xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Jp_S_inv_ji), r)());
 
             H_wnn[i][j]= prt1 + prt2 + prt3 + prt4 + prt5 + prt6;

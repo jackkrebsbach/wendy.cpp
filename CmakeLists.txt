@@ -48,3 +48,13 @@ target_link_libraries(example
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
 )
+
+#find_package(PkgConfig REQUIRED)
+#pkg_check_modules(IPOPT ipopt)
+#
+#if (IPOPT_FOUND)
+#    target_include_directories(example PRIVATE ${IPOPT_INCLUDE_DIRS})
+#    target_link_libraries(example PRIVATE ${IPOPT_LIBRARIES})
+#else()
+#    message(FATAL_ERROR "IPOPT not found! Please install IPOPT and make sure pkg-config can find it.")
+#endif()

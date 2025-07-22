@@ -12,7 +12,7 @@
 #include <fmt/ranges.h>
 
 
-#include "optimizers/mle.h"
+#include "objective/mle.h"
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_) :
@@ -50,6 +50,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     // Variance of the data
     Sigma(xt::diag(xt::ones<double>({D}))) {
 }
+
 
 void Wendy::build_full_test_function_matrices() {
     const double dt = xt::mean(xt::diff(tt))();
@@ -135,11 +136,32 @@ void Wendy::build_full_test_function_matrices() {
     this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse, UtV_prime), xt::range(0, K), xt::all());
 }
 
+bool is_symmetric(const std::vector<std::vector<double>>& H, double tol = 1e-10) {
+    size_t n = H.size();
+    for (size_t i = 0; i < n; ++i) {
+        if (H[i].size() != n) return false; // Not square
+        for (size_t j = 0; j < n; ++j) {
+            if (std::abs(H[i][j] - H[j][i]) > tol) {
+                std::cout << "Non-symmetric at (" << i << "," << j << "): "
+                          << H[i][j] << " vs " << H[j][i] << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+void print_matrix(const std::vector<std::vector<double>>& mat, int precision = 6) {
+    size_t n = mat.size();
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < mat[i].size(); ++j) {
+            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << mat[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 
 void Wendy::build_objective_function() const {
-
-    const auto&u = xt::view(U,0, xt::all());
-    const auto&t = xt::view(tt,0);
 
     const auto g = g_functor(F, V);
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
@@ -151,6 +173,7 @@ void Wendy::build_objective_function() const {
     const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
 
     const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+
     const auto S_inv_r = S_inv_r_functor(L, g, b);
 
 
@@ -160,6 +183,8 @@ void Wendy::build_objective_function() const {
     const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
     const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
     const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
+
+    print_matrix(H_f(p0));
 }
 
 void Wendy::log_details() const {
