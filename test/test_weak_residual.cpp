@@ -15,9 +15,6 @@ constexpr auto D =  2;
 constexpr auto K = 3;
 constexpr auto mp1 = 4;
 
-const auto tt = xt::linspace<double>(0, mp1 -1, mp1);
-const auto V = xt::reshape_view( xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1});
-
 
 const auto u0  = xt::xtensor<double,1>({2,3});
 const auto p =  std::vector<double>({1,2,3,4,5});
@@ -80,8 +77,11 @@ void print_xtensor2d(const T& tensor) {
     }
 }
 
+const auto U = integrate_(p,u0, 0.0, 4.0, mp1, f);
+const xt::xtensor<double,1> tt = xt::linspace<double>(0, mp1 -1, mp1);
+const auto V = xt::reshape_view( xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1});
 
-
+const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 
 TEST_CASE("f_functor takes in RealLambdaDouble Visitors Evaluation") {
 
@@ -123,6 +123,7 @@ TEST_CASE("Ju_f_functor computes correct Jacobian with respect to u") {
     CHECK(jac(1,0) == doctest::Approx(df2_du1)); // df2/du1
     CHECK(jac(1,1) == doctest::Approx(df2_du2)); // df2/du2
 }
+
 
 
 TEST_CASE("Jp_Ju_f_functor computes correct Hessian with respect to p and u") {
@@ -174,30 +175,6 @@ TEST_CASE("Jp_Ju_f_functor computes correct Hessian with respect to p and u") {
 }
 
 TEST_CASE("Ju_g_functor computes correct Jacobian with respect to all state variables u") {
-
-    constexpr auto J =  5;
-    constexpr auto D =  2;
-    constexpr auto K = 3;
-    constexpr auto mp1 = 4;
-
-    const std::vector<std::string> f_string = {"p1 - p3 / (36 + p2 * u2)", "p4 * u1 - p5"};
-
-    const auto f_symbolic = build_symbolic_f(f_string);
-    const auto u_symbolic =  create_symbolic_vars("u", 2);
-    const auto Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, u_symbolic);
-
-    const auto f = build_f(f_symbolic, D, J);
-    const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
-
-    const xt::xtensor<double,1> tt = xt::eval(xt::reshape_view(xt::linspace<double>(0, mp1 -1, mp1), {mp1}));
-
-    const auto p =  std::vector<double>({1,2,3,4,5});
-    const auto V = xt::eval(xt::reshape_view( xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1}));
-
-    const auto u0  = xt::xtensor<double,1>({2,3});
-    const auto U = integrate_(p,u0, 0.0, 4.0, mp1, f);
-
-    const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 
     const auto Ju_gp = Ju_g(p);
 
