@@ -151,8 +151,8 @@ bool is_symmetric(const std::vector<std::vector<double> > &H, double tol = 1e-10
     return true;
 }
 
-void print_matrix(const std::vector<std::vector<double> > &mat, int precision = 6) {
-    size_t n = mat.size();
+void print_matrix(const std::vector<std::vector<double> > &mat, const int precision = 1) {
+    const size_t n = mat.size();
     for (size_t i = 0; i < n; ++i) {
         for (const double j: mat[i]) {
             std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
@@ -160,7 +160,6 @@ void print_matrix(const std::vector<std::vector<double> > &mat, int precision = 
         std::cout << std::endl;
     }
 }
-
 
 void Wendy::build_objective_function() const {
     const auto g = g_functor(F, V);

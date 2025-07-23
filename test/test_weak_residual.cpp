@@ -32,12 +32,13 @@ const auto Jp_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
 
 const auto Jp_Ju_f_symbolic = build_symbolic_jacobian(Ju_f_symbolic, p_symbolic);
 
-const auto Jp_Jp_Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
+const auto Jp_Jp_Ju_f_symbolic = build_symbolic_jacobian(Jp_Ju_f_symbolic, p_symbolic);
 
 const auto f = build_f(f_symbolic, D, J);
 const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
 const auto Jp_f = build_J_f(Jp_f_symbolic, D, J);
 const auto Jp_Ju_f = build_H_f(Jp_Ju_f_symbolic, D, J);
+const auto Jp_Jp_Ju_f = build_T_f(Jp_Jp_Ju_f_symbolic, D, J);
 
 
 xt::xtensor<double, 2> integrate_(
@@ -80,10 +81,12 @@ void print_xtensor2d(const T &tensor) {
 
 const auto U = integrate_(p, u0, 0.0, mp1 - 1, mp1, f);
 const xt::xtensor<double, 1> tt = xt::linspace<double>(0, mp1 - 1, mp1);
-const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(0, K * mp1 - 1, K * mp1), {K, mp1});
+const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(1, K * mp1, K * mp1), {K, mp1});
 
 const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
+const auto Jp_Ju_g = H_g_functor(U, tt, V, Jp_Ju_f);
+const auto Jp_Jp_Ju_g = T_g_functor(U, tt, V, Jp_Jp_Ju_f);
 
 TEST_CASE("f_functor takes in RealLambdaDouble Visitors Evaluation") {
     const auto out = f(p, u, t);
@@ -239,4 +242,59 @@ TEST_CASE("Jp_g_functor computes correct Jacobian with respect to parameters p�
     CHECK(Jp_gp(K*D-1,0) == doctest::Approx(xKD1));
     CHECK(Jp_gp(K*D-1, J-1) == doctest::Approx(xKDJ));
     CHECK(Jp_gp(K*D-1, J-2) == doctest::Approx(xKDJm1));
+}
+
+
+TEST_CASE("Jp_Ju_g_functor computes correct Hessian with respect to parameters p⃗ and state u⃗") {
+    auto H_F = xt::xtensor<double, 4>({mp1, D, D, J});
+
+    for (size_t i = 0; i < mp1; ++i) {
+        const double &t = tt[i];
+        const auto &u = xt::view(U, i, xt::all());
+        xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = Jp_Ju_f(p, u, t);
+    }
+
+    const xt::xtensor<double, 1> phi1 = xt::row(V, 0);
+    const xt::xtensor<double, 1> phi2 = xt::row(V, 1);
+
+    const auto part1 = xt::view(H_F, mp1 - 1, 0, D - 1, xt::all());
+    const auto part2 = xt::view(H_F, 1, 0, 0, xt::all()); //∇p 𝜕u_21 f_1(u2)
+
+    const auto x1 = phi1[mp1 - 1] * part1; // ∇p 𝜕u_mp1*D f_1(u_mp1) * ϕ_1mp1
+    const auto x2 = phi2[1] * part2; // ∇p 𝜕u_21 f_1(u2) * ϕ_22
+
+    const auto Jp_Ju_gp = xt::reshape_view(Jp_Ju_g(p), {K * D, mp1 * D, J}); // ∇ₚ∇ᵤg(p) ∈ ℝ^(K*D x mp1*D x J)
+
+    CHECK(Jp_Ju_gp(0,mp1*D-1,1) == doctest::Approx(x1[1])); // 𝜕p_1 𝜕u_mp1*D f_1(u_mp1) * ϕ_1mp1
+    CHECK(Jp_Ju_gp(0,mp1*D-1,2) == doctest::Approx(x1[2])); // 𝜕p_2 𝜕u_mp1*D f_1(u_mp1) * ϕ_1mp1
+    CHECK(Jp_Ju_gp(1,1,3) == doctest::Approx(x2[3])); // 𝜕p_4𝜕u_21 g_2(p) = 𝜕p_4 𝜕u_21 f_1(u_2) * ϕ_22
+    CHECK(Jp_Ju_gp(1,1,2) == doctest::Approx(x2[2])); // 𝜕p_3𝜕u_21 g_2(p) = 𝜕p_3 𝜕u_21 f_1(u_2) * ϕ_22
+    CHECK(Jp_Ju_gp(1,1,1) == doctest::Approx(x2[1])); // 𝜕p_2𝜕u_21 g_2(p) = 𝜕p_2 𝜕u_21 f_1(u_2) * ϕ_22
+    CHECK(Jp_Ju_gp(1,1,0) == doctest::Approx(x2[0])); // 𝜕p_1𝜕u_21 g_2(p) = 𝜕p_1 𝜕u_21 f_1(u_2) * ϕ_22
+}
+
+TEST_CASE("Jp_Jp_Ju_g_functor computes correct high dimensional Hessian with respect to parameters p⃗ and state u⃗") {
+    auto T_F = xt::xtensor<double, 5>({mp1, D, D, J, J});
+
+    for (size_t i = 0; i < mp1; ++i) {
+        const double &t = tt[i];
+        const auto &u = xt::view(U, i, xt::all());
+        xt::view(T_F, i, xt::all(), xt::all(), xt::all(), xt::all()) = Jp_Jp_Ju_f(p, u, t);
+    }
+
+    const xt::xtensor<double, 1> phi1 = xt::row(V, 0);
+
+    const auto part2 = xt::view(T_F, mp1 - 1, 0, D - 1, 1, xt::all()); //∇p 𝜕p_2 𝜕u_mp1*D f_1(u_mp1)
+
+    const auto x = phi1[mp1 - 1] * part2; // ∇p 𝜕u_21 f_1(u2) * ϕ_1mp1
+
+    const auto Jp_Jp_Ju_gp = xt::reshape_view(Jp_Jp_Ju_g(p), {K * D, mp1 * D, J, J});
+    // ∇ₚ∇ₚ∇ᵤg(p) ∈ ℝ^(K*D x mp1*D x J x J)
+
+    std::cout << xt::eval(xt::view(Jp_Jp_Ju_gp, 0, mp1 * D - 1, 1, xt::all())) << std::endl;
+
+    CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,0) == doctest::Approx(x[0])); // 𝜕p_1𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_1𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
+    CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,1) == doctest::Approx(x[1])); // 𝜕p_2𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_2𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
+    CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,2) == doctest::Approx(x[2])); // 𝜕p_3𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_3𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
+    CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,3) == doctest::Approx(x[3])); // 𝜕p_4𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_4𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
 }

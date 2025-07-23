@@ -75,14 +75,14 @@ int main() {
     constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
-    constexpr double noise_ratio = 0.15;
+    constexpr double noise_ratio = 0.05;
     const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
-    const auto u_noisy = add_noise(u_star, noise_ratio);
+    // const auto u_noisy = add_noise(u_star, noise_ratio);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
     std::vector<double> u_flat;
-    for (const auto &row: u_noisy) {
+    for (const auto &row: u_star) {
         u_flat.insert(u_flat.end(), row.begin(), row.end());
     }
 
