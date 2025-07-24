@@ -109,9 +109,17 @@ const auto S_inv_r = S_inv_r_functor(L, g, b);
 
 const auto mle = MLE(U, tt, V, V, L, g, b, Ju_g, Jp_g, Jp_Ju_g, Jp_Jp_g, Jp_Jp_Ju_g, S_inv_r);
 
-
-
 TEST_CASE("Weak Negative Log Likelihood") {
     const auto wnll = mle(p);
+
+    const auto Lp = L(p);
+    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+    const auto r = g(p) - b;
+    const auto x = xt::linalg::solve(S,r);
+    const auto logdet = std::log(xt::linalg::det(S));
+    const auto quad = xt::linalg::dot(r,x)();
+    const auto wnnl_manual = 0.5*(logdet + quad);
+
+    CHECK(xt::isclose(wnll, wnnl_manual));
 
 }

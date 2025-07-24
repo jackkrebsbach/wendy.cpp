@@ -33,7 +33,7 @@ double MLE::operator()(const std::vector<double> &p) const {
     const auto x = xt::linalg::solve(S, r); // Solve Sy = g(p) - b;
     const auto logdetS = std::log(xt::linalg::det(S));
     const auto quad = xt::linalg::dot(r, x)();
-    const auto wnll = logdetS + quad;
+    const auto wnll = 0.5*(logdetS + quad);
     return (wnll);
 }
 
