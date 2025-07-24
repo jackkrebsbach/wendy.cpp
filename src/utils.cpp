@@ -3,8 +3,37 @@
 #include "weak_residual.h"
 
 #include <xtensor/misc/xsort.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
+
+// The solve_cholesky and solve_triangular from xt is busted as of now
+// https://github.com/xtensor-stack/xtensor-blas/issues/242
+xt::xarray<double> solve_cholesky(const xt::xarray<double>& L, const xt::xarray<double>& B) {
+    using namespace cxxlapack;
+
+    const int n = static_cast<int>(L.shape()[0]);
+    const int nrhs = static_cast<int>(B.shape()[1]);
+
+    xt::xarray<double, xt::layout_type::column_major> A = L;
+    xt::xarray<double, xt::layout_type::column_major> X = B;
+
+    const int info = cxxlapack::potrs(
+        'L',        // Lower triangle
+        n,          // Matrix size
+        nrhs,       // Number of RHS columns
+        A.data(),   // Cholesky factor
+        n,          // Leading dimension of A
+        X.data(),   // RHS, overwritten with solution
+        n           // Leading dimension of B/X
+    );
+
+    if (info != 0) {
+        throw std::runtime_error("Cholesky solve failed with info = " + std::to_string(info));
+    }
+
+    return X;
+}
 
 std::function<double(double)>
 make_scalar_function(const SymEngine::Expression &expr, const SymEngine::RCP<const SymEngine::Symbol> &var) {

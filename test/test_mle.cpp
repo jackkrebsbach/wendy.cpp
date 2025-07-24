@@ -6,8 +6,7 @@
 #include <iostream>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor-blas/xlinalg.hpp>
-#include <string>
-#include <vector>
+#include <xtensor/generators/xrandom.hpp>
 
 constexpr auto J = 5;
 constexpr auto D = 2;
@@ -109,6 +108,36 @@ const auto S_inv_r = S_inv_r_functor(L, g, b);
 
 const auto mle = MLE(U, tt, V, V, L, g, b, Ju_g, Jp_g, Jp_Ju_g, Jp_Jp_g, Jp_Jp_Ju_g, S_inv_r);
 
+// The solve_cholesky and solve_triangular from xt is busted as of now
+// https://github.com/xtensor-stack/xtensor-blas/issues/242
+
+TEST_CASE("Cholesky solve vs regular solve") {
+    constexpr int D = 30;
+    // Create symmetric positive definite matrix Sp = A * Aᵀ + δI
+    xt::xarray<double> A = xt::random::randn<double>({D, D});
+    xt::xarray<double> Sp = xt::linalg::dot(A, xt::transpose(A)) + 1e-3 * xt::eye<double>(D);
+
+    // Cholesky factor
+    xt::xarray<double> C = xt::linalg::cholesky(Sp);
+    // Create a symmetric matrix Jp_Sp_j
+    xt::xarray<double> B = xt::random::randn<double>({D, D});
+    xt::xarray<double> Jp_Sp_j = 0.5 * (B + xt::transpose(B));
+
+    // Compute -S(p)^-1𝜕ⱼS(p)S(p)^-1 from L and 𝜕ⱼS(p)
+    // Cholesky solve
+    const xt::xtensor<double,2> LeftInverse1 = solve_cholesky(C,xt::transpose(Jp_Sp_j));
+    const auto c_solve= -1*solve_cholesky(C, xt::transpose(LeftInverse1));
+
+    // Regular Solve
+    const xt::xtensor<double,2> LeftInverse2 = xt::linalg::solve(Sp,xt::transpose(Jp_Sp_j));
+    const auto r_solve = -1*xt::linalg::solve(Sp, xt::transpose(LeftInverse2));
+
+    CHECK(xt::allclose(Sp, xt::linalg::dot(C, xt::transpose(C))));
+    CHECK(xt::allclose(xt::linalg::solve(Sp, B) ,  solve_cholesky(xt::linalg::cholesky(Sp), B)));
+    CHECK(xt::allclose(c_solve, r_solve));
+
+}
+
 TEST_CASE("Weak Negative Log Likelihood") {
     const auto wnll = mle(p);
 
@@ -122,4 +151,20 @@ TEST_CASE("Weak Negative Log Likelihood") {
 
     CHECK(xt::isclose(wnll, wnnl_manual));
 
+}
+
+TEST_CASE("HESSIAN Term") {
+    const auto Lp = L(p);
+    const auto Jp_Lp = L.Jacobian(p);
+    const auto Hp_Lp = L.Hessian(p);
+
+    const auto Hp_LLT = xt::transpose(xt::linalg::tensordot(Hp_Lp, xt::transpose(Lp), {1}, {0}), {0, 3, 1, 2});
+
+    for (int j = 0; j < J; ++j){
+        for (int i = 0; i < J; ++i) {
+            const auto Hp_LLT_ij = xt::eval(xt::view(Hp_LLT, xt::all(), xt::all(), j, i));
+            const auto Hp_LLT_ij_Manual = xt::eval(xt::linalg::dot(xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), j, i)) , xt::transpose(Lp) )); //∇ₚLLᵀ
+            CHECK(xt::allclose(Hp_LLT_ij, Hp_LLT_ij_Manual));
+        }
+     }
 }

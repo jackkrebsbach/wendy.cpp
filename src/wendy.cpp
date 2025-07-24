@@ -161,6 +161,17 @@ void print_matrix(const std::vector<std::vector<double> > &mat, const int precis
     }
 }
 
+void print_vector(const std::vector<double>& vec, const int precision = 1) {
+    for (const double val : vec) {
+        std::cout << std::setw(precision + 6)
+                  << std::setprecision(precision)
+                  << std::fixed
+                  << val << " ";
+    }
+    std::cout << std::endl;
+}
+
+
 void Wendy::build_objective_function() const {
     const auto g = g_functor(F, V);
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
@@ -183,6 +194,7 @@ void Wendy::build_objective_function() const {
     const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
     const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
 
+    // print_vector(J_f(p0));
     print_matrix(H_f(p0));
 }
 

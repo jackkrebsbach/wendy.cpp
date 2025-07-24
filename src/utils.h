@@ -7,6 +7,8 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
+
+
 template<typename T, typename Predicate>
 int find_last(const xt::xtensor<T, 1> &arr, Predicate pred) {
     for (int i = arr.size() - 1; i >= 0; --i) {
@@ -14,6 +16,8 @@ int find_last(const xt::xtensor<T, 1> &arr, Predicate pred) {
     }
     return -1;
 }
+
+xt::xarray<double> solve_cholesky(const xt::xarray<double>& L, const xt::xarray<double>& B);
 
 std::function<double(double)> make_scalar_function(const SymEngine::Expression &expr,
                                                    const SymEngine::RCP<const SymEngine::Symbol> &var);
