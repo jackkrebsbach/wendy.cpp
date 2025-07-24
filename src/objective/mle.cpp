@@ -132,7 +132,7 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
             auto Jp_Lp_j = xt::view(Jp_Lp, xt::all(), xt::all(), j);
 
             // 𝜕ₚ𝜕ₚS(p) (Hessian information)
-            const auto Hp_LLT_ji = xt::view(xt::linalg::dot(xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), i, j)), xt::transpose(Lp)), xt::all(), xt::all(), i, j);
+            const auto Hp_LLT_ji = xt::linalg::dot(xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), i, j)), xt::transpose(Lp));
             const auto Jp_Lp_Jp_LpT_ji = xt::linalg::dot(xt::eval(Jp_Lp_i), xt::transpose(xt::eval(Jp_Lp_j)));
             const auto H_ji = Hp_LLT_ji + Jp_Lp_Jp_LpT_ji; //𝜕ₚ𝜕ₚLLᵀ + 𝜕ₚL𝜕ₚLᵀ
             const auto Hp_S_ji = H_ji + xt::transpose(xt::eval(H_ji), {1, 0}); // 𝜕ₚ𝜕ₚS(p)

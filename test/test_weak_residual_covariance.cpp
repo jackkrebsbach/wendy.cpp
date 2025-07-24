@@ -131,4 +131,23 @@ TEST_CASE("∇ₚL: ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ ") {
     }
 }
 
+TEST_CASE("∇ₚ∇ₚL") {
+    const auto Lp = L(p);
+    const auto Hp_Lp = L.Hessian(p); // ∇ₚ∇ₚL(p)
+    const auto Jp_Jp_JUgp = xt::reshape_view(Jp_Jp_Ju_g(p), {D * K, D * mp1, J, J});
+
+    for (int i = 0; i < J; ++i) {
+        for (int j = 0; j < J; ++j) {
+            const auto t1 = xt::linalg::kron(xt::eye(D), V);
+            const auto t2 = xt::view(Jp_Jp_JUgp, xt::all(), xt::all(), i, j) + t1;
+
+            const xt::xtensor<double, 2> Hp_ji_manual = xt::eval(xt::linalg::dot(t2, xt::linalg::kron(Sigma, xt::eye(mp1))));
+            const xt::xtensor<double, 2> Hp_L_ji = xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), i, j));
+
+            CHECK(xt::allclose(Hp_ji_manual, Hp_L_ji));
+        }
+    }
+}
+
+
 
