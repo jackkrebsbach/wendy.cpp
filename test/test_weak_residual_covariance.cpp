@@ -82,7 +82,7 @@ const auto U = integrate_(p, u0, 0.0, mp1 - 1, mp1, f);
 const xt::xtensor<double, 1> tt = xt::linspace<double>(0, mp1 - 1, mp1);
 const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(1, K * mp1, K * mp1), {K, mp1});
 
-const xt::xtensor<double,2> Sigma = xt::diag(xt::ones<double>({D}));
+const xt::xtensor<double, 2> Sigma = xt::diag(xt::ones<double>({D}));
 
 const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
@@ -97,21 +97,38 @@ const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
 // constexpr auto mp1 = 4;
 
 TEST_CASE("L is (∇ᵤg(p) + V' ⊙ I_D) (Σ ⊙ I_mp1)") {
-
     const auto Lp = L(p);
 
     xt::xtensor<double, 2> Lp_first_bock = xt::view(Lp, xt::range(0, K), xt::range(0, mp1));
-    xt::xtensor<double, 2> Lp_second_bock = xt::view(Lp, xt::range(0, K), xt::range(mp1, 2*mp1));
+    xt::xtensor<double, 2> Lp_second_bock = xt::view(Lp, xt::range(0, K), xt::range(mp1, 2 * mp1));
 
     const auto Ju_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
 
     xt::xarray<double> sqrt_diag = xt::sqrt(xt::diagonal(Sigma));
 
-    xt::xtensor<double, 2> L_manual_first_bock =  xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(0, mp1)) + V)  * sqrt_diag(0);
-    xt::xtensor<double, 2> L_manual_second_bock =  xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(mp1, 2*mp1)) )  * sqrt_diag(1);
+    xt::xtensor<double, 2> L_manual_first_bock =
+            xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(0, mp1)) + V) * sqrt_diag(0);
+    xt::xtensor<double, 2> L_manual_second_bock =
+            xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(mp1, 2 * mp1))) * sqrt_diag(1);
 
     CHECK(xt::allclose(Lp_first_bock, L_manual_first_bock));
     CHECK(xt::allclose(Lp_second_bock, L_manual_second_bock));
-
 }
+
+TEST_CASE("∇ₚL: ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ ") {
+    const auto Lp = L(p);
+    const auto Jp_Lp = L.Jacobian(p);
+    const auto Jp_JUgp = xt::reshape_view(Jp_Ju_g(p), {D * K, D * mp1, J});
+
+    for (int i = 0; i < J; ++i) {
+        const auto t1 = xt::linalg::kron(xt::eye(D), V);
+        const auto t2 = xt::view(Jp_JUgp, xt::all(), xt::all(), i) + t1;
+
+        const xt::xtensor<double, 2> Jp_i_manual = xt::eval(xt::linalg::dot(t2, xt::linalg::kron(Sigma, xt::eye(mp1))));
+        const xt::xtensor<double, 2> Jp_i = xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(), i));
+
+        CHECK(xt::allclose(Jp_i_manual, Jp_i));
+    }
+}
+
 
