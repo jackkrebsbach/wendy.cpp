@@ -41,7 +41,7 @@ const auto Jp_Ju_f = build_H_f(Jp_Ju_f_symbolic, D, J);
 const auto Jp_Jp_Ju_f = build_T_f(Jp_Jp_Ju_f_symbolic, D, J);
 
 
-xt::xtensor<double, 2> integrate_(
+static xt::xtensor<double, 2> integrate_(
     const std::vector<double> &p,
     const xt::xtensor<double, 1> &u0,
     const double t0, const double t1, int npoints,
@@ -290,8 +290,6 @@ TEST_CASE("Jp_Jp_Ju_g_functor computes correct high dimensional Hessian with res
 
     const auto Jp_Jp_Ju_gp = xt::reshape_view(Jp_Jp_Ju_g(p), {K * D, mp1 * D, J, J});
     // ∇ₚ∇ₚ∇ᵤg(p) ∈ ℝ^(K*D x mp1*D x J x J)
-
-    std::cout << xt::eval(xt::view(Jp_Jp_Ju_gp, 0, mp1 * D - 1, 1, xt::all())) << std::endl;
 
     CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,0) == doctest::Approx(x[0])); // 𝜕p_1𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_1𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
     CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,1) == doctest::Approx(x[1])); // 𝜕p_2𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_2𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}

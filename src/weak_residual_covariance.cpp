@@ -30,18 +30,19 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_JU_g.grad2_len;
 
-    const auto sqrt_Sigma = xt::linalg::cholesky(Sigma); // Precompute square root of Sigma (Sigma is diagonal)
+    const auto sqrt_Sigma = xt::diag(xt::sqrt(xt::diagonal(Sigma))); // Precompute square root of Sigma (Sigma is diagonal)
 
     sqrt_Sigma_I_mp1 = xt::linalg::kron(sqrt_Sigma, xt::eye(mp1));
     // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
-    phi_prime_I_D = xt::linalg::kron(V_prime, xt::eye(D)); // ϕ'x I_d
+    phi_prime_I_D = xt::linalg::kron( xt::eye(D), V_prime); // ϕ'x I_d
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
 xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
-    const auto JU_gp = xt::reshape_view(JU_g(p), {D * K, D * mp1}); // (K*D, D*Mp1)
+    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // (K*D, D*Mp1)
+
 
     assert((JU_gp.shape() == phi_prime_I_D.shape()) && JU_gp.shape()[1] == sqrt_Sigma_I_mp1.shape()[0]);
 
