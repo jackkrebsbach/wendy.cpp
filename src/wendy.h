@@ -2,7 +2,6 @@
 #define WENDY_H
 
 #include "weak_residual.h"
-#include <xtensor/views/xview.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
@@ -69,8 +68,6 @@ public:
     void build_full_test_function_matrices();
 
     void build_objective_function() const;
-
-    void log_details() const;
 
     [[nodiscard]] const xt::xtensor<double, 2> &getU() const { return this->U; }
     [[nodiscard]] const xt::xtensor<double, 2> &getV() const { return this->V; }

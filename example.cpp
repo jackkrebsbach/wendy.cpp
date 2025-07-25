@@ -1,8 +1,6 @@
 #include "src/wendy.h"
-#include "src/logger.h"
 #include <vector>
 #include <string>
-#include <xtensor/containers/xarray.hpp>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
 #include <random>
@@ -66,23 +64,24 @@ std::vector<std::vector<double> > add_noise(
 }
 
 int main() {
-    spdlog::set_level(spdlog::level::debug);
-    spdlog::set_pattern("[%^%l%$] %v");
 
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
+    std::vector<double> p_perturbed = {2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 50;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
+
     constexpr double noise_ratio = 0.05;
-    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
+
+    const auto u_noisy = integrate_goodwin(u0, p_star, t0, t1, num_samples);
     // const auto u_noisy = add_noise(u_star, noise_ratio);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
     std::vector<double> u_flat;
-    for (const auto &row: u_star) {
+    for (const auto &row: u_noisy) {
         u_flat.insert(u_flat.end(), row.begin(), row.end());
     }
 
@@ -97,14 +96,13 @@ int main() {
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     const std::vector<double> p0(p_star.begin(), p_star.end());
     try {
-       logger->set_level(spdlog::level::debug);
 
-       Wendy wendy(system_eqs, U, p0, tt);
+       Wendy wendy(system_eqs, U, p_perturbed, tt);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 
     } catch (const std::exception &e) {
-        logger->error("Exception occurred: {}", e.what());
+        std::cout << "Exception occurred: {}" << e.what() << std::endl;
     }
     return 0;
 }

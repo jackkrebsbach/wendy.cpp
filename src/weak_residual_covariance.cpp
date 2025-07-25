@@ -1,5 +1,4 @@
 #include "utils.h"
-#include "logger.h"
 #include "weak_residual_covariance.h"
 #include "weak_residual.h"
 #include <xtensor/containers/xtensor.hpp>

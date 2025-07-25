@@ -1,17 +1,18 @@
 #include "symbolic_utils.h"
 #include "utils.h"
 #include "wendy.h"
-#include "logger.h"
 #include "test_function.h"
 #include "objective/mle.h"
+#include "optimization/ceres.h"
 
-#include <symengine/expression.h>
+#include <exprtk.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <fmt/ranges.h>
+#include <chrono>
+#include <iostream>
+#include <vector>
+#include <iomanip>
 
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
@@ -124,7 +125,7 @@ void Wendy::build_full_test_function_matrices() {
     auto K = std::min({k1, k2, k_max});
 
 
-    logger->info("Condition Number is now: {}", condition_numbers[K]);
+    std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
 
     this->V = xt::view(Vᵀ, xt::range(0, K), xt::all());
 
@@ -186,39 +187,28 @@ void Wendy::build_objective_function() const {
 
     const auto S_inv_r = S_inv_r_functor(L, g, b);
 
-
-    // weak negative log-likelihood as a loss function
     const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
 
-    const auto f = [&](const std::vector<double> &p) { return mle(p); }; // f
-    const auto J_f = [&](const std::vector<double> &p) { return mle.Jacobian(p); }; // ∇f
-    const auto H_f = [&](const std::vector<double> &p) { return mle.Hessian(p); }; // Hf (Hessian of f)
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto hessian_result = Jp_Jp_JU_g(p0);
+    auto end_time = std::chrono::high_resolution_clock::now();
 
-    // print_vector(J_f(p0));
-    print_matrix(H_f(p0));
-}
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    std::cout << "Hessian computation took: " << duration.count() << " ms" << std::endl;
 
-void Wendy::log_details() const {
-    logger->info("Wendy class details:");
-    logger->info("  D (Number of state variables): {}", D);
-    logger->info("  J (Number of parameters): {}", J);
-
-    logger->info("  sym_system (Symbolic system expressions):");
-    logger->info("    Size: {}", f_symbolic.size());
-    for (size_t i = 0; i < f_symbolic.size(); ++i) {
-        logger->info("      [{}]: {}", i, str(f_symbolic[i]));
-    }
-
-    logger->info("  sym_system_jac (Symbolic Jacobian):");
-    logger->info("    Size: {}", Ju_f_symbolic.size());
-    for (size_t i = 0; i < Ju_f_symbolic.size(); ++i) {
-        std::string row;
-        for (size_t j = 0; j < Ju_f_symbolic[i].size(); ++j) {
-            row += str(Ju_f_symbolic[i][j]);
-            if (j < Ju_f_symbolic[i].size() - 1)
-                row += ", ";
-        }
-        logger->info("      Row {} (size {}): {}", i, Ju_f_symbolic[i].size(), row);
-    }
+    // MyMLEProblem problem(mle);
+    //
+    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    //
+    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    // auto initial_state = cppoptlib::function::FunctionState(x_init);
+    //
+    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+    //
+    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    //
+    // std::cout << "\nSolver finished!" << std::endl;
+    // std::cout << "Final Status: " << solver_state.status << std::endl;
+    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 }
 

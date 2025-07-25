@@ -2,18 +2,15 @@
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor/core/xmath.hpp>
-#include <xtensor/reducers/xnorm.hpp>
 #include <fftw3.h>
 #include <vector>
 #include <complex>
-#include <ranges>
 
 xt::xarray<std::complex<double> >
 calculate_fft(const xt::xarray<double> &data) {
     int nrows = static_cast<int>(data.shape()[0]);
     int ncols = static_cast<int>(data.shape()[1]);
     int nfreq = ncols / 2 + 1;
-
 
     xt::xarray<std::complex<double> > f_hat = xt::zeros<std::complex<double> >({nrows, nfreq});
 

@@ -7,46 +7,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(GLOB_RECURSE WENDY_SOURCES src/*.cpp)
 list(APPEND WENDY_SOURCES example.cpp)
 
-find_package(spdlog REQUIRED)
-find_package(xtensor REQUIRED)
-
 add_executable(example ${WENDY_SOURCES})
 
-target_include_directories(example PRIVATE /opt/homebrew/Caskroom/miniforge/base/include)
-target_link_directories(example PRIVATE /opt/homebrew/lib)
+find_library(FLINT_LIBRARY flint REQUIRED)
+find_library(MPFR_LIBRARY mpfr REQUIRED)
+find_library(GMP_LIBRARY gmp REQUIRED)
+find_library(FFTW3_LIBRARY fftw3 REQUIRED)
 
-# For BLAS and LAPACK
-# https://xtensor-blas.readthedocs.io/en/latest/performance.html#perf-and-link
-add_definitions(-DHAVE_CBLAS=1)
-
-if (WIN32)
-    find_package(OpenBLAS REQUIRED)
-    set(BLAS_LIBRARIES ${CMAKE_INSTALL_PREFIX}${OpenBLAS_LIBRARIES})
-else()
-    find_package(BLAS REQUIRED)
-    find_package(LAPACK REQUIRED)
-endif()
-
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_package(xtensor REQUIRED)
+find_package(symengine REQUIRED)
+find_package(xtensor-blas REQUIRED)
 find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(example PRIVATE OpenMP::OpenMP_CXX)
-endif()
+find_package(Eigen3 REQUIRED)
 
-message(STATUS "BLAS VENDOR:    " ${BLA_VENDOR})
-message(STATUS "BLAS LIBRARIES: " ${BLAS_LIBRARIES})
+include_directories(external/CppNumericalSolvers/include)
+include_directories(external/exprtk)
 
 target_link_libraries(example
         PRIVATE
         symengine
-        flint
-        mpfr
-        gmp
-        spdlog::spdlog
-        fmt::fmt
-        fftw3
         xtensor
+        xtensor-blas
+        Eigen3::Eigen
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
+        ${FLINT_LIBRARY}
+        ${MPFR_LIBRARY}
+        ${GMP_LIBRARY}
+        ${FFTW3_LIBRARY}
 )
 
-add_subdirectory(test)
