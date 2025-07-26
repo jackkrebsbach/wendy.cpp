@@ -22,8 +22,9 @@ find_package(xtensor-blas REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-include_directories(external/CppNumericalSolvers/include)
-include_directories(external/exprtk)
+add_library(CppNumericalSolvers INTERFACE)
+target_include_directories(CppNumericalSolvers SYSTEM INTERFACE external/CppNumericalSolvers/include)
+
 
 target_link_libraries(example
         PRIVATE
@@ -31,6 +32,7 @@ target_link_libraries(example
         xtensor
         xtensor-blas
         Eigen3::Eigen
+        CppNumericalSolvers
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
         ${FLINT_LIBRARY}

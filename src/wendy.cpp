@@ -5,7 +5,6 @@
 #include "objective/mle.h"
 #include "optimization/ceres.h"
 
-#include <exprtk.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -13,6 +12,27 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+
+std::vector<double> gradient_4th_order(
+    const std::function<double(const std::vector<double>&)>& f,
+    const std::vector<double>& x,
+    double h = 1e-5
+) {
+    const size_t n = x.size();
+    std::vector<double> grad(n);
+
+    for (size_t i = 0; i < n; ++i) {
+        std::vector<double> xp2h = x, xph = x, xmh = x, xm2h = x;
+        xp2h[i] += 2*h;
+        xph[i]  += h;
+        xmh[i]  -= h;
+        xm2h[i] -= 2*h;
+
+        grad[i] = (-f(xp2h) + 8*f(xph) - 8*f(xmh) + f(xm2h)) / (12*h);
+    }
+
+    return grad;
+}
 
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
@@ -50,6 +70,90 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     // Variance of the data
     Sigma(xt::diag(xt::ones<double>({D}))) {
+}
+
+
+
+bool is_symmetric(const std::vector<std::vector<double> > &H, double tol = 1e-10) {
+    const size_t n = H.size();
+    for (size_t i = 0; i < n; ++i) {
+        if (H[i].size() != n) return false; // Not square
+        for (size_t j = 0; j < n; ++j) {
+            if (std::abs(H[i][j] - H[j][i]) > tol) {
+                std::cout << "Non-symmetric at (" << i << "," << j << "): "
+                        << H[i][j] << " vs " << H[j][i] << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void print_matrix(const std::vector<std::vector<double> > &mat, const int precision = 1) {
+    const size_t n = mat.size();
+    for (size_t i = 0; i < n; ++i) {
+        for (const double j: mat[i]) {
+            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void print_vector(const std::vector<double>& vec, const int precision = 1) {
+    for (const double val : vec) {
+        std::cout << std::setw(precision + 6)
+                  << std::setprecision(precision)
+                  << std::fixed
+                  << val << " ";
+    }
+    std::cout << std::endl;
+}
+
+
+void Wendy::build_objective_function() const {
+    const auto g = g_functor(F, V);
+    const auto JU_g = J_g_functor(U, tt, V, Ju_f);
+    const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
+    const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
+    const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
+    const auto Jp_Jp_JU_g = T_g_functor(U, tt, V, Jp_Jp_JU_f);
+
+    const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
+
+    const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+
+    const auto S_inv_r = S_inv_r_functor(L, g, b);
+
+    const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
+
+    const auto analytical_jacobian = mle.Jacobian(p0);
+
+    std::cout <<"\n Analytical" <<  std::endl;
+
+    for (const auto& v : analytical_jacobian) std::cout << v << " ";
+    std::cout << std::endl;
+
+    std::cout <<"\n Finite" <<  std::endl;
+
+    const auto finite_jacobian = gradient_4th_order(mle, p0);
+
+    for (const auto& v : finite_jacobian) std::cout << v << " ";
+    std::cout << std::endl;
+
+    // MyMLEProblem problem(mle);
+    //
+    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    //
+    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    // auto initial_state = cppoptlib::function::FunctionState(x_init);
+    //
+    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+    //
+    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    //
+    // std::cout << "\nSolver finished!" << std::endl;
+    // std::cout << "Final Status: " << solver_state.status << std::endl;
+    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 }
 
 
@@ -136,79 +240,3 @@ void Wendy::build_full_test_function_matrices() {
 
     this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse, UtV_prime), xt::range(0, K), xt::all());
 }
-
-bool is_symmetric(const std::vector<std::vector<double> > &H, double tol = 1e-10) {
-    const size_t n = H.size();
-    for (size_t i = 0; i < n; ++i) {
-        if (H[i].size() != n) return false; // Not square
-        for (size_t j = 0; j < n; ++j) {
-            if (std::abs(H[i][j] - H[j][i]) > tol) {
-                std::cout << "Non-symmetric at (" << i << "," << j << "): "
-                        << H[i][j] << " vs " << H[j][i] << std::endl;
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-void print_matrix(const std::vector<std::vector<double> > &mat, const int precision = 1) {
-    const size_t n = mat.size();
-    for (size_t i = 0; i < n; ++i) {
-        for (const double j: mat[i]) {
-            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void print_vector(const std::vector<double>& vec, const int precision = 1) {
-    for (const double val : vec) {
-        std::cout << std::setw(precision + 6)
-                  << std::setprecision(precision)
-                  << std::fixed
-                  << val << " ";
-    }
-    std::cout << std::endl;
-}
-
-
-void Wendy::build_objective_function() const {
-    const auto g = g_functor(F, V);
-    const auto JU_g = J_g_functor(U, tt, V, Ju_f);
-    const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
-    const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
-    const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
-    const auto Jp_Jp_JU_g = T_g_functor(U, tt, V, Jp_Jp_JU_f);
-
-    const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
-
-    const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
-
-    const auto S_inv_r = S_inv_r_functor(L, g, b);
-
-    const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
-
-    auto start_time = std::chrono::high_resolution_clock::now();
-    auto hessian_result = Jp_Jp_JU_g(p0);
-    auto end_time = std::chrono::high_resolution_clock::now();
-
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    std::cout << "Hessian computation took: " << duration.count() << " ms" << std::endl;
-
-    // MyMLEProblem problem(mle);
-    //
-    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
-    //
-    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
-    // auto initial_state = cppoptlib::function::FunctionState(x_init);
-    //
-    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
-    //
-    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
-    //
-    // std::cout << "\nSolver finished!" << std::endl;
-    // std::cout << "Final Status: " << solver_state.status << std::endl;
-    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
-}
-
