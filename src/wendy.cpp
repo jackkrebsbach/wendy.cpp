@@ -36,7 +36,7 @@ std::vector<double> gradient_4th_order(
 
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_) :
+             const xt::xtensor<double, 1> &tt_, bool compute_svd_) :
     // Data
     tt(tt_),
     U(U_),
@@ -69,49 +69,18 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     ),
 
     // Variance of the data
-    Sigma(xt::diag(xt::ones<double>({D}))) {
-}
+    Sigma(xt::diag(0.05*xt::ones<double>({D}))),
+    compute_svd(compute_svd_) {
 
-
-
-bool is_symmetric(const std::vector<std::vector<double> > &H, double tol = 1e-10) {
-    const size_t n = H.size();
-    for (size_t i = 0; i < n; ++i) {
-        if (H[i].size() != n) return false; // Not square
-        for (size_t j = 0; j < n; ++j) {
-            if (std::abs(H[i][j] - H[j][i]) > tol) {
-                std::cout << "Non-symmetric at (" << i << "," << j << "): "
-                        << H[i][j] << " vs " << H[j][i] << std::endl;
-                return false;
-            }
-        }
     }
-    return true;
-}
-
-void print_matrix(const std::vector<std::vector<double> > &mat, const int precision = 1) {
-    const size_t n = mat.size();
-    for (size_t i = 0; i < n; ++i) {
-        for (const double j: mat[i]) {
-            std::cout << std::setw(precision + 6) << std::setprecision(precision) << std::fixed << j << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void print_vector(const std::vector<double>& vec, const int precision = 1) {
-    for (const double val : vec) {
-        std::cout << std::setw(precision + 6)
-                  << std::setprecision(precision)
-                  << std::fixed
-                  << val << " ";
-    }
-    std::cout << std::endl;
-}
 
 
-void Wendy::build_objective_function() const {
+
+
+
+void Wendy::build_objective_function() {
     const auto g = g_functor(F, V);
+
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
     const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
     const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
@@ -120,7 +89,7 @@ void Wendy::build_objective_function() const {
 
     const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
 
-    const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+    const auto b = xt::eval(-1*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
 
     const auto S_inv_r = S_inv_r_functor(L, g, b);
 
@@ -140,20 +109,22 @@ void Wendy::build_objective_function() const {
     for (const auto& v : finite_jacobian) std::cout << v << " ";
     std::cout << std::endl;
 
-    // MyMLEProblem problem(mle);
-    //
-    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
-    //
-    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
-    // auto initial_state = cppoptlib::function::FunctionState(x_init);
-    //
-    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
-    //
-    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
-    //
-    // std::cout << "\nSolver finished!" << std::endl;
-    // std::cout << "Final Status: " << solver_state.status << std::endl;
-    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+    MyMLEProblem problem(mle);
+
+    Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+
+    cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    auto initial_state = cppoptlib::function::FunctionState(x_init);
+
+    solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+
+    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+
+    std::cout << "\nSolver finished!" << std::endl;
+    std::cout << "Final Status: " << solver_state.status << std::endl;
+    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+
+    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
 }
 
 
@@ -175,14 +146,20 @@ void Wendy::build_full_test_function_matrices() {
         max_radius = max_radius_for_interior;
     }
 
-    const int min_radius_int_error = find_min_radius_int_error(U, tt, min_radius, max_radius);
+    const auto [ix, errors, _] = find_min_radius_int_error(U, tt, min_radius, max_radius);
 
-    radii = radii * min_radius_int_error;
+    const int min_radius_int_error = _[ix];
+
+    this->min_radius_errors = errors;
+    this->min_radius_radii = _;
+    this->min_radius_ix = ix;
+    this->min_radius = min_radius_int_error;
+
+    radii = radii * 3;
     radii = xt::filter(radii, radii < max_radius);
 
-    enum TestFunctionOrder { VALUE = 0, DERIVATIVE = 1 };
-    auto V = build_full_test_function_matrix(tt, radii, TestFunctionOrder::VALUE);
-    auto V_prime = build_full_test_function_matrix(tt, radii, TestFunctionOrder::DERIVATIVE);
+    auto V = build_full_test_function_matrix(tt, radii, 0);
+    auto V_prime = build_full_test_function_matrix(tt, radii, 1);
 
     if (!compute_svd) {
         this->V = V;
@@ -194,7 +171,7 @@ void Wendy::build_full_test_function_matrices() {
 
     constexpr bool COMPUTE_FULL_MATRICES = false;
     const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
-    const xt::xtensor<double, 2> U = std::get<0>(SVD);
+    const xt::xtensor<double, 2> U_ = std::get<0>(SVD);
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
     const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
 
@@ -220,7 +197,7 @@ void Wendy::build_full_test_function_matrices() {
         return x < test_function_params.max_test_fun_condition_number;
     });
     auto k2 = find_last(info_numbers, [this](const double x) {
-        return x > test_function_params.min_test_fun_info_number;
+        return x < test_function_params.min_test_fun_info_number;
     });
 
     if (k1 == -1) { k1 = std::numeric_limits<int>::max(); }
@@ -228,15 +205,14 @@ void Wendy::build_full_test_function_matrices() {
 
     auto K = std::min({k1, k2, k_max});
 
-
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
 
     this->V = xt::view(Vᵀ, xt::range(0, K), xt::all());
 
     // TODO: Compare this to the Fourier Transformation
     // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-    const auto S_psuedo_inverse = xt::diag(1.0 / singular_values);
-    const auto UtV_prime = xt::linalg::dot(xt::transpose(U), V_prime);
+    const auto S_pseudo_inverse = xt::diag(1.0 / singular_values);
+    const auto UtV_prime = xt::linalg::dot(xt::transpose(U_), V_prime);
 
-    this->V_prime = xt::view(xt::linalg::dot(S_psuedo_inverse, UtV_prime), xt::range(0, K), xt::all());
+    this->V_prime = xt::view(xt::linalg::dot(S_pseudo_inverse, UtV_prime), xt::range(0, K), xt::all());
 }

@@ -22,6 +22,7 @@ struct MLE {
     size_t mp1;
     size_t D;
     size_t J;
+    double constant_term;
 
     MLE(
         const xt::xtensor<double, 2> &U_,

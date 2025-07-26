@@ -40,7 +40,6 @@ struct CovarianceFactor {
     xt::xtensor<double, 4> Hessian(const std::vector<double> &p) const;
 };
 
-
 // S(p)^-1(g(p) - b) is a function of the parameters p⃗
 struct S_inv_r_functor {
     const CovarianceFactor &L;
@@ -57,7 +56,8 @@ struct S_inv_r_functor {
     xt::xtensor<double, 1> operator()(const std::vector<double> &p) const {
         const auto Lp = L(p);
         const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
-        const auto x = xt::linalg::solve(S, g(p) - b); // Solve Sx = g(p) - b;
+        const auto r = g(p) - b;
+        const auto x = xt::linalg::solve(S, r); // Solve Sx = g(p) - b;
         return (x);
     }
 };

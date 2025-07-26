@@ -29,11 +29,8 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_JU_g.grad2_len;
 
-    const auto sqrt_Sigma = xt::diag(xt::sqrt(xt::diagonal(Sigma))); // Precompute square root of Sigma (Sigma is diagonal)
-
-    sqrt_Sigma_I_mp1 = xt::linalg::kron(sqrt_Sigma, xt::eye(mp1));
-    // (ΣxI)^1/2 same as Cholesky factorization of Σ∘I because Σ is diagonal
-    phi_prime_I_D = xt::linalg::kron( xt::eye(D), V_prime); // ϕ'x I_d
+    sqrt_Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
+    phi_prime_I_D = xt::linalg::kron( xt::eye(D), V_prime); // I_d x ϕ'
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
@@ -41,7 +38,6 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
     const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // (K*D, D*Mp1)
-
 
     assert((JU_gp.shape() == phi_prime_I_D.shape()) && JU_gp.shape()[1] == sqrt_Sigma_I_mp1.shape()[0]);
 
@@ -51,7 +47,7 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
 
 // ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) const {
-    const auto Jp_JU_gp = xt::reshape_view(Jp_JU_g(p), {D * K, D * mp1, J});
+    const auto Jp_JU_gp = xt::reshape_view(Jp_JU_g(p), {D * K, mp1 * D, J});
     const auto A = Jp_JU_gp + xt::broadcast(xt::expand_dims(phi_prime_I_D, 2), {D * K, D * mp1, J});
     // shape: (D*K, D*mp1, J)
     const auto &B = sqrt_Sigma_I_mp1; // shape: (D*mp1 D*mp1)

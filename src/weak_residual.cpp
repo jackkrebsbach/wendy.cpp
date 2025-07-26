@@ -50,7 +50,6 @@ xt::xtensor<double, 2> J_f_functor::operator()(
     inputs.emplace_back(t);
     xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
 
-    #pragma omp parallel for collapse(2)
     for (std::size_t i = 0; i < nrows; ++i) {
         for (std::size_t j = 0; j < ncols; ++j) {
             out(i, j) = dx[i][j]->call(inputs);
@@ -79,7 +78,6 @@ xt::xtensor<double, 3> H_f_functor::operator()(
     inputs.emplace_back(t);
     xt::xtensor<double, 3> out = xt::empty<double>({nrows, ncols, ndepth});
 
-     #pragma omp parallel for collapse(3)
     for (std::size_t i = 0; i < nrows; ++i) {
         for (std::size_t j = 0; j < ncols; ++j) {
             for (std::size_t k = 0; k < ndepth; ++k) {
@@ -113,7 +111,6 @@ xt::xtensor<double, 4> T_f_functor::operator()(
     xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
 
 
-    #pragma omp parallel for collapse(4)
     for (std::size_t i = 0; i < nrows; ++i) {
         for (std::size_t j = 0; j < ncols; ++j) {
             for (std::size_t k = 0; k < ndepth; ++k) {
@@ -139,7 +136,6 @@ F_functor::F_functor(
 xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const {
     auto F_eval = xt::zeros_like(U);
 
-    #pragma omp parallel for
     for (int i = 0; i < U.shape()[0]; ++i) {
         auto u = xt::view(U, i, xt::all());
         auto t = tt[i];
@@ -178,7 +174,6 @@ xt::xtensor<double, 4> J_g_functor::operator()(
 ) const {
     xt::xtensor<double, 3> J_F({mp1, D, grad_len}); // Compute J_F: (mp1, D, gradient_len)
 
-    #pragma omp parallel for
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
         const auto &u = xt::view(U, i, xt::all());
@@ -211,7 +206,6 @@ xt::xtensor<double, 5> H_g_functor::operator()(
     // Compute H_F with dimension (mp1, D, len(∇₁), len(∇₂))
     xt::xtensor<double, 4> H_F({mp1, D, grad1_len, grad2_len});
 
-    #pragma omp parallel for
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
         const auto &u = xt::view(U, i, xt::all());
@@ -220,7 +214,7 @@ xt::xtensor<double, 5> H_g_functor::operator()(
     //Compute Hg                               // V_expanded has dimension (K, mp1, 1,       1, 1)
     const auto H_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂)
     const auto Hg = V_expanded * H_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂))
-    const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 3, 1, 4}); // (K, D, mp1, len(∇₁), len(∇₂))
+    const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 1, 3, 4}); // (K, D,len(∇₁),mp1,len(∇₂))
     return Hgt;
 }
 
@@ -246,7 +240,6 @@ xt::xtensor<double, 6> T_g_functor::operator()(
     // Compute H_F with dimension (mp1, D, len(∇₁), len(∇₂) len(∇₃))
     xt::xtensor<double, 5> H_F({mp1, D, grad1_len, grad2_len, grad3_len});
 
-    #pragma omp parallel for
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
         const auto &u = xt::view(U, i, xt::all());
@@ -255,6 +248,6 @@ xt::xtensor<double, 6> T_g_functor::operator()(
     //Compute Tg                                                         // V_expanded has dimension (K, mp1, 1, 1, 1)
     const auto T_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
     const auto Tg = V_expanded * T_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
-    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
+    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 1, 3, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
     return Tgt;
 }

@@ -5,9 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE WENDY_SOURCES src/*.cpp)
-list(APPEND WENDY_SOURCES example.cpp)
+list(APPEND WENDY_SOURCES example_logistic.cpp)
 
-add_executable(example ${WENDY_SOURCES})
+add_executable(example_logistic ${WENDY_SOURCES})
+
+target_include_directories(example_logistic PRIVATE /opt/homebrew/include
+        /opt/homebrew/Caskroom/miniforge/base/include)
+
+target_link_directories(example_logistic PRIVATE /opt/homebrew/lib)
 
 find_library(FLINT_LIBRARY flint REQUIRED)
 find_library(MPFR_LIBRARY mpfr REQUIRED)
@@ -22,16 +27,20 @@ find_package(xtensor-blas REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+find_path(FFTW3_INCLUDE_DIR fftw3.h REQUIRED PATHS /opt/homebrew/include /usr/local/include)
+target_include_directories(example_logistic PRIVATE ${FFTW3_INCLUDE_DIR})
+
+
 add_library(CppNumericalSolvers INTERFACE)
 target_include_directories(CppNumericalSolvers SYSTEM INTERFACE external/CppNumericalSolvers/include)
 
-
-target_link_libraries(example
+target_link_libraries(example_logistic
         PRIVATE
         symengine
         xtensor
         xtensor-blas
         Eigen3::Eigen
+        fftw3
         CppNumericalSolvers
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
@@ -40,4 +49,4 @@ target_link_libraries(example
         ${GMP_LIBRARY}
         ${FFTW3_LIBRARY}
 )
-
+add_subdirectory(test)

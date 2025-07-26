@@ -1,4 +1,7 @@
 #include "mle.h"
+
+#include <numbers>
+
 #include "../utils.h"
 
 #include <xtensor/containers/xadapt.hpp>
@@ -26,25 +29,25 @@ MLE::MLE(
    JU_g(Ju_g_), Jp_g(Jp_g_), Jp_JU_g(Jp_JU_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_JU_g(Jp_Jp_JU_g_),
    S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
     J = Jp_JU_g.grad2_len;
+    constant_term = K*D*std::log(2*std::numbers::pi);
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
     const auto Lp = L(p);
     const auto r = g(p) - b;
-    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+    const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
     const auto x = xt::linalg::solve(S, r); // Solve Sy = g(p) - b;
     const auto quad = xt::linalg::dot(xt::transpose(r), x)();
     const auto logdetS = std::log(xt::linalg::det(S));
-    const auto wnll = 0.5*(logdetS + quad);
+    const auto wnll = 0.5*(logdetS + quad + constant_term);
     return (wnll);
 }
 
 std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
-    // Precomputions
+    // Precomputations
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
     const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (covariance)
-    const auto F = xt::linalg::cholesky(S); // Cholesky factor of covariance
 
     const auto r = g(p) - b; // r(p) = g(p) - b
     const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
@@ -66,22 +69,21 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
         const auto JU_gp_j = xt::view(JU_gp, xt::all(), j);
 
         // Compute  S(p)^(-1)𝜕ⱼS(p)
-        const auto X = solve_cholesky(F,Jp_Sp_j );
+        const auto X = xt::linalg::solve(S, Jp_Sp_j);
         // Compute  𝜕ⱼS(p)^(-1) = -S(p)^-1𝜕ⱼS(p)S(p)^-1 from L and S(p)^-1𝜕ⱼS(p)
-        const auto Jp_Sp_inv= -1*solve_cholesky(F, xt::transpose(X));
 
-        const double prt1 = 0.5 * xt::linalg::trace(X)();
-        const double prt2 = xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
-        const double prt3 = 0.5*xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Sp_inv), r)();
+        const double prt1 = xt::linalg::trace(X)();
+        const double prt2 = 2*xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
+        const double prt3 = -1*xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_Sp_j), S_inv_rp)();
 
-        J_wnn[j] = prt1 + prt2 + prt3;
+        J_wnn[j] = 0.5*(prt1 + prt2 + prt3);
     }
 
     return (J_wnn);
 }
 
 std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) const {
-    // Precomputions
+    // Precomputations
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
     const auto Hp_Lp = L.Hessian(p); // ∇ₚ∇ₚL(p)

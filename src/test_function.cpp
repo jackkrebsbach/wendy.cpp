@@ -123,7 +123,6 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
     xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
     xt::xtensor<double, 2> V = xt::zeros<double>({indices.size(), len_tt});
 
-    // #pragma omp parallel for
     for (size_t i = 0; i < indices.size() - 1; i++) {
         const auto &support_indices = indices[i];
         auto n_support = support_indices.size();
@@ -138,7 +137,6 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> 
     // Vector containing test matrices for one radius
     std::vector<xt::xtensor<double, 2> > test_matrices(radii.shape()[0]);
 
-    // #pragma omp parallel for
     for (int i = 0; i < radii.shape()[0]; ++i) {
         // Build the test matrix for one radius
         const xt::xtensor<double, 2> V_k = build_test_function_matrix(tt, radii[i], order);
@@ -147,7 +145,6 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> 
     xt::xtensor<double, 2> V_full = test_matrices[0];
 
     for (size_t i = 1; i < test_matrices.size(); ++i) {
-        //Subtle bug: Must wrap concatenation in xt::xarray<double>(...) otherwise we get data loss
         V_full = xt::xtensor<double, 2>(xt::concatenate(xt::xtuple(V_full, test_matrices[i]), 0));
     }
 
@@ -155,7 +152,7 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> 
 }
 
 
-int find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
+std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
                               double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
     auto Mp1 = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
@@ -186,6 +183,6 @@ int find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
     }
 
     auto ix = get_corner_index(errors);
-    return radii[ix];
+    return std::make_tuple(ix, errors, radii);
 }
 

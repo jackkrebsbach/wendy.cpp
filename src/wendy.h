@@ -2,10 +2,8 @@
 #define WENDY_H
 
 #include "weak_residual.h"
-#include <symengine/expression.h>
-#include <symengine/lambda_double.h>
-
 #include "weak_residual_covariance.h"
+#include <symengine/expression.h>
 
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
@@ -60,14 +58,22 @@ public:
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
-    bool compute_svd = true; // If true then the test function matrices are orthonormal
+    bool compute_svd = false; // If true then the test function matrices are orthonormal
+
+    std::vector<double> p_hat;
+
+    double min_radius{};
+    xt::xtensor<double,1> min_radius_errors;
+    xt::xtensor<double,1> min_radius_radii;
+    size_t min_radius_ix{};
+
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-          const xt::xtensor<double, 1> &tt_);
+          const xt::xtensor<double, 1> &tt_, bool compute_svd = true);
 
     void build_full_test_function_matrices();
 
-    void build_objective_function() const;
+    void build_objective_function();
 
     [[nodiscard]] const xt::xtensor<double, 2> &getU() const { return this->U; }
     [[nodiscard]] const xt::xtensor<double, 2> &getV() const { return this->V; }
