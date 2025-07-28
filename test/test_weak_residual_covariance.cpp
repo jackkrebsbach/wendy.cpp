@@ -123,8 +123,7 @@ TEST_CASE("∇ₚL: ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ ") {
     const auto Jp_JUgp = xt::reshape_view(Jp_Ju_g(p), {D * K, D * mp1, J});
 
     for (int i = 0; i < J; ++i) {
-        const auto t1 = xt::linalg::kron(xt::eye(D), V);
-        const auto t2 = xt::view(Jp_JUgp, xt::all(), xt::all(), i) + t1;
+        const auto t2 = xt::view(Jp_JUgp, xt::all(), xt::all(), i);
 
         const xt::xtensor<double, 2> Jp_i_manual = xt::eval(xt::linalg::dot(t2, xt::linalg::kron(Sigma, xt::eye(mp1))));
         const xt::xtensor<double, 2> Jp_i = xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(), i));
@@ -140,8 +139,7 @@ TEST_CASE("∇ₚ∇ₚL") {
 
     for (int i = 0; i < J; ++i) {
         for (int j = 0; j < J; ++j) {
-            const auto t1 = xt::linalg::kron(xt::eye(D), V);
-            const auto t2 = xt::view(Jp_Jp_JUgp, xt::all(), xt::all(), i, j) + t1;
+            const auto t2 = xt::view(Jp_Jp_JUgp, xt::all(), xt::all(), i, j);
 
             const xt::xtensor<double, 2> Hp_ji_manual = xt::eval(xt::linalg::dot(t2, xt::linalg::kron(Sigma, xt::eye(mp1))));
             const xt::xtensor<double, 2> Hp_L_ji = xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), i, j));

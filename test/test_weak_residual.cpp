@@ -319,17 +319,8 @@ TEST_CASE("g  functor") {
     const auto g = g_functor(F, V);
     const auto Fp = F(p);
     const auto gp = g(p);
-
-    // Manually compute V @ Fp and vectorize column-wise
-    xt::xarray<double> g_manual = xt::zeros<double>({K * D});
-    for (int j = 0; j < mp1; ++j) {
-        xt::xarray<double> F_col = xt::col(Fp, j);       // shape (D,)
-        xt::xarray<double> Vf = xt::linalg::dot(V, F_col); // shape (K,)
-        for (int i = 0; i < K; ++i) {
-            g_manual(j * K + i) = Vf(i);  // column-major flattening
-        }
-    }
-
+    const auto dot_result = xt::linalg::dot(V, Fp);
+    auto g_manual = xt::ravel<xt::layout_type::column_major>(dot_result);
     CHECK(xt::allclose(gp, g_manual));
 }
 

@@ -70,26 +70,26 @@ void Wendy::build_objective_function() {
     const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
 
 
-    const auto analytical_hessian = mle.Jacobian(p0);
-    const auto finite_hessian = gradient_4th_order(mle, p0);
+    const auto analytical_hessian = mle.Hessian(p0);
+    const auto finite_hessian = hessian_4th_order(mle, p0);
 
     std::cout << "\nAnalytical Hessian" << std::endl;
-    // for (const auto& row : analytical_hessian) {
-        for (const auto& val : analytical_hessian) //{
+    for (const auto& row : analytical_hessian) {
+        for (const auto& val : row) {
             std::cout << val << " ";
-        // }
+        }
         std::cout << std::endl; // Newline after each row
-    // }
+    }
 
     std::cout << std::endl;
 
     std::cout << "\n Finite Hessian" << std::endl;
-    // for (const auto& row : finite_hessian) {
-        for (const auto& val : finite_hessian) //{
+    for (const auto& row : finite_hessian) {
+        for (const auto& val : row) {
             std::cout << val << " ";
-        // }
-        // std::cout << std::endl; // Newline after each row
-    // }
+        }
+        std::cout << std::endl; // Newline after each row
+    }
 
     std::cout << std::endl;
 

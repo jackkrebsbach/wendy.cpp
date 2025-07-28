@@ -61,7 +61,7 @@ int main() {
     const std::vector<double> u0 = {0.01};
 
     constexpr double noise_ratio = 0.05;
-    constexpr int num_samples = 200;
+    constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
 
