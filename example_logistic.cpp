@@ -33,48 +33,39 @@ std::vector<std::vector<double> > integrate_(
     return result;
 }
 
-
-std::vector<std::vector<double> > add_noise(
-    const std::vector<std::vector<double> > &data,
+std::vector<std::vector<double>> add_noise(
+    const std::vector<std::vector<double>>& data,
     double noise_ratio) {
-    std::vector<std::vector<double> > noisy = data;
+    std::vector<std::vector<double>> noisy = data;
     int npoints = data.size();
     int dim = data[0].size();
 
-    std::vector<double> stddev(dim, 0.0);
-    for (int d = 0; d < dim; ++d) {
-        double mean = 0.0;
-        for (int i = 0; i < npoints; ++i) mean += data[i][d];
-        mean /= npoints;
-        for (int i = 0; i < npoints; ++i) stddev[d] += std::pow(data[i][d] - mean, 2);
-        stddev[d] = std::sqrt(stddev[d] / npoints);
-    }
-
     std::random_device rd;
     std::mt19937 gen(rd());
-    for (int d = 0; d < dim; ++d) {
-        std::normal_distribution<> dist(0,1);
-        for (int i = 0; i < npoints; ++i) {
-            noisy[i][d] += noise_ratio*dist(gen);
+    std::normal_distribution<> dist(0, 1);
+
+    for (int i = 0; i < npoints; ++i) {
+        for (int d = 0; d < dim; ++d) {
+            noisy[i][d] += noise_ratio * dist(gen);
         }
     }
     return noisy;
 }
 
+
 int main() {
 
     std::vector<double> p_star = {1.0, 1.0};
-    std::vector<double> p_perturbed = {0.5 ,0.5};
+    std::vector<double> p_perturbed = {1.5 ,1.5};
 
     const std::vector<double> u0 = {0.01};
 
-    constexpr int num_samples = 50;
-    constexpr double t0 = 0.0;
-    constexpr double t1 = 10.0;
-
     constexpr double noise_ratio = 0.05;
+    constexpr int num_samples = 100;
+    constexpr double t0 = 0.0;
+    constexpr double t1 = 1.0;
 
-    const auto u_star = integrate_(u0, p_star, t0, t1, num_samples);
+    const auto u_star = integrate_(u0, p_perturbed, t0, t1, num_samples);
 
     const auto u_noisy = add_noise(u_star, noise_ratio);
 
@@ -95,7 +86,7 @@ int main() {
     const std::vector<double> p0(p_perturbed.begin(), p_perturbed.end());
     try {
 
-       Wendy wendy(system_eqs, U, p0, tt);
+       Wendy wendy(system_eqs, U, p0, tt, true);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 

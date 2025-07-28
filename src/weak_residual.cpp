@@ -156,7 +156,6 @@ xt::xtensor<double, 1> g_functor::operator()(const std::vector<double> &p) const
 }
 
 // ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
-
 J_g_functor::J_g_functor(
     const xt::xtensor<double, 2> &U_,
     const xt::xtensor<double, 1> &tt_,
@@ -219,7 +218,6 @@ xt::xtensor<double, 5> H_g_functor::operator()(
 }
 
 // ∇∇∇g(p) with respect to three difference variables
-
 T_g_functor::T_g_functor(
     const xt::xtensor<double, 2> &U_,
     const xt::xtensor<double, 1> &tt_,
@@ -245,9 +243,9 @@ xt::xtensor<double, 6> T_g_functor::operator()(
         const auto &u = xt::view(U, i, xt::all());
         xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = T_f(p, u, t);
     }
-    //Compute Tg                                                         // V_expanded has dimension (K, mp1, 1, 1, 1)
+    //Compute Tg                                                        // V_expanded has dimension (K, mp1, 1, 1, 1)
     const auto T_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
     const auto Tg = V_expanded * T_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
-    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 1, 3, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
+    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
     return Tgt;
 }

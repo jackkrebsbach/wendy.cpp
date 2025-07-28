@@ -53,7 +53,6 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
     const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
-    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
     const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
@@ -66,17 +65,18 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
         // Extract partial information for each p_i from the gradients
         const auto Jp_Sp_j = xt::view(Jp_Sp, xt::all(), xt::all(), j);
         const auto Jp_gp_j = xt::view(Jp_gp, xt::all(), j);
-        const auto JU_gp_j = xt::view(JU_gp, xt::all(), j);
 
         // Compute  S(p)^(-1)𝜕ⱼS(p)
         const auto X = xt::linalg::solve(S, Jp_Sp_j);
         // Compute  𝜕ⱼS(p)^(-1) = -S(p)^-1𝜕ⱼS(p)S(p)^-1 from L and S(p)^-1𝜕ⱼS(p)
+        const auto Jp_Sp_inv= -1*xt::transpose(xt::linalg::solve(S, xt::transpose(X)));
 
-        const double prt1 = xt::linalg::trace(X)();
-        const double prt2 = 2*xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
-        const double prt3 = -1*xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_Sp_j), S_inv_rp)();
+        const double prt1 = 0.5 * xt::linalg::trace(X)();
+        const double prt2 = xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
+        const double prt3 = 0.5*xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Sp_inv), r)();
 
-        J_wnn[j] = 0.5*(prt1 + prt2 + prt3);
+        J_wnn[j] = prt1 + prt2 + prt3;
+
     }
 
     return (J_wnn);

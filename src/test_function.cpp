@@ -29,7 +29,7 @@ std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
 }
 
 auto test_function_derivative(const int radius, const double dt, const int order) {
-    const auto scale_factor = std::pow(radius * dt, -1 * order);
+    const auto scale_factor = std::pow(double(radius * dt), -1 * order);
     // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
     const SymEngine::RCP<const SymEngine::Symbol> t = SymEngine::symbol("t");
     const SymEngine::Expression expression = SymEngine::exp(
@@ -163,7 +163,6 @@ std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_err
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));
 
-    // #pragma omp parallel for
     for (int i = 0; i < radii.size(); ++i) {
         auto radius = static_cast<int>(radii[i]);
         auto V_r = build_test_function_matrix(tt, radius);

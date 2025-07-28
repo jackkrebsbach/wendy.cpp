@@ -35,6 +35,9 @@ std::vector<double> gradient_4th_order(
 }
 
 
+
+
+
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_, bool compute_svd_) :
     // Data
@@ -74,13 +77,9 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     }
 
-
-
-
-
 void Wendy::build_objective_function() {
-    const auto g = g_functor(F, V);
 
+    const auto g = g_functor(F, V);
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
     const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
     const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
@@ -98,33 +97,31 @@ void Wendy::build_objective_function() {
     const auto analytical_jacobian = mle.Jacobian(p0);
 
     std::cout <<"\n Analytical" <<  std::endl;
-
     for (const auto& v : analytical_jacobian) std::cout << v << " ";
     std::cout << std::endl;
 
     std::cout <<"\n Finite" <<  std::endl;
-
     const auto finite_jacobian = gradient_4th_order(mle, p0);
 
     for (const auto& v : finite_jacobian) std::cout << v << " ";
     std::cout << std::endl;
 
-    MyMLEProblem problem(mle);
-
-    Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
-
-    cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
-    auto initial_state = cppoptlib::function::FunctionState(x_init);
-
-    solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
-
-    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
-
-    std::cout << "\nSolver finished!" << std::endl;
-    std::cout << "Final Status: " << solver_state.status << std::endl;
-    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
-
-    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+    // MyMLEProblem problem(mle);
+    //
+    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    //
+    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    // auto initial_state = cppoptlib::function::FunctionState(x_init);
+    //
+    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+    //
+    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    //
+    // std::cout << "\nSolver finished!" << std::endl;
+    // std::cout << "Final Status: " << solver_state.status << std::endl;
+    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+    //
+    // p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
 }
 
 
@@ -155,7 +152,7 @@ void Wendy::build_full_test_function_matrices() {
     this->min_radius_ix = ix;
     this->min_radius = min_radius_int_error;
 
-    radii = radii * 3;
+    radii = radii * min_radius_int_error;
     radii = xt::filter(radii, radii < max_radius);
 
     auto V = build_full_test_function_matrix(tt, radii, 0);
@@ -206,6 +203,7 @@ void Wendy::build_full_test_function_matrices() {
     auto K = std::min({k1, k2, k_max});
 
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
+    std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
 
     this->V = xt::view(Vᵀ, xt::range(0, K), xt::all());
 
