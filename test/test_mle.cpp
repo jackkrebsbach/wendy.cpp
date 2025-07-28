@@ -7,6 +7,7 @@
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/generators/xrandom.hpp>
+#include <numbers>
 
 constexpr auto J = 5;
 constexpr auto D = 2;
@@ -147,7 +148,7 @@ TEST_CASE("Weak Negative Log Likelihood") {
     const auto x = xt::linalg::solve(S,r);
     const auto logdet = std::log(xt::linalg::det(S));
     const auto quad = xt::linalg::dot(r,x)();
-    const auto wnnl_manual = 0.5*(logdet + quad);
+    const auto wnnl_manual = 0.5*(logdet + quad + K*D*std::log(2*std::numbers::pi));
 
     CHECK(xt::isclose(wnll, wnnl_manual));
 

@@ -29,7 +29,8 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_JU_g.grad2_len;
 
-    sqrt_Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
+    Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
+
     phi_prime_I_D = xt::linalg::kron( xt::eye(D), V_prime); // I_d x ϕ'
 }
 
@@ -37,33 +38,31 @@ CovarianceFactor::CovarianceFactor(
 xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
-    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // (K*D, D*Mp1)
+    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1});
 
-    assert((JU_gp.shape() == phi_prime_I_D.shape()) && JU_gp.shape()[1] == sqrt_Sigma_I_mp1.shape()[0]);
+    assert((JU_gp.shape() == phi_prime_I_D.shape()) && JU_gp.shape()[1] == Sigma_I_mp1.shape()[0]);
 
-    const auto L = xt::linalg::dot((JU_gp + phi_prime_I_D), sqrt_Sigma_I_mp1);
+    const auto sum = xt::eval(JU_gp + phi_prime_I_D);
+
+    const auto L = xt::linalg::dot(sum, Sigma_I_mp1);
     return (L);
 };
 
 // ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) const {
+
     const auto Jp_JU_gp = xt::reshape_view(Jp_JU_g(p), {D * K, mp1 * D, J});
-    const auto A = Jp_JU_gp + xt::broadcast(xt::expand_dims(phi_prime_I_D, 2), {D * K, D * mp1, J});
-    // shape: (D*K, D*mp1, J)
-    const auto &B = sqrt_Sigma_I_mp1; // shape: (D*mp1 D*mp1)
-    const auto Jp_L_ = xt::linalg::tensordot(A, B, {1}, {0}); // shape (D*K, J, D*mp1)
+    const auto Jp_L_ = xt::linalg::tensordot(Jp_JU_gp, Sigma_I_mp1, {1}, {0}); // shape (D*K, J, D*mp1)
     const auto Jp_L = xt::transpose(Jp_L_, {0, 2, 1}); // shape: (D*K, D*mp1, J)
+
     return (Jp_L);
 };
 
 
-// ∇ₚ∇ₚL(p) Hessain of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
+// ∇ₚ∇ₚL(p) Hessian of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
 xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
     const auto Jp_Jp_JU_gp = xt::reshape_view(Jp_Jp_JU_g(p), {D * K, D * mp1, J, J});
-    const auto A = Jp_Jp_JU_gp + xt::broadcast(xt::expand_dims(xt::expand_dims(phi_prime_I_D, 2), 3),
-                                               {D * K, D * mp1, J, J}); // shape: (D*K, D*mp1, J)
-    const auto &B = sqrt_Sigma_I_mp1; // shape: (D*mp1 D*mp1)
-    const auto Jp_H_ = xt::linalg::tensordot(A, B, {1}, {0}); // shape: (D*K,J, J, D*mp1)
+    const auto Jp_H_ = xt::linalg::tensordot(Jp_Jp_JU_gp, Sigma_I_mp1, {1}, {0}); // shape: (D*K,J, J, D*mp1)
     const auto Jp_H = xt::transpose(Jp_H_, {0, 3, 1, 2}); // shape: (D*K, D*mp1, J, J)
     return (Jp_H);
 };

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "../../../../../../../opt/homebrew/Cellar/xtensor/0.27.0/include/xtensor/generators/xrandom.hpp"
+
 constexpr auto J = 5;
 constexpr auto D = 2;
 constexpr auto K = 3;
@@ -149,5 +151,46 @@ TEST_CASE("∇ₚ∇ₚL") {
     }
 }
 
+TEST_CASE("S_inv_r"){
+
+    const auto F = F_functor(f, U, tt);
+    const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
+    const auto g = g_functor(F, V);
+    const auto b = xt::eval(-1*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, U)));
+    const auto S_inv_r = S_inv_r_functor(L, g, b);
+
+    const auto Lp = L(p);
+    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+    const auto S_inv_rp = S_inv_r(p);
+
+    CHECK(xt::allclose(S_inv_rp, xt::linalg::dot( xt::linalg::inv(S), g(p) - b )));
+    }
 
 
+
+TEST_CASE("Expand matrix") {
+
+    const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(1, K * mp1, K * mp1), {K, mp1});
+    const auto _ = xt::broadcast(xt::expand_dims(V, 2), {K, mp1,J});
+
+    for(int i = 0; i < J; ++i) {
+        CHECK(xt::allclose(V, xt::view(_, xt::all(), xt::all(), i)));
+    }
+}
+
+
+
+TEST_CASE("Matrix Solve"){
+
+    const auto Lp = L(p);
+    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+
+    xt::xarray<double> A = xt::random::randn<double>(S.shape());
+
+    const auto B = xt::linalg::solve(S, A);
+
+    CHECK(xt::allclose(A, xt::linalg::dot(S,B)));
+
+
+
+}

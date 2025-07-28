@@ -217,6 +217,14 @@ TEST_CASE("Ju_g_functor computes correct Jacobian with respect to all state vari
     CHECK(Ju_gp(LAST_ROW, D*mp1 - 3) == doctest::Approx(yDD[1]));
     CHECK(Ju_gp(LAST_ROW, D*mp1 - 2) == doctest::Approx(yDD[2]));
     CHECK(Ju_gp(LAST_ROW, D*mp1 - 1 ) == doctest::Approx(yDD[3]));
+
+    const xt::xtensor<double, 1> phi2 = xt::row(V, 1);
+    const auto xx4 = phi2(3) * xt::view(J_F, xt::all(), 0, 0);
+
+    CHECK(Ju_gp(4, 3) == doctest::Approx(xx4[3])); // 𝜕u_1f_1(u_4) * ϕ_24
+    CHECK(Ju_gp(4, 2) == doctest::Approx(xx4[2])); // 𝜕u_1f_1(u_3) * ϕ_24
+    CHECK(Ju_gp(4, 1) == doctest::Approx(xx4[1])); // 𝜕u_1f_1(u_2) * ϕ_24
+    CHECK(Ju_gp(4, 0) == doctest::Approx(xx4[0])); // 𝜕u_1f_1(u_1) * ϕ_24
 }
 
 TEST_CASE("Jp_g_functor computes correct Jacobian with respect to parameters p⃗") {
@@ -259,9 +267,11 @@ TEST_CASE("Jp_Ju_g_functor computes correct Hessian with respect to parameters p
 
     const auto part1 = xt::view(H_F, mp1 - 1, 0, D - 1, xt::all());
     const auto part2 = xt::view(H_F, 1, 0, 0, xt::all()); //∇p 𝜕u_21 f_1(u2)
+    const auto part3 = xt::view(H_F, 1, 0, 0, xt::all()); //∇p 𝜕u_41 f_2(u_2)
 
     const auto x1 = phi1[mp1 - 1] * part1; // ∇p 𝜕u_mp1*D f_1(u_mp1) * ϕ_1mp1
     const auto x2 = phi2[1] * part2; // ∇p 𝜕u_21 f_1(u2) * ϕ_22
+    const auto x3 = phi2[1]*part3;  // ∇p 𝜕u_41 f_1(u4) * ϕ_22
 
     const auto Jp_Ju_gp = xt::reshape_view(Jp_Ju_g(p), {K * D, mp1 * D, J}); // ∇ₚ∇ᵤg(p) ∈ ℝ^(K*D x mp1*D x J)
 
@@ -271,6 +281,13 @@ TEST_CASE("Jp_Ju_g_functor computes correct Hessian with respect to parameters p
     CHECK(Jp_Ju_gp(1,1,2) == doctest::Approx(x2[2])); // 𝜕p_3𝜕u_21 g_2(p) = 𝜕p_3 𝜕u_21 f_1(u_2) * ϕ_22
     CHECK(Jp_Ju_gp(1,1,1) == doctest::Approx(x2[1])); // 𝜕p_2𝜕u_21 g_2(p) = 𝜕p_2 𝜕u_21 f_1(u_2) * ϕ_22
     CHECK(Jp_Ju_gp(1,1,0) == doctest::Approx(x2[0])); // 𝜕p_1𝜕u_21 g_2(p) = 𝜕p_1 𝜕u_21 f_1(u_2) * ϕ_22
+
+    const auto xx4 = phi2(3) * xt::view(H_F, xt::all(), 0, 0, 0);
+
+    CHECK(Jp_Ju_gp(4, 3, 0) == doctest::Approx(xx4[3])); // 𝜕p_1 𝜕u_1f_1(u_4) * ϕ_24
+    CHECK(Jp_Ju_gp(4, 2, 0) == doctest::Approx(xx4[2])); // 𝜕p_1 𝜕u_1f_1(u_3) * ϕ_24
+    CHECK(Jp_Ju_gp(4, 1, 0) == doctest::Approx(xx4[1])); // 𝜕p_1 𝜕u_1f_1(u_2) * ϕ_24
+    CHECK(Jp_Ju_gp(4, 0, 0) == doctest::Approx(xx4[0])); // 𝜕p_1 𝜕u_1f_1(u_1) * ϕ_24
 }
 
 TEST_CASE("Jp_Jp_Ju_g_functor computes correct high dimensional Hessian with respect to parameters p⃗ and state u⃗") {
@@ -296,3 +313,49 @@ TEST_CASE("Jp_Jp_Ju_g_functor computes correct high dimensional Hessian with res
     CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,2) == doctest::Approx(x[2])); // 𝜕p_3𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_3𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
     CHECK(Jp_Jp_Ju_gp(0,mp1*D-1,1,3) == doctest::Approx(x[3])); // 𝜕p_4𝜕p_2𝜕u_mp1D g_1(p) = 𝜕p_4𝜕p_2 𝜕u_mp1D f_1(u_mp1) * ϕ_1mp1}
 }
+
+TEST_CASE("g  functor") {
+    const auto F = F_functor(f, U, tt);
+    const auto g = g_functor(F, V);
+    const auto Fp = F(p);
+    const auto gp = g(p);
+
+    // Manually compute V @ Fp and vectorize column-wise
+    xt::xarray<double> g_manual = xt::zeros<double>({K * D});
+    for (int j = 0; j < mp1; ++j) {
+        xt::xarray<double> F_col = xt::col(Fp, j);       // shape (D,)
+        xt::xarray<double> Vf = xt::linalg::dot(V, F_col); // shape (K,)
+        for (int i = 0; i < K; ++i) {
+            g_manual(j * K + i) = Vf(i);  // column-major flattening
+        }
+    }
+
+    CHECK(xt::allclose(gp, g_manual));
+}
+
+TEST_CASE("F  functor") {
+    const auto F = F_functor(f, U, tt);
+    const auto Fp = F(p);
+    xt::xarray<double> g_manual = xt::zeros<double>({K * D});
+
+    for (int j = 0; j < mp1; ++j) {
+        const double &t = tt[j];
+        const auto &u = xt::view(U, j, xt::all());
+
+        CHECK(xt::allclose(xt::row(Fp, j),f(p, u ,t)));
+    }
+
+
+}
+
+
+TEST_CASE("b") {
+    const auto b = xt::eval(-1*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, U)));
+    const auto bk_m = -1*xt::linalg::dot(xt::row(V,K-1), xt::col(U,0))();
+
+    const auto bk = b[K-1];
+
+    CHECK(bk == doctest::Approx(bk_m));
+}
+
+

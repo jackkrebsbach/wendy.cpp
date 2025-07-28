@@ -13,29 +13,6 @@
 #include <vector>
 #include <iomanip>
 
-std::vector<double> gradient_4th_order(
-    const std::function<double(const std::vector<double>&)>& f,
-    const std::vector<double>& x,
-    double h = 1e-5
-) {
-    const size_t n = x.size();
-    std::vector<double> grad(n);
-
-    for (size_t i = 0; i < n; ++i) {
-        std::vector<double> xp2h = x, xph = x, xmh = x, xm2h = x;
-        xp2h[i] += 2*h;
-        xph[i]  += h;
-        xmh[i]  -= h;
-        xm2h[i] -= 2*h;
-
-        grad[i] = (-f(xp2h) + 8*f(xph) - 8*f(xmh) + f(xm2h)) / (12*h);
-    }
-
-    return grad;
-}
-
-
-
 
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
@@ -59,9 +36,9 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
 
     Ju_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)), D, J)),
-    Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)), D, J)),
-    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
     Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
+    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
+    Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)), D, J)),
 
     Jp_Jp_JU_f(build_T_f(
             build_symbolic_jacobian(
@@ -72,10 +49,8 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     ),
 
     // Variance of the data
-    Sigma(xt::diag(0.05*xt::ones<double>({D}))),
-    compute_svd(compute_svd_) {
-
-    }
+    Sigma(xt::diag(0.058*xt::ones<double>({D}))),
+    compute_svd(compute_svd_) {}
 
 void Wendy::build_objective_function() {
 
@@ -94,34 +69,46 @@ void Wendy::build_objective_function() {
 
     const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
 
-    const auto analytical_jacobian = mle.Jacobian(p0);
 
-    std::cout <<"\n Analytical" <<  std::endl;
-    for (const auto& v : analytical_jacobian) std::cout << v << " ";
+    const auto analytical_hessian = mle.Jacobian(p0);
+    const auto finite_hessian = gradient_4th_order(mle, p0);
+
+    std::cout << "\nAnalytical Hessian" << std::endl;
+    // for (const auto& row : analytical_hessian) {
+        for (const auto& val : analytical_hessian) //{
+            std::cout << val << " ";
+        // }
+        std::cout << std::endl; // Newline after each row
+    // }
+
     std::cout << std::endl;
 
-    std::cout <<"\n Finite" <<  std::endl;
-    const auto finite_jacobian = gradient_4th_order(mle, p0);
+    std::cout << "\n Finite Hessian" << std::endl;
+    // for (const auto& row : finite_hessian) {
+        for (const auto& val : finite_hessian) //{
+            std::cout << val << " ";
+        // }
+        // std::cout << std::endl; // Newline after each row
+    // }
 
-    for (const auto& v : finite_jacobian) std::cout << v << " ";
     std::cout << std::endl;
 
-    // MyMLEProblem problem(mle);
-    //
-    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
-    //
-    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
-    // auto initial_state = cppoptlib::function::FunctionState(x_init);
-    //
+    MyMLEProblem problem(mle);
+    Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+
+    cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+
+    auto initial_state = cppoptlib::function::FunctionState(x_init);
+
     // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
-    //
-    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
-    //
-    // std::cout << "\nSolver finished!" << std::endl;
-    // std::cout << "Final Status: " << solver_state.status << std::endl;
-    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
-    //
-    // p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+
+    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+
+    std::cout << "\nSolver finished!" << std::endl;
+    std::cout << "Final Status: " << solver_state.status << std::endl;
+    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+
+    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
 }
 
 
@@ -153,10 +140,10 @@ void Wendy::build_full_test_function_matrices() {
     this->min_radius = min_radius_int_error;
 
     radii = radii * min_radius_int_error;
-    radii = xt::filter(radii, radii < max_radius);
+    const auto radii_ = xt::filter(radii, radii < max_radius);
 
-    auto V = build_full_test_function_matrix(tt, radii, 0);
-    auto V_prime = build_full_test_function_matrix(tt, radii, 1);
+    auto V = build_full_test_function_matrix(tt, radii_, 0);
+    auto V_prime = build_full_test_function_matrix(tt, radii_, 1);
 
     if (!compute_svd) {
         this->V = V;
@@ -172,22 +159,19 @@ void Wendy::build_full_test_function_matrices() {
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
     const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
 
-    const double corner_index = static_cast<double>(get_corner_index(xt::cumsum(singular_values)));
-    // Change point in cumulative sum of singular values
+    const double corner_index = static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
     const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
-
-    xt::xtensor<double, 1> condition_numbers = singular_values(0) / singular_values;
-    // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
-
     double sum_singular_values = xt::sum(singular_values)();
 
-    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix, corner_index}));
+    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix }));
 
     // Natural information is the ratio of the first k singular values to the sum
     xt::xtensor<double, 1> info_numbers = xt::zeros<double>({k_max});
     for (int i = 1; i < k_max; i++) {
         info_numbers[i] = xt::sum(xt::view(singular_values, xt::range(0, i)))() / sum_singular_values;
     }
+
+    xt::xtensor<double, 1> condition_numbers = singular_values(0) / singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
 
     // Regularize with user input (hard max on condition # of test function & how much "information" we want)
     auto k1 = find_last(condition_numbers, [this](const double x) {
@@ -205,12 +189,10 @@ void Wendy::build_full_test_function_matrices() {
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
     std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
 
-    this->V = xt::view(Vᵀ, xt::range(0, K), xt::all());
+    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K), xt::all()));
 
-    // TODO: Compare this to the Fourier Transformation
     // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-    const auto S_pseudo_inverse = xt::diag(1.0 / singular_values);
     const auto UtV_prime = xt::linalg::dot(xt::transpose(U_), V_prime);
 
-    this->V_prime = xt::view(xt::linalg::dot(S_pseudo_inverse, UtV_prime), xt::range(0, K), xt::all());
+    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K), xt::all()));
 }

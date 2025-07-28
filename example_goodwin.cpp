@@ -55,9 +55,9 @@ std::vector<std::vector<double> > add_noise(
     std::random_device rd;
     std::mt19937 gen(rd());
     for (int d = 0; d < dim; ++d) {
-        std::normal_distribution<> dist(0.0, noise_ratio * stddev[d]);
+        std::normal_distribution<> dist(0.0,  1);
         for (int i = 0; i < npoints; ++i) {
-            noisy[i][d] += dist(gen);
+            noisy[i][d] += noise_ratio*dist(gen);
         }
     }
     return noisy;
@@ -69,14 +69,14 @@ int main() {
     std::vector<double> p_perturbed = {2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    constexpr int num_samples = 50;
+    constexpr int num_samples = 200;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
 
-    constexpr double noise_ratio = 0.05;
+    constexpr double noise_ratio = 0.01;
 
-    const auto u_noisy = integrate_goodwin(u0, p_star, t0, t1, num_samples);
-    // const auto u_noisy = add_noise(u_star, noise_ratio);
+    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
+    const auto u_noisy = add_noise(u_star, noise_ratio);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
@@ -97,7 +97,7 @@ int main() {
     const std::vector<double> p0(p_star.begin(), p_star.end());
     try {
 
-       Wendy wendy(system_eqs, U, p_perturbed, tt);
+       Wendy wendy(system_eqs, U, p_perturbed, tt, true);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 

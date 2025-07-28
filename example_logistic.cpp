@@ -56,16 +56,16 @@ std::vector<std::vector<double>> add_noise(
 int main() {
 
     std::vector<double> p_star = {1.0, 1.0};
-    std::vector<double> p_perturbed = {1.5 ,1.5};
+    std::vector<double> p_perturbed = {0.5 ,0.5};
 
     const std::vector<double> u0 = {0.01};
 
     constexpr double noise_ratio = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 200;
     constexpr double t0 = 0.0;
-    constexpr double t1 = 1.0;
+    constexpr double t1 = 10.0;
 
-    const auto u_star = integrate_(u0, p_perturbed, t0, t1, num_samples);
+    const auto u_star = integrate_(u0, p_star, t0, t1, num_samples);
 
     const auto u_noisy = add_noise(u_star, noise_ratio);
 

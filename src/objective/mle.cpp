@@ -36,46 +36,33 @@ double MLE::operator()(const std::vector<double> &p) const {
     const auto Lp = L(p);
     const auto r = g(p) - b;
     const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
-    const auto x = xt::linalg::solve(S, r); // Solve Sy = g(p) - b;
-    const auto quad = xt::linalg::dot(xt::transpose(r), x)();
+    const auto quad = xt::linalg::dot(xt::transpose(r), S_inv_r(p))();
     const auto logdetS = std::log(xt::linalg::det(S));
     const auto wnll = 0.5*(logdetS + quad + constant_term);
     return (wnll);
 }
 
 std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
-    // Precomputations
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
     const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (covariance)
-
     const auto r = g(p) - b; // r(p) = g(p) - b
     const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
 
-    // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
     const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
-    // Precomputed ∇ₚS(p) gradient of the covariance matrix, 3D Tensor
-    const auto Jp_LLT = xt::transpose(xt::linalg::tensordot(Jp_Lp, xt::transpose(Lp), {1}, {0}), {0, 2, 1}); //∇ₚLLᵀ
-    const auto Jp_Sp = Jp_LLT + xt::transpose(Jp_LLT, {1, 0, 2}); // ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ 3D tensor
-
-    // Output
-    std::vector<double> J_wnn(p.size());
+    std::vector<double> J_wnn(p.size()); // Output
     for (int j = 0; j < p.size(); ++j) {
         // Extract partial information for each p_i from the gradients
-        const auto Jp_Sp_j = xt::view(Jp_Sp, xt::all(), xt::all(), j);
+        const auto Jp_LLT_j = xt::linalg::dot(xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(),j)), xt::eval(xt::transpose(Lp)));
+        const auto Jp_Sp_j = Jp_LLT_j + xt::transpose(Jp_LLT_j);
         const auto Jp_gp_j = xt::view(Jp_gp, xt::all(), j);
 
-        // Compute  S(p)^(-1)𝜕ⱼS(p)
-        const auto X = xt::linalg::solve(S, Jp_Sp_j);
-        // Compute  𝜕ⱼS(p)^(-1) = -S(p)^-1𝜕ⱼS(p)S(p)^-1 from L and S(p)^-1𝜕ⱼS(p)
-        const auto Jp_Sp_inv= -1*xt::transpose(xt::linalg::solve(S, xt::transpose(X)));
+        const double prt1 = xt::linalg::trace(xt::linalg::solve(S, Jp_Sp_j))();
+        const double prt2 = 2*xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
+        const double prt3 = -1*xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_Sp_j), S_inv_rp)();
 
-        const double prt1 = 0.5 * xt::linalg::trace(X)();
-        const double prt2 = xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
-        const double prt3 = 0.5*xt::linalg::dot(xt::linalg::dot(xt::transpose(r), Jp_Sp_inv), r)();
-
-        J_wnn[j] = prt1 + prt2 + prt3;
+        J_wnn[j] = 0.5*(prt1 + prt2 + prt3);
 
     }
 
@@ -125,7 +112,7 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
         const auto Jp_Lp_j = xt::view(Jp_Lp, xt::all(), xt::all(), j);
 
         for (int i = j; i < p.size(); ++i) {
-            // 𝜕ⱼS(p) (Jacobian information)
+            // 𝜕ᵢS(p) (Jacobian information)
             const auto Jp_Sp_i = xt::view(Jp_Sp, xt::all(), xt::all(), i);
 
             // Compute  S(p)^(-1)𝜕ᵢS(p)

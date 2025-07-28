@@ -137,7 +137,7 @@ xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const
     auto F_eval = xt::zeros_like(U);
 
     for (int i = 0; i < U.shape()[0]; ++i) {
-        auto u = xt::view(U, i, xt::all());
+        auto u = xt::row(U, i);
         auto t = tt[i];
         xt::view(F_eval, i, xt::all()) = f(p, u, t);
     }
@@ -145,7 +145,6 @@ xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const
 }
 
 // g(p) = vec[Phi F(p,U,t)] ∈ ℝ^(mp1 x D) column wise vectorization
-
 g_functor::g_functor(const F_functor &F_,
                      const xt::xtensor<double, 2> &V_): V(V_), F(F_) {
 }
@@ -213,7 +212,7 @@ xt::xtensor<double, 5> H_g_functor::operator()(
     //Compute Hg                               // V_expanded has dimension (K, mp1, 1,       1, 1)
     const auto H_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂)
     const auto Hg = V_expanded * H_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂))
-    const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 1, 3, 4}); // (K, D,len(∇₁),mp1,len(∇₂))
+    const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 1, 3, 4}); // (K, D, mp1, len(∇₁), len(∇₂))
     return Hgt;
 }
 

@@ -14,6 +14,81 @@
 #include <unistd.h>
 #include <limits.h>
 
+
+inline std::vector<double> gradient_4th_order(
+    const std::function<double(const std::vector<double>&)>& f,
+    const std::vector<double>& x,
+    double h = 1e-5
+) {
+    const size_t n = x.size();
+    std::vector<double> grad(n);
+
+    for (size_t i = 0; i < n; ++i) {
+        std::vector<double> xp2h = x, xph = x, xmh = x, xm2h = x;
+        xp2h[i] += 2*h;
+        xph[i]  += h;
+        xmh[i]  -= h;
+        xm2h[i] -= 2*h;
+
+        grad[i] = (-f(xp2h) + 8*f(xph) - 8*f(xmh) + f(xm2h)) / (12*h);
+    }
+    return grad;
+}
+
+inline std::vector<std::vector<double>> hessian_4th_order(
+    const std::function<double(const std::vector<double>&)>& f,
+    const std::vector<double>& x,
+    double h = 1e-5
+) {
+    const size_t n = x.size();
+    std::vector<std::vector<double>> H(n, std::vector<double>(n));
+
+    std::vector<double> x_pp = x, x_pm = x, x_mp = x, x_mm = x;
+    std::vector<double> x_p = x, x_m = x;
+
+    // Diagonal entries: ∂²f / ∂xᵢ²
+    for (size_t i = 0; i < n; ++i) {
+        std::vector<double> xpp = x, xp = x, xm = x, xmm = x;
+        xpp[i] += 2*h;
+        xp[i]  += h;
+        xm[i]  -= h;
+        xmm[i] -= 2*h;
+        H[i][i] = (-f(xpp) + 16*f(xp) - 30*f(x) + 16*f(xm) - f(xmm)) / (12 * h * h);
+    }
+
+    // Off-diagonal entries: ∂²f / ∂xᵢ∂xⱼ
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = i + 1; j < n; ++j) {
+            for (int si : {-1, 1}) {
+                for (int sj : {-1, 1}) {
+                    x_pp = x;
+                    x_pp[i] += si * h;
+                    x_pp[j] += sj * h;
+                    double sign = si * sj;
+                    H[i][j] += sign * f(x_pp);
+                }
+            }
+            x_p = x;
+            x_p[i] += h;
+            x_m = x;
+            x_m[i] -= h;
+            double fi0 = f(x_p) + f(x_m);
+
+            x_p = x;
+            x_p[j] += h;
+            x_m = x;
+            x_m[j] -= h;
+            double f0j = f(x_p) + f(x_m);
+
+            H[i][j] = (H[i][j] - fi0 - f0j + 2*f(x)) / (4 * h * h);
+            H[j][i] = H[i][j];  // symmetry
+        }
+    }
+
+    return H;
+}
+
+
 inline void print_cwd() {
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd))) {
