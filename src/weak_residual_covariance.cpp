@@ -31,7 +31,7 @@ CovarianceFactor::CovarianceFactor(
 
     Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
 
-    I_D_phi_prime = xt::linalg::kron( xt::eye(D), V_prime); // I_d x ϕ'
+    I_D_phi_prime = xt::linalg::kron( xt::eye(D),V_prime ); // I_d x ϕ'
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ

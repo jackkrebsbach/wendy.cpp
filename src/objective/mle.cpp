@@ -1,9 +1,7 @@
 #include "mle.h"
-
-#include <numbers>
-
 #include "../utils.h"
 
+#include <numbers>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor/containers/xtensor.hpp>
@@ -33,12 +31,13 @@ MLE::MLE(
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
+    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1});
     const auto Lp = L(p);
     const auto r = g(p) - b;
     const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
-    const auto quad = xt::linalg::dot(xt::transpose(r), S_inv_r(p))();
+    const auto quad = xt::linalg::dot(xt::transpose(r), xt::linalg::solve(S, r))();
     const auto logdetS = std::log(xt::linalg::det(S));
-    const auto wnll = 0.5*(logdetS + quad)  + constant_term;
+    const auto wnll = 0.5*(logdetS + quad + constant_term)  ;
     return (wnll);
 }
 
@@ -128,24 +127,22 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
 
             const auto H_ij = Hp_ijL_LT + Jp_Lp_j_Jp_Lp_iT; //𝜕ᵢ𝜕ⱼLLᵀ + 𝜕ⱼL𝜕ᵢLᵀ
             const auto Hp_S_ij = H_ij + xt::transpose(xt::eval(H_ij)); // 𝜕ᵢ𝜕ⱼS(p)
-
             // 𝜕ᵢ𝜕ⱼ g(p) (Hessian information)
             const auto Hp_gp_ij = xt::view(Hp_gp, xt::all(), xt::all(), j, i);
-
             //𝜕ᵢ𝜕ⱼS(p)^-1
             //prt1
-            const auto prt1_inv = xt::linalg::solve(Sp,xt::linalg::dot( Jp_Sp_i, -1.0 * Jp_Sp_inv_j));
+            const auto prt1_inv = xt::linalg::solve(Sp, xt::linalg::dot( -1.0 * Jp_Sp_inv_i, Jp_Sp_j));
             //prt2 S^(-1)𝜕ᵢ𝜕ⱼS(p)S^(-1)
             const auto prt2_inv = -1.0*xt::linalg::solve(Sp, xt::linalg::solve(Sp, Hp_S_ij));
             // prt3
-            const auto prt3_inv = xt::linalg::solve(Sp, xt::linalg::dot(Jp_Sp_j, -1.0 * Jp_Sp_inv_i));
+            const auto prt3_inv = xt::linalg::dot(Sp, xt::linalg::dot(Jp_Sp_j, -1.0 * Jp_Sp_inv_i));
             // adding terms together
             const auto Jp_Jp_S_inv_ij = prt1_inv + prt2_inv + prt3_inv;
 
             // 𝜕ᵢ𝜕ⱼ l(p) Weak negative log likelihood
             const auto x1 = xt::linalg::dot(Jp_Sp_inv_i, Jp_Sp_j);
             const auto y1 = xt::linalg::solve(Sp, Hp_S_ij);
-            const auto prt1 = 0.5 * (xt::linalg::trace(x1 + y1)());
+            const auto prt1 = 0.5 * (xt::linalg::trace(x1)() + xt::linalg::trace(y1)());
             const auto prt2 = xt::linalg::dot(xt::transpose(Hp_gp_ij), S_inv_rp)();
             const auto prt3 = xt::linalg::dot(xt::transpose(Jp_gp_j), xt::linalg::dot(Jp_Sp_inv_i, r))();
             const auto prt4 = xt::linalg::dot(xt::transpose(Jp_gp_j), xt::linalg::solve(Sp, Jp_gp_i))();

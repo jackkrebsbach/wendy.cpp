@@ -8,7 +8,7 @@
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
     // Number of test functions to use in the minimum radius selection process
-    xt::xtensor<int, 1> radius_params =  xt::xtensor<double, 1>{1, 2, 3, 4, 8, 10, 15, 20, 40, 50};
+    xt::xtensor<int, 1> radius_params =  xt::pow(2, xt::xtensor<double, 1>{0,1,2,3});
     // Radii to use for the test functions
     double radius_min_time = 0.01; // Minimum radius (in seconds)
     double radius_max_time = 5; // Maximum radius (in seconds)
@@ -53,12 +53,11 @@ public:
     T_f_functor  Jp_Jp_JU_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
 
     // Weak residual functors and related objects
-
     xt::xtensor<double, 2> Sigma; // Variance estimates for each dimension diagonal Matrix (D x D)
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
-    bool compute_svd = false; // If true then the test function matrices are orthonormal
+    bool compute_svd = true; // If true then the test function matrices are orthonormal
 
     std::vector<double> p_hat;
 

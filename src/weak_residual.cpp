@@ -174,7 +174,7 @@ xt::xtensor<double, 4> J_g_functor::operator()(
 
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
-        const auto &u = xt::view(U, i, xt::all());
+        const auto &u = xt::row(U,i);
         xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
     }
     // // V_expanded has dimension (K, mp1, 1, 1)

@@ -33,7 +33,7 @@ public:
         // if (hessian) {
         //     hessian->resize(x.size(), x.size());
         //     const auto H = mle.Hessian(p);
-        //     for (Eigen::Index i = 0; i < H.size(); ++i) {
+        //     for (Eigen::Index i = 0; i < x.size(); ++i) {
         //         for (Eigen::Index j = 0; j < x.size(); ++j) {
         //             (*hessian)(i, j) = H[i][j];
         //         }

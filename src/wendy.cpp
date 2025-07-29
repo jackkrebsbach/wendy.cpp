@@ -45,11 +45,10 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
         )
     ),
     // Variance of the data
-    Sigma(xt::diag(0.01*xt::ones<double>({D}))),
+    Sigma(xt::diag(0.05*xt::ones<double>({D}))),
     compute_svd(compute_svd_) {}
 
 void Wendy::build_objective_function() {
-
     const auto g = g_functor(F, V);
     const auto JU_g = J_g_functor(U, tt, V, Ju_f);
     const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
@@ -59,68 +58,76 @@ void Wendy::build_objective_function() {
 
     const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
 
-    const auto b = xt::eval(-1*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+    const auto b = xt::eval(-1.0*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
 
     const auto S_inv_r = S_inv_r_functor(L, g, b);
 
     const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
 
-
-    const auto analytical_jacobian = mle.Jacobian(p0);
-    const auto finite_jacobian = gradient_4th_order(mle, p0);
-
-    std::cout << "\nAnalytical Jacobian" << std::endl;
-    for (const auto& row : analytical_jacobian) {
-            std::cout << row << " ";
-        std::cout << std::endl; // Newline after each row
-    }
-
-    std::cout << std::endl;
-
-    std::cout << "\nFinite Jacobian" << std::endl;
-    for (const auto& row : finite_jacobian) {
-            std::cout << row << " ";
-        std::cout << std::endl; // Newline after each row
-    }
-
-    std::cout << std::endl;
-
-    const auto analytical_hessian = mle.Hessian(p0);
-    const auto finite_hessian = hessian_3rd_order(mle, p0);
-
-    std::cout << "\nAnalytical Hessian" << std::endl;
-    for (const auto& row : analytical_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
-
-    std::cout << "\n Finite Hessian" << std::endl;
-    for (const auto& row : finite_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
-
-
-    // MyMLEProblem problem(mle);
-    // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    // Check that the likelihood is minimized @pstar
+    // std::cout << std::endl;
     //
-    // cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    // std::cout << mle(std::vector<double>({0.1,0.1}))   << std::endl;
+    // std::cout << mle(std::vector<double>({0.5,0.5}))   << std::endl;
+    // std::cout << mle(std::vector<double>({1.5,1.5}))   << std::endl;
+    // std::cout << mle(std::vector<double>({1,1}))   << std::endl;
     //
-    // auto initial_state = cppoptlib::function::FunctionState(x_init);
+    // std::cout << std::endl;
+
+    // const auto analytical_jacobian = mle.Jacobian(p0);
+    // const auto finite_jacobian = gradient_4th_order(mle, p0);
     //
-    // // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+    // std::cout << "\nAnalytical Jacobian" << std::endl;
+    // for (const auto& row : analytical_jacobian) {
+    //         std::cout << row << " ";
+    //     std::cout << std::endl; // Newline after each row
+    // }
     //
-    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    // std::cout << std::endl;
     //
-    // std::cout << "\nSolver finished!" << std::endl;
-    // std::cout << "Final Status: " << solver_state.status << std::endl;
-    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+    // std::cout << "\nFinite Jacobian" << std::endl;
+    // for (const auto& row : finite_jacobian) {
+    //         std::cout << row << " ";
+    //     std::cout << std::endl; // Newline after each row
+    // }
     //
-    // p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+    // std::cout << std::endl;
+    //
+    // const auto analytical_hessian = mle.Hessian(p0);
+    // const auto finite_hessian = hessian_3rd_order(mle, p0);
+    //
+    // std::cout << "\nAnalytical Hessian" << std::endl;
+    // for (const auto& row : analytical_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
+    //
+    // std::cout << "\n Finite Hessian" << std::endl;
+    // for (const auto& row : finite_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
+
+    MyMLEProblem problem(mle);
+    Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+
+    cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+
+    auto initial_state = cppoptlib::function::FunctionState(x_init);
+
+    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
+
+    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+
+    std::cout << "\nSolver finished!" << std::endl;
+    std::cout << "Final Status: " << solver_state.status << std::endl;
+    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+
+    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
 }
 
 
