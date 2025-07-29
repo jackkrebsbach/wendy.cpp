@@ -69,11 +69,11 @@ int main() {
     std::vector<double> p_perturbed = {2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    constexpr int num_samples = 200;
+    constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80.0;
 
-    constexpr double noise_ratio = 0.01;
+    constexpr double noise_ratio = 0.05;
 
     const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
     const auto u_noisy = add_noise(u_star, noise_ratio);

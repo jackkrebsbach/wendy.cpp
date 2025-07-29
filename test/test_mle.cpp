@@ -3,6 +3,7 @@
 #include "../src/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
+#include "../src/utils.h"
 #include <iostream>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -137,6 +138,7 @@ TEST_CASE("Cholesky solve vs regular solve") {
     CHECK(xt::allclose(xt::linalg::solve(Sp, B) ,  solve_cholesky(xt::linalg::cholesky(Sp), B)));
     CHECK(xt::allclose(c_solve, r_solve));
 
+
 }
 
 TEST_CASE("Weak Negative Log Likelihood") {
@@ -168,4 +170,21 @@ TEST_CASE("HESSIAN Term") {
             CHECK(xt::allclose(Hp_LLT_ij, Hp_LLT_ij_Manual));
         }
      }
+}
+
+TEST_CASE("Right Symmetric Inverse") {
+
+    // Create symmetric positive definite matrix Sp = A * Aᵀ + δI
+    xt::xarray<double> A = xt::random::randn<double>({D, D});
+    xt::xarray<double> Sp = xt::linalg::dot(A, xt::transpose(A)) + 1e-3 * xt::eye<double>(D);
+    xt::xarray<double> B = xt::random::randn<double>(Sp.shape());
+
+    /// Solve BA^-1 = X with A symmetric
+    /// B = XA => Bᵀ = AᵀXᵀ => Bᵀ = AXᵀ  solve => xᵀ
+
+    const auto Xt = xt::linalg::solve(Sp, xt::transpose(B));
+    const auto X = xt::transpose(xt::eval(Xt));
+
+    CHECK(xt::allclose(B, xt::linalg::dot(X,Sp)));
+
 }

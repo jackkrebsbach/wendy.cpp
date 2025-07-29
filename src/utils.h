@@ -35,18 +35,16 @@ inline std::vector<double> gradient_4th_order(
     return grad;
 }
 
-inline std::vector<std::vector<double>> hessian_4th_order(
+
+inline std::vector<std::vector<double>> hessian_3rd_order(
     const std::function<double(const std::vector<double>&)>& f,
     const std::vector<double>& x,
-    double h = 1e-5
+    double h = 1e-6
 ) {
     const size_t n = x.size();
-    std::vector<std::vector<double>> H(n, std::vector<double>(n));
+    std::vector<std::vector<double>> H(n, std::vector<double>(n, 0.0));
 
-    std::vector<double> x_pp = x, x_pm = x, x_mp = x, x_mm = x;
-    std::vector<double> x_p = x, x_m = x;
-
-    // Diagonal entries: ∂²f / ∂xᵢ²
+    // Diagonal: 5-point stencil (4th order)
     for (size_t i = 0; i < n; ++i) {
         std::vector<double> xpp = x, xp = x, xm = x, xmm = x;
         xpp[i] += 2*h;
@@ -56,32 +54,17 @@ inline std::vector<std::vector<double>> hessian_4th_order(
         H[i][i] = (-f(xpp) + 16*f(xp) - 30*f(x) + 16*f(xm) - f(xmm)) / (12 * h * h);
     }
 
-    // Off-diagonal entries: ∂²f / ∂xᵢ∂xⱼ
+    // Off-diagonal: 3rd-order central difference for mixed partials
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = i + 1; j < n; ++j) {
-            for (int si : {-1, 1}) {
-                for (int sj : {-1, 1}) {
-                    x_pp = x;
-                    x_pp[i] += si * h;
-                    x_pp[j] += sj * h;
-                    double sign = si * sj;
-                    H[i][j] += sign * f(x_pp);
-                }
-            }
-            x_p = x;
-            x_p[i] += h;
-            x_m = x;
-            x_m[i] -= h;
-            double fi0 = f(x_p) + f(x_m);
+            std::vector<double> xpp = x, xpm = x, xmp = x, xmm = x;
 
-            x_p = x;
-            x_p[j] += h;
-            x_m = x;
-            x_m[j] -= h;
-            double f0j = f(x_p) + f(x_m);
+            xpp[i] += h; xpp[j] += h;
+            xpm[i] += h; xpm[j] -= h;
+            xmp[i] -= h; xmp[j] += h;
+            xmm[i] -= h; xmm[j] -= h;
 
-            H[i][j] = (H[i][j] - fi0 - f0j + 2*f(x)) / (4 * h * h);
-            H[j][i] = H[i][j];  // symmetry
+            H[i][j] = H[j][i] = (f(xpp) - f(xpm) - f(xmp) + f(xmm)) / (4 * h * h);
         }
     }
 

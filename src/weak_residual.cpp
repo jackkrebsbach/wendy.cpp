@@ -245,6 +245,6 @@ xt::xtensor<double, 6> T_g_functor::operator()(
     //Compute Tg                                                        // V_expanded has dimension (K, mp1, 1, 1, 1)
     const auto T_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
     const auto Tg = V_expanded * T_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
-    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
+    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, len(∇₁), mp1, len(∇₂), len(∇₃))
     return Tgt;
 }

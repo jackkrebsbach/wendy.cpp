@@ -56,12 +56,12 @@ std::vector<std::vector<double>> add_noise(
 int main() {
 
     std::vector<double> p_star = {1.0, 1.0};
-    std::vector<double> p_perturbed = {0.5 ,0.5};
+    std::vector<double> p_perturbed = {0.25 ,0.25};
 
     const std::vector<double> u0 = {0.01};
 
     constexpr double noise_ratio = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 150;
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
 
