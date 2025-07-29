@@ -31,7 +31,7 @@ CovarianceFactor::CovarianceFactor(
 
     Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
 
-    phi_prime_I_D = xt::linalg::kron( xt::eye(D), V_prime); // I_d x ϕ'
+    I_D_phi_prime = xt::linalg::kron( xt::eye(D), V_prime); // I_d x ϕ'
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
@@ -40,9 +40,9 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
 ) const {
     const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1});
 
-    assert((JU_gp.shape() == phi_prime_I_D.shape()) && JU_gp.shape()[1] == Sigma_I_mp1.shape()[0]);
+    assert((JU_gp.shape() == I_D_phi_prime.shape()) && JU_gp.shape()[1] == Sigma_I_mp1.shape()[0]);
 
-    const auto sum = xt::eval(JU_gp + phi_prime_I_D);
+    const auto sum = xt::eval(JU_gp + I_D_phi_prime);
 
     const auto L = xt::linalg::dot(sum, Sigma_I_mp1);
     return (L);
@@ -62,8 +62,10 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
 // ∇ₚ∇ₚL(p) Hessian of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
 xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
     const auto Jp_Jp_JU_gp = xt::reshape_view(Jp_Jp_JU_g(p), {D * K, D * mp1, J, J});
+                                                                                                // Sigma_I_mp1 shape (D*mp1 x D*mp1)
     const auto Jp_H_ = xt::linalg::tensordot(Jp_Jp_JU_gp, Sigma_I_mp1, {1}, {0}); // shape: (D*K,J, J, D*mp1)
     const auto Jp_H = xt::transpose(Jp_H_, {0, 3, 1, 2}); // shape: (D*K, D*mp1, J, J)
+
     return (Jp_H);
 };
 

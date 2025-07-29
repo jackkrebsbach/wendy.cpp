@@ -20,7 +20,7 @@ struct CovarianceFactor {
     size_t K;
     size_t J;
     xt::xtensor<double, 2> Sigma_I_mp1;
-    xt::xtensor<double, 2> phi_prime_I_D;
+    xt::xtensor<double, 2> I_D_phi_prime;
 
     CovarianceFactor(
         const xt::xtensor<double, 2> &U_,

@@ -96,8 +96,6 @@ void Wendy::build_objective_function() {
         std::cout << std::endl; // Newline after each row
     }
 
-    std::cout << std::endl;
-
     std::cout << "\n Finite Hessian" << std::endl;
     for (const auto& row : finite_hessian) {
         for (const auto& val : row) {
@@ -106,7 +104,6 @@ void Wendy::build_objective_function() {
         std::cout << std::endl; // Newline after each row
     }
 
-    std::cout << std::endl;
 
     // MyMLEProblem problem(mle);
     // Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
@@ -147,8 +144,6 @@ void Wendy::build_full_test_function_matrices() {
     const auto [ix, errors, _] = find_min_radius_int_error(U, tt, min_radius, max_radius);
 
     const int min_radius_int_error = _[ix];
-
-    std::cout << min_radius_int_error  << std::endl;
 
     this->min_radius_errors = errors;
     this->min_radius_radii = _;

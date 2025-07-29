@@ -31,6 +31,7 @@ const auto Ju_f_symbolic = build_symbolic_jacobian(f_symbolic, u_symbolic);
 const auto Jp_f_symbolic = build_symbolic_jacobian(f_symbolic, p_symbolic);
 
 const auto Jp_Ju_f_symbolic = build_symbolic_jacobian(Ju_f_symbolic, p_symbolic);
+const auto Jp_Jp_f_symbolic = build_symbolic_jacobian(Jp_f_symbolic, p_symbolic);
 
 const auto Jp_Jp_Ju_f_symbolic = build_symbolic_jacobian(Jp_Ju_f_symbolic, p_symbolic);
 
@@ -38,6 +39,7 @@ const auto f = build_f(f_symbolic, D, J);
 const auto Ju_f = build_J_f(Ju_f_symbolic, D, J);
 const auto Jp_f = build_J_f(Jp_f_symbolic, D, J);
 const auto Jp_Ju_f = build_H_f(Jp_Ju_f_symbolic, D, J);
+const auto Jp_Jp_f = build_H_f(Jp_Jp_f_symbolic, D, J);
 const auto Jp_Jp_Ju_f = build_T_f(Jp_Jp_Ju_f_symbolic, D, J);
 
 
@@ -86,6 +88,7 @@ const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(1, K * mp
 const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
 const auto Jp_Ju_g = H_g_functor(U, tt, V, Jp_Ju_f);
+const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
 const auto Jp_Jp_Ju_g = T_g_functor(U, tt, V, Jp_Jp_Ju_f);
 
 TEST_CASE("f_functor takes in RealLambdaDouble Visitors Evaluation") {
@@ -251,6 +254,27 @@ TEST_CASE("Jp_g_functor computes correct Jacobian with respect to parameters p�
     CHECK(Jp_gp(K*D-1, J-1) == doctest::Approx(xKDJ));
     CHECK(Jp_gp(K*D-1, J-2) == doctest::Approx(xKDJm1));
 }
+
+TEST_CASE("Jp_Jp_g_functor computes correct Hessian with respect to parameters p⃗ and state u⃗") {
+    auto H_F = xt::xtensor<double, 4>({mp1, D, J, J});
+
+    for (size_t i = 0; i < mp1; ++i) {
+        const double &t = tt[i];
+        const auto &u = xt::view(U, i, xt::all());
+        xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = Jp_Jp_f(p, u, t);
+    }
+
+    const auto Hp_gp = xt::reshape_view(xt::sum(Jp_Jp_g(p), {2}), {K * D, J, J});
+
+    const auto phi1 = xt::row(V, 0);
+
+    const auto slice = xt::view(H_F, xt::all(), 0, 0, 1); // 𝜕₂𝜕₁f_1(U⃗)
+
+    const auto res = xt::linalg::dot(phi1, slice)();
+
+    CHECK(Hp_gp(0,0,1) == doctest::Approx(res)); // 𝜕₂𝜕₁g1(p) = 𝜕₂𝜕₁(ϕ_1ᵀ f_1(U⃗))
+}
+
 
 
 TEST_CASE("Jp_Ju_g_functor computes correct Hessian with respect to parameters p⃗ and state u⃗") {
