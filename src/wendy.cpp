@@ -13,7 +13,7 @@
 #include <vector>
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_, bool compute_svd_) :
+             const xt::xtensor<double, 1> &tt_, bool compute_svd_):
     // Data
     tt(tt_),
     U(U_),
@@ -44,80 +44,84 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
             ), D, J
         )
     ),
-    // Variance of the data
+    // Standard deviation of the noise from the data
     Sigma(xt::diag(0.05*xt::ones<double>({D}))),
     compute_svd(compute_svd_) {}
 
+
+
 void Wendy::build_objective_function() {
-    const auto g = g_functor(F, V);
-    const auto JU_g = J_g_functor(U, tt, V, Ju_f);
-    const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
-    const auto Jp_JU_g = H_g_functor(U, tt, V, Jp_Ju_f);
-    const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
-    const auto Jp_Jp_JU_g = T_g_functor(U, tt, V, Jp_Jp_JU_f);
+    g = std::make_unique<g_functor>(F, V);
+    Ju_g = std::make_unique<J_g_functor>(U, tt, V, Ju_f);
+    Jp_g = std::make_unique<J_g_functor>(U, tt, V, Jp_f);
+    Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
+    Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
+    Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_JU_f);
+    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g);
+    b = xt::eval(-1.0 * xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+    S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
+    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
+}
 
-    const auto L = CovarianceFactor(U, tt, V, V_prime, Sigma, JU_g, Jp_JU_g, Jp_Jp_JU_g);
 
-    const auto b = xt::eval(-1.0*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+void Wendy::inspect_equations() const {
 
-    const auto S_inv_r = S_inv_r_functor(L, g, b);
+    if (obj == nullptr) {
+        std::cout << "ERROR: Objective Function not Initialized" << std::endl;
+        return;
+    }
 
-    const auto mle = MLE(U, tt, V, V_prime, L, g, b, JU_g, Jp_g, Jp_JU_g, Jp_Jp_g, Jp_Jp_JU_g, S_inv_r);
+    const auto analytical_jacobian = obj->Jacobian(p0);
+    const auto finite_jacobian = gradient_4th_order(*obj, p0);
 
-    // Check that the likelihood is minimized @pstar
-    // std::cout << std::endl;
-    //
-    // std::cout << mle(std::vector<double>({0.1,0.1}))   << std::endl;
-    // std::cout << mle(std::vector<double>({0.5,0.5}))   << std::endl;
-    // std::cout << mle(std::vector<double>({1.5,1.5}))   << std::endl;
-    // std::cout << mle(std::vector<double>({1,1}))   << std::endl;
-    //
-    // std::cout << std::endl;
+    std::cout << "\nAnalytical Jacobian" << std::endl;
+    for (const auto& row : analytical_jacobian) {
+            std::cout << row << " ";
+        std::cout << std::endl; // Newline after each row
+    }
+    std::cout << std::endl;
 
-    // const auto analytical_jacobian = mle.Jacobian(p0);
-    // const auto finite_jacobian = gradient_4th_order(mle, p0);
-    //
-    // std::cout << "\nAnalytical Jacobian" << std::endl;
-    // for (const auto& row : analytical_jacobian) {
-    //         std::cout << row << " ";
-    //     std::cout << std::endl; // Newline after each row
-    // }
-    //
-    // std::cout << std::endl;
-    //
-    // std::cout << "\nFinite Jacobian" << std::endl;
-    // for (const auto& row : finite_jacobian) {
-    //         std::cout << row << " ";
-    //     std::cout << std::endl; // Newline after each row
-    // }
-    //
-    // std::cout << std::endl;
-    //
-    // const auto analytical_hessian = mle.Hessian(p0);
-    // const auto finite_hessian = hessian_3rd_order(mle, p0);
-    //
-    // std::cout << "\nAnalytical Hessian" << std::endl;
-    // for (const auto& row : analytical_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
-    //
-    // std::cout << "\n Finite Hessian" << std::endl;
-    // for (const auto& row : finite_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
+    std::cout << "\nFinite Jacobian" << std::endl;
+    for (const auto& row : finite_jacobian) {
+            std::cout << row << " ";
+        std::cout << std::endl; // Newline after each row
+    }
 
-    MyMLEProblem problem(mle);
-    Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    std::cout << std::endl;
+
+    const auto analytical_hessian = obj->Hessian(p0);
+    const auto finite_hessian = hessian_3rd_order(*obj, p0);
+
+    std::cout << "\nAnalytical Hessian" << std::endl;
+    for (const auto& row : analytical_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
+
+    std::cout << "\n Finite Hessian" << std::endl;
+    for (const auto& row : finite_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
+}
+
+void Wendy::optimize_parameters() {
+
+    if (!obj) {
+        std::cout << "Warning: Objective Function not Initialized" << std::endl;
+        return;
+    }
+
+    const MyMLEProblem problem(*obj);
+    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
 
     cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
 
-    auto initial_state = cppoptlib::function::FunctionState(x_init);
+    const auto initial_state = cppoptlib::function::FunctionState(x_init);
 
     // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
 
@@ -128,6 +132,7 @@ void Wendy::build_objective_function() {
     std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 
     p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+
 }
 
 
@@ -207,10 +212,10 @@ void Wendy::build_full_test_function_matrices() {
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
     std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
 
-    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K), xt::all()));
+    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K-1), xt::all()));
 
     // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
     const auto UtV_prime = xt::linalg::dot(xt::transpose(U_), V_prime);
 
-    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K), xt::all()));
+    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K-1), xt::all()));
 }

@@ -1,6 +1,8 @@
 #ifndef WENDY_H
 #define WENDY_H
 
+
+#include "objective/mle.h"
 #include "weak_residual.h"
 #include "weak_residual_covariance.h"
 #include <symengine/expression.h>
@@ -67,12 +69,29 @@ public:
     size_t min_radius_ix{};
 
 
+    // Weak Residual Equations
+    std::unique_ptr<g_functor> g;
+    std::unique_ptr<J_g_functor> Ju_g;
+    std::unique_ptr<J_g_functor> Jp_g;
+    std::unique_ptr<H_g_functor> Jp_Ju_g;
+    std::unique_ptr<H_g_functor> Jp_Jp_g;
+    std::unique_ptr<T_g_functor> Jp_Jp_Ju_g;
+    std::unique_ptr<CovarianceFactor> L;
+    xt::xtensor<double,1> b;
+    std::unique_ptr<S_inv_r_functor> S_inv_r;
+    std::shared_ptr<MLE> obj;
+
+
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
           const xt::xtensor<double, 1> &tt_, bool compute_svd_ = true);
 
     void build_full_test_function_matrices();
 
     void build_objective_function();
+
+    void inspect_equations() const;
+
+    void optimize_parameters();
 
     [[nodiscard]] const xt::xtensor<double, 2> &getU() const { return this->U; }
     [[nodiscard]] const xt::xtensor<double, 2> &getV() const { return this->V; }

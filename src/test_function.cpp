@@ -23,17 +23,16 @@ std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
     result.reserve(t_vec.size());
 
     for (const auto &t: t_vec) {
-        result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
+        result.push_back(std::exp(-eta * std::pow((1 - std::pow(t, 2.0)), -1.0)));
     }
     return result;
 }
 
-auto test_function_derivative(const int radius, const double dt, const int order) {
-    const auto scale_factor = std::pow(static_cast<double>(radius * dt), -1 * order);
+auto test_function_derivative(const double radius, const double dt, const int order) {
+    const auto scale_factor = std::pow((static_cast<double>(radius) * static_cast<double>(dt)), (-1.0 * order));
     // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
     const SymEngine::RCP<const SymEngine::Symbol> t = SymEngine::symbol("t");
-    const SymEngine::Expression expression = SymEngine::exp(
-        -9 * SymEngine::pow((1 - SymEngine::pow(SymEngine::Expression(t), 2)), -1));
+    const SymEngine::Expression expression = SymEngine::exp( -9 * SymEngine::pow((1 - SymEngine::pow(SymEngine::Expression(t), 2)), -1));
     const auto derivative = SymEngine::expand(scale_factor * expression.diff(t));
     return (make_scalar_function(derivative, t));
 }
@@ -86,7 +85,7 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
         if (order == 0) {
             return (phi(t, 9));
         }
-        const std::function<double(double)> phi_deriv = test_function_derivative(radius, dt, order);
+        const std::function<double(double)> phi_deriv = test_function_derivative((radius + 0.5), dt, order);
         return (phi_deriv(t));
     };
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once

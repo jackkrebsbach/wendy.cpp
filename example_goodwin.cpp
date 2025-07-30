@@ -43,15 +43,6 @@ std::vector<std::vector<double> > add_noise(
     int npoints = data.size();
     int dim = data[0].size();
 
-    std::vector<double> stddev(dim, 0.0);
-    for (int d = 0; d < dim; ++d) {
-        double mean = 0.0;
-        for (int i = 0; i < npoints; ++i) mean += data[i][d];
-        mean /= npoints;
-        for (int i = 0; i < npoints; ++i) stddev[d] += std::pow(data[i][d] - mean, 2);
-        stddev[d] = std::sqrt(stddev[d] / npoints);
-    }
-
     std::random_device rd;
     std::mt19937 gen(rd());
     for (int d = 0; d < dim; ++d) {

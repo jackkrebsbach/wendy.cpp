@@ -15,14 +15,14 @@ std::vector<double> logistic(double t, const std::vector<double> &u, const std::
 std::vector<std::vector<double> > integrate_(
     const std::vector<double> &u0,
     const std::vector<double> &p,
-    double t0, double t1, int npoints) {
-    int dim = u0.size();
-    std::vector<std::vector<double> > result(npoints, std::vector<double>(dim));
-    const double dt = (t1 - t0) / (npoints - 1);
+    const double t0, const double t1, int n_points) {
+    const int dim = u0.size();
+    std::vector<std::vector<double> > result(n_points, std::vector<double>(dim));
+    const double dt = (t1 - t0) / (n_points - 1);
     std::vector<double> u = u0;
     double t = t0;
 
-    for (int i = 0; i < npoints; ++i) {
+    for (int i = 0; i < n_points; ++i) {
         result[i] = u;
         auto du = logistic(t, u, p);
         for (int d = 0; d < dim; ++d) {
@@ -35,18 +35,18 @@ std::vector<std::vector<double> > integrate_(
 
 std::vector<std::vector<double>> add_noise(
     const std::vector<std::vector<double>>& data,
-    double noise_ratio) {
+    const double noise_ratio) {
     std::vector<std::vector<double>> noisy = data;
-    int npoints = data.size();
-    int dim = data[0].size();
+    const int n_points = data.size();
+    const int dim = data[0].size();
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<> dist(0, 1);
+    std::normal_distribution<> dist(0, noise_ratio);
 
-    for (int i = 0; i < npoints; ++i) {
+    for (int i = 0; i < n_points; ++i) {
         for (int d = 0; d < dim; ++d) {
-            noisy[i][d] += noise_ratio * dist(gen);
+            noisy[i][d] +=  dist(gen);
         }
     }
     return noisy;
@@ -55,13 +55,13 @@ std::vector<std::vector<double>> add_noise(
 
 int main() {
 
-    std::vector<double> p_star = {1.0, 1.0};
+    const std::vector<double> p_star = {1.0, 1.0};
     std::vector<double> p_perturbed = {0.25 ,0.25};
 
     const std::vector<double> u0 = {0.01};
 
-    constexpr double noise_ratio = 0.05;
-    constexpr int num_samples = 150;
+    constexpr double noise_ratio = 0.1;
+    constexpr int num_samples = 175;
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
 
@@ -78,18 +78,16 @@ int main() {
 
     const xt::xtensor<double,2> U = xt::adapt(u_flat, shape);
 
-    const std::vector<std::string> system_eqs = {
-        "u1*p1 - p2*u1^2"
-    };
+    const std::vector<std::string> system_eqs = { "u1*p1 - p2*u1^2" };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     const std::vector<double> p0(p_perturbed.begin(), p_perturbed.end());
     try {
-
        Wendy wendy(system_eqs, U, p0, tt, true);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
-
+       wendy.inspect_equations();
+       wendy.optimize_parameters();
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;
     }
