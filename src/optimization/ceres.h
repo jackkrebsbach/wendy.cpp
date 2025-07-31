@@ -1,47 +1,35 @@
 #pragma once
 #include "../objective/mle.h"
-#include <cppoptlib/function.h>
-#include <cppoptlib/solver/lbfgs.h>
-#include <cppoptlib/solver/newton_descent.h>
+#include <ceres/ceres.h>
 
-class MleProblem final : public cppoptlib::function::FunctionCRTP<MleProblem, double, cppoptlib::function::DifferentiabilityMode::First> {
+class MleCeresCostFunction final : public ceres::CostFunction {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    const MLE mle;
-
-    explicit MleProblem(
-        const MLE &mle_
-    ) : mle(mle_) {}
-
-    ScalarType operator()(const VectorType &x) const {
-        return this->operator()(x, nullptr);
+    MleCeresCostFunction(const MLE& mle_, const std::vector<double>& p0)
+        : parameter_dim(static_cast<int>(p0.size())), mle(mle_) {
+        set_num_residuals(1);
+        mutable_parameter_block_sizes()->push_back(parameter_dim);
     }
-    // ScalarType operator()(const VectorType &x, VectorType *grad) const {
-    //     return this->operator()(x, grad, nullptr);
-    // }
-    ScalarType operator()(const VectorType &x, VectorType *grad) const {
-        const std::vector<double> p(x.data(), x.data() + x.size());
 
-        if (grad) {
-            grad->resize(x.size());
-            const auto g = mle.Jacobian(p);
-            // const auto g = gradient_4th_order(mle, p);
+    bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const override {
 
-            for (Eigen::Index i = 0; i < x.size(); ++i){
-                (*grad)(i) = g[i];
+        const double* x_ptr = parameters[0];
+        const std::vector p(x_ptr, x_ptr + parameter_dim);
+
+        residuals[0] = mle(p);
+
+        if (jacobians && jacobians[0]) {
+            // const std::vector<double> g = gradient_4th_order(mle, p);
+            const std::vector<double> g = mle.Jacobian(p);
+
+            for (int i = 0; i < parameter_dim; ++i) {
+                jacobians[0][i] = g[i];
             }
         }
-        // if (hessian) {
-        //     hessian->resize(x.size(), x.size());
-        //     // const auto H = mle.Hessian(p);
-        //     const auto H = hessian_3rd_order(mle, p);
-        //     for (Eigen::Index i = 0; i < x.size(); ++i) {
-        //         for (Eigen::Index j = 0; j < x.size(); ++j) {
-        //             (*hessian)(i, j) = H[i][j];
-        //         }
-        //     }
-        // }
 
-        return mle(p);
+        return true;
     }
+
+    int parameter_dim;
+    const MLE mle;
 };

@@ -31,21 +31,15 @@ MLE::MLE(
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
-    const auto JU_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
-    const auto Lp = L(p);
-    const auto r = g(p) - b;
+    const auto Sigma_I_mp1 = xt::linalg::kron(L.Sigma, xt::eye(mp1));
+    const auto I_D_phi_prime = xt::linalg::kron( xt::eye(D),V_prime ); // I_d x ϕ'
+    const auto Ju_gp = xt::reshape_view<xt::layout_type::column_major>(Ju_g(p), {K * D, D * mp1});
+    const auto Lp = xt::linalg::dot((Ju_gp + I_D_phi_prime), Sigma_I_mp1);
     const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
-    const auto quad = xt::linalg::dot(xt::transpose(r), xt::linalg::solve(S, r))();
-
-
-    auto logdetS = std::log(xt::linalg::det(S));
-    if (std::isinf(logdetS) && logdetS < 0.0) {
-        const auto C = xt::linalg::cholesky(S);
-        const auto diagL = xt::diag(C);
-        const auto filtered_diag = xt::filter(diagL, xt::not_equal(diagL, 0.0));
-        logdetS = 2.0 * xt::sum(xt::log(filtered_diag))();
-     }
-    const auto wnll = 0.5*(logdetS + quad + constant_term)  ;
+    const auto r = g(p) - b;
+    const auto quad = xt::linalg::dot(r, S_inv_r(p))();
+    const auto logdetS = std::log(xt::linalg::det(S));
+    const auto wnll = 0.5*(logdetS + quad + constant_term);
     return (wnll);
 }
 

@@ -55,7 +55,7 @@ struct S_inv_r_functor {
 
     xt::xtensor<double, 1> operator()(const std::vector<double> &p) const {
         const auto Lp = L(p);
-        const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+        const auto S = xt::linalg::dot(Lp, xt::eval(xt::transpose(Lp)));
         const auto r = g(p) - b;
         const auto x = xt::linalg::solve(S, r); // Solve Sx = g(p) - b;
         return (x);

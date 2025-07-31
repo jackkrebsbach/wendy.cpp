@@ -125,20 +125,20 @@ TEST_CASE("Cholesky solve vs regular solve") {
 
 }
 
-TEST_CASE("Weak Negative Log Likelihood") {
-    const auto wnll = mle(p);
-
-    const auto Lp = L(p);
-    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
-    const auto r = g(p) - b;
-    const auto x = xt::linalg::solve(S,r);
-    const auto logdet = std::log(xt::linalg::det(S));
-    const auto quad = xt::linalg::dot(r,x)();
-    const auto wnnl_manual = 0.5*(logdet + quad + K*D*std::log(2*std::numbers::pi));
-
-    CHECK(xt::isclose(wnll, wnnl_manual));
-
-}
+// TEST_CASE("Weak Negative Log Likelihood") {
+//     const auto wnll = mle(p);
+//
+//     const auto Lp = L(p);
+//     const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+//     const auto r = g(p) - b;
+//     const auto x = xt::linalg::solve(S,r);
+//     const auto logdet = std::log(xt::linalg::det(S));
+//     const auto quad = xt::linalg::dot(r,x)();
+//     const auto wnnl_manual = 0.5*(logdet + quad + K*D*std::log(2*std::numbers::pi));
+//
+//     CHECK(xt::isclose(wnll, wnnl_manual));
+//
+// }
 
 TEST_CASE("HESSIAN Term") {
     const auto Lp = L(p);

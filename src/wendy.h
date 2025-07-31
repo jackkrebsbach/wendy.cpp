@@ -36,6 +36,7 @@ public:
     xt::xtensor<double, 2> V; // Test Function Matrix
     xt::xtensor<double, 2> V_prime; //  Derivative of Test Function Matrix
 
+
     // Symbolics
     std::vector<SymEngine::Expression> f_symbolic; // Symbolic rhs u' = f(p,u,t)
     std::vector<std::vector<SymEngine::Expression> > Ju_f_symbolic; // Symbolic jacobian of the rhs w.r.t u⃗
@@ -53,7 +54,7 @@ public:
     H_f_functor Jp_Ju_f; // ∇ₚ∇ᵤf(p,u,t) 3D Tensor with mixed partials
     H_f_functor Ju_Jp_f; // ∇ᵤ∇ₚf(p,u,t) 3D Tensor with mixed partials
 
-    T_f_functor Jp_Jp_JU_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
+    T_f_functor Jp_Jp_Ju_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
 
     // Weak residual functors and related objects
     xt::xtensor<double, 2> Sigma; // Variance estimates for each dimension diagonal Matrix (D x D)

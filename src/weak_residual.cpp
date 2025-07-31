@@ -110,7 +110,6 @@ xt::xtensor<double, 4> T_f_functor::operator()(
     inputs.emplace_back(t);
     xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
 
-
     for (std::size_t i = 0; i < nrows; ++i) {
         for (std::size_t j = 0; j < ncols; ++j) {
             for (std::size_t k = 0; k < ndepth; ++k) {
@@ -139,7 +138,7 @@ xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const
     for (int i = 0; i < U.shape()[0]; ++i) {
         auto u = xt::row(U, i);
         auto t = tt[i];
-        xt::view(F_eval, i, xt::all()) = f(p, u, t);
+        xt::row(F_eval, i) = f(p, u, t);
     }
     return F_eval;
 }
@@ -150,8 +149,7 @@ g_functor::g_functor(const F_functor &F_,
 }
 
 xt::xtensor<double, 1> g_functor::operator()(const std::vector<double> &p) const {
-    const auto F_eval = F(p);
-    return (xt::reshape_view(xt::transpose(xt::linalg::dot(V, F_eval)), {V.shape()[0]*F_eval.shape()[1]}));
+    return (xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, F(p))));
 }
 
 // ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
@@ -176,11 +174,10 @@ xt::xtensor<double, 4> J_g_functor::operator()(
         const double &t = tt[i];
         const auto &u = xt::row(U,i);
         xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
-    }
-    // // V_expanded has dimension (K, mp1, 1, 1)
+    }                                 // // V_expanded has dimension (K, mp1, 1, 1)
     auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
-    auto Jg = V_expanded * J_F_expanded; // (K, mp1, D, len(∇))
-    auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 3, 1}); // (K, D, len(∇), mp1)
+    auto Jg = V_expanded * J_F_expanded;          // (K, mp1, D, len(∇))
+    auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 3, 1}); // (K, D, mp1, len(∇))
 
     return J_g_t;
 }

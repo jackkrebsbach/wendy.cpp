@@ -31,6 +31,7 @@ find_package(xtensor REQUIRED)
 find_package(symengine REQUIRED)
 find_package(xtensor-blas REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(Ceres REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 
@@ -42,6 +43,7 @@ target_link_libraries(wendy_tests
         Eigen3::Eigen
         CppNumericalSolvers
         fftw3
+        Ceres::ceres
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
         ${FLINT_LIBRARY}

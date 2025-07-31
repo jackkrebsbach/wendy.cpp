@@ -7,6 +7,8 @@
 #include <xtensor-blas/xlinalg.hpp>
 #include <boost/numeric/odeint.hpp>
 
+#include "src/utils.h"
+
 using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
@@ -44,12 +46,13 @@ std::vector<std::vector<double> > add_noise( const std::vector<std::vector<doubl
 int main() {
 
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
-    std::vector<double> p0 = {3.2, 0.075, 1.25, 12, 0.15, 0.121, 0.18, 0.10};
+    std::vector<double> p0 = {3.0, 0.1, 4 , 12, 0.1, 0.1, 0.1, 0.1};
+    // p₀ = [3.0, 0.1, 4, 12, 0.1, 0.1, 0.1, 0.1]
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 80;
+    constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
 
@@ -85,7 +88,7 @@ int main() {
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     try {
 
-       Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
+       Wendy wendy(system_eqs, U, p0, tt, noise_sd, false);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 
@@ -95,13 +98,23 @@ int main() {
         std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
         std::cout << std::endl;
 
+        // print_vector(mle.Jacobian(std::vector<double>(p0)));
+
         std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
         std::cout << mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
         std::cout << mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
         std::cout << mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
 
-       wendy.inspect_equations();
+       //wendy.inspect_equations();
        wendy.optimize_parameters();
+
+
+        std::cout << "P0: " << std::endl;
+        print_vector(p0);
+
+        std::cout << "Pstar: " << std::endl;
+        print_vector(p_star);
+
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

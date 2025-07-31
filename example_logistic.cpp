@@ -43,13 +43,13 @@ struct LogisticODE {
 
 int main() {
     const std::vector p_star = {1.0, 1.0};
-    std::vector p0 = {0.5, 0.5};
+    std::vector p0 = {0.25, 0.25};
 
     const std::vector u0 = {0.005};
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 200;
+    constexpr int num_samples = 100;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -81,7 +81,7 @@ int main() {
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
+        Wendy wendy(system_eqs, U, p0, tt, noise_sd, false);
 
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
@@ -89,15 +89,22 @@ int main() {
         const auto mle = *wendy.obj;
 
         std::cout << "\np*: " << mle(p_star) << std::endl;
-
+        std::cout << "p0: " << mle(p0) << std::endl;
+        std::cout << "    " << mle(std::vector<double>({0.55, 0.55})) << std::endl;
         std::cout << "    " << mle(std::vector<double>({0.9, 0.9})) << std::endl;
         std::cout << "    " << mle(std::vector<double>({0.25, 0.25})) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({0.5, 0.5})) << std::endl;
         std::cout << "    " << mle(std::vector<double>({1.5, 1.5})) << std::endl;
         std::cout << "    " << mle(std::vector<double>({2.0, 2.0})) << std::endl;
 
-        wendy.inspect_equations();
+        // wendy.inspect_equations();
         // wendy.optimize_parameters();
+
+
+        // std::cout << "P0: " << std::endl;
+        // print_vector(p0);
+        //
+        // std::cout << "Pstar: " << std::endl;
+        // print_vector(p_star);
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

@@ -3,6 +3,7 @@
 #include "wendy.h"
 #include "test_function.h"
 #include "objective/mle.h"
+#include "optimization/cpp_numerical.h"
 #include "optimization/ceres.h"
 
 #include <xtensor/containers/xarray.hpp>
@@ -39,7 +40,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
     Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
 
-    Jp_Jp_JU_f(build_T_f(
+    Jp_Jp_Ju_f(build_T_f(
             build_symbolic_jacobian(
                 build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
                 create_symbolic_vars("p", J)
@@ -51,14 +52,24 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 }
 
 void Wendy::build_objective_function() {
+    // const auto row_V = xt::view(V, 0, xt::all());
+    // std::array<std::size_t, 2> new_shape = {1, row_V.shape()[0]};
+    // this->V = xt::eval(xt::reshape_view(row_V, new_shape));
+    //
+    //
+    // const auto row_Vp = xt::view(V_prime, 0, xt::all());
+    // std::array<std::size_t, 2> new_shape_p = {1, row_Vp.shape()[0]};
+    // this->V_prime = xt::eval(xt::reshape_view(row_Vp, new_shape_p));
+
+
     g = std::make_unique<g_functor>(F, V);
     Ju_g = std::make_unique<J_g_functor>(U, tt, V, Ju_f);
     Jp_g = std::make_unique<J_g_functor>(U, tt, V, Jp_f);
     Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
-    Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_JU_f);
+    Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
     L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g);
-    b = xt::eval( xt::reshape_view(xt::linalg::dot(-1.0*V_prime, U), {V_prime.shape()[0]*D}));
+    b = xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(-1.0*V_prime, U));
     S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
     obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
 }
@@ -110,22 +121,49 @@ void Wendy::optimize_parameters() {
 
     if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
+    // const MleProblem problem(mle);
+    // const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
+    //
+    // cppoptlib::solver::NewtonDescent<MleProblem> solver;
+    //
+    // auto initial_state = cppoptlib::function::FunctionState(x_init);
+    //
+    //
+    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    //
+    //
+    // std::cout << "\nSolver finished" << std::endl;
+    // std::cout << "Final Status: " << solver_state.status << std::endl;
+    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+
     const auto mle = *obj;
-    const MleProblem problem(mle);
-    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
 
-    cppoptlib::solver::Lbfgs<MleProblem> solver;
+    auto* cost_function = new MleCeresCostFunction(mle, p0);
+    double* p = p0.data();
 
-    const auto initial_state = cppoptlib::function::FunctionState(x_init);
+    ceres::Problem problem;
+    problem.AddResidualBlock(cost_function, nullptr, p);
 
-    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    ceres::Solver::Options options;
+    options.minimizer_progress_to_stdout = false;
+    options.linear_solver_type = ceres::DENSE_SCHUR;
 
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
 
-    std::cout << "\nSolver finished" << std::endl;
-    std::cout << "Final Status: " << solver_state.status << std::endl;
-    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+    // std::cout << summary.FullReport() << "\n";
 
-    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+    const auto precision = 4;
+    std::cout << "Phat: " << std::endl;
+    for (size_t i = 0; i <p0.size(); ++i){
+        std::cout << std::setw(precision + 6)
+                  << std::setprecision(precision)
+                  << std::fixed
+                <<  p[i] << " ";
+    }
+
+    std::cout << std::endl;
+    p_hat = std::vector<double>(p, p + p0.size());
 
 }
 

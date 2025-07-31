@@ -151,7 +151,7 @@ inline void print_matrix(const std::vector<std::vector<double> > &mat, const int
     }
 }
 
-inline void print_vector(const std::vector<double>& vec, const int precision = 1) {
+inline void print_vector(const std::vector<double>& vec, const int precision = 3) {
     for (const double val : vec) {
         std::cout << std::setw(precision + 6)
                   << std::setprecision(precision)

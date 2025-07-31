@@ -29,9 +29,8 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_Ju_g.grad2_len;
 
-    Sigma_I_mp1 = xt::linalg::kron(Sigma, xt::eye(mp1));
+    Sigma_I_mp1 = xt::linalg::kron(xt::eye(mp1), Sigma);
     I_D_phi_prime = xt::linalg::kron( xt::eye(D),V_prime ); // I_d x ϕ'
-
 
 }
 
@@ -39,13 +38,8 @@ CovarianceFactor::CovarianceFactor(
 xt::xtensor<double, 2> CovarianceFactor::operator()(
     const std::vector<double> &p
 ) const {
-    const auto Ju_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
-
-    assert((Ju_gp.shape() == I_D_phi_prime.shape()) && Ju_gp.shape()[1] == Sigma_I_mp1.shape()[0]);
-
-    const auto sum = xt::eval(Ju_gp + I_D_phi_prime);
-    const auto L = xt::linalg::dot(sum, Sigma_I_mp1);
-
+    const auto Ju_gp = xt::reshape_view<xt::layout_type::column_major>(Ju_g(p), {K * D, D * mp1});
+    const auto L = xt::linalg::dot(Ju_gp + I_D_phi_prime, Sigma_I_mp1);
     return (L);
 };
 
