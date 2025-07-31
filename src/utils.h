@@ -176,7 +176,6 @@ H_f_functor build_H_f(const std::vector<std::vector<std::vector<SymEngine::Expre
 T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymEngine::Expression> > > > &T_f_symbolic,
                       size_t D, size_t J);
 
-size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<double, 1> *xx_in = nullptr);
-
+size_t get_corner_index(const xt::xtensor<double, 1> &y, const xt::xtensor<double, 1> *xx_in = nullptr);
 
 #endif //UTILS_H

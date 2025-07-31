@@ -1,20 +1,20 @@
 #include "src/wendy.h"
+#include "src/utils.h"
+
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
 #include <random>
 #include <boost/numeric/odeint.hpp>
 #include <xtensor-blas/xlinalg.hpp>
-#include "src/utils.h"
-
 
 using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
 
-std::vector<std::vector<double>> add_noise( const std::vector<std::vector<double>>& data, const double noise_ratio) {
-    std::vector<std::vector<double>> noisy = data;
+std::vector<std::vector<double> > add_noise(const std::vector<std::vector<double> > &data, const double noise_sd) {
+    std::vector<std::vector<double> > noisy = data;
     const int n_points = static_cast<int>(data.size());
     const int dim = static_cast<int>(data[0].size());
 
@@ -24,7 +24,7 @@ std::vector<std::vector<double>> add_noise( const std::vector<std::vector<double
 
     for (int i = 0; i < n_points; ++i) {
         for (int d = 0; d < dim; ++d) {
-            noisy[i][d] +=  noise_ratio*dist(gen);
+            noisy[i][d] += noise_sd * dist(gen);
         }
     }
     return noisy;
@@ -32,27 +32,28 @@ std::vector<std::vector<double>> add_noise( const std::vector<std::vector<double
 
 struct LogisticODE {
     std::vector<double> p;
-    explicit LogisticODE(const std::vector<double>& p_) : p(p_) {}
+
+    explicit LogisticODE(const std::vector<double> &p_) : p(p_) {
+    }
 
     void operator()(const state_type &u, state_type &du_dt, double /*t*/) const {
-        du_dt[0] = u[0]*p[0] - p[1]*std::pow(u[0], 2);
+        du_dt[0] = u[0] * p[0] - p[1] * std::pow(u[0], 2);
     }
 };
 
 int main() {
+    const std::vector p_star = {1.0, 1.0};
+    std::vector p0 = {0.5, 0.5};
 
-    const std::vector<double> p_star = {1, 1};
-    std::vector<double> p0 = {0.5 ,0.5};
-
-    const std::vector<double> u0 = {0.005};
-    std::vector<double> u = u0;
+    const std::vector u0 = {0.005};
+    std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 200;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
-    const xt::xtensor<double,1> t_eval = xt::linspace(t0,t1, num_samples);
+    const xt::xtensor<double, 1> t_eval = xt::linspace(t0, t1, num_samples);
     std::vector<state_type> u_eval;
     std::vector<double> t_vec;
 
@@ -73,30 +74,30 @@ int main() {
         u_flat.insert(u_flat.end(), row.begin(), row.end());
     }
 
-    const xt::xtensor<double,2> U = xt::adapt(u_flat, shape);
+    const xt::xtensor<double, 2> U = xt::adapt(u_flat, shape);
 
-    const std::vector<std::string> system_eqs = { "u1*p1 - p2*u1^2" };
 
-    const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     try {
+        const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
+        const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-       Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
-       wendy.build_full_test_function_matrices();
-       wendy.build_objective_function();
-       // wendy.inspect_equations();
+        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
+
+        wendy.build_full_test_function_matrices();
+        wendy.build_objective_function();
 
         const auto mle = *wendy.obj;
 
-        std::cout << "\npstar: " <<  mle(p_star) << std::endl;
-        std::cout << std::endl;
+        std::cout << "\np*: " << mle(p_star) << std::endl;
 
-        std::cout << mle(std::vector<double>({0.9,0.9}))  << std::endl;
-        std::cout << mle(std::vector<double>({0.25,0.25}))  << std::endl;
-        std::cout << mle(std::vector<double>({0.5,0.5}))  << std::endl;
-        std::cout << mle(std::vector<double>({1.5,1.5}))  << std::endl;
-        std::cout << mle(std::vector<double>({2, 2}))  << std::endl;
+        std::cout << "    " << mle(std::vector<double>({0.9, 0.9})) << std::endl;
+        std::cout << "    " << mle(std::vector<double>({0.25, 0.25})) << std::endl;
+        std::cout << "    " << mle(std::vector<double>({0.5, 0.5})) << std::endl;
+        std::cout << "    " << mle(std::vector<double>({1.5, 1.5})) << std::endl;
+        std::cout << "    " << mle(std::vector<double>({2.0, 2.0})) << std::endl;
 
-       // wendy.optimize_parameters();
+        wendy.inspect_equations();
+        // wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

@@ -4,54 +4,28 @@
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
 #include <random>
-#include <cmath>
 #include <xtensor-blas/xlinalg.hpp>
+#include <boost/numeric/odeint.hpp>
 
-std::vector<double> goodwin_3d(double t, const std::vector<double> &u, const std::vector<double> &p) {
-    double du1 = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
-    double du2 = p[4] * u[0] - p[5] * u[1];
-    double du3 = p[6] * u[1] - p[7] * u[2];
-    return {du1, du2, du3};
-}
-std::vector<std::vector<double>> integrate_(
-    const std::vector<double> &u0,
-    const std::vector<double> &p,
-    double t0,
-    double dt,
-    const xt::xtensor<double,1> &t_eval
-) {
-    const int dim = u0.size();
-    std::vector<std::vector<double>> result;
-    std::vector<double> u = u0;
-    double t = t0;
+using namespace boost::numeric::odeint;
 
-    size_t eval_idx = 0;
-    const size_t n_eval = t_eval.size();
+using state_type = std::vector<double>;
 
-    while (eval_idx < n_eval) {
-        // Save current u if t has passed t_eval[eval_idx]
-        if (t >= t_eval[eval_idx] - 1e-10) {  // small tolerance
-            result.push_back(u);
-            ++eval_idx;
-        }
 
-        // Euler step
-        auto du = goodwin_3d(t, u, p);
-        for (int d = 0; d < dim; ++d) {
-            u[d] += du[d] * dt;
-        }
-        t += dt;
+struct GoodwinODE {
+    std::vector<double> p;
+
+    explicit GoodwinODE(const std::vector<double> &p_) : p(p_) {}
+
+    void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
+        du_dt[0] = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
+        du_dt[1] = p[4] * u[0] - p[5] * u[1];
+        du_dt[2] = p[6] * u[1] - p[7] * u[2];
     }
-
-    return result;
-}
+};
 
 
-
-
-std::vector<std::vector<double> > add_noise(
-    const std::vector<std::vector<double> > &data,
-    const double noise_ratio) {
+std::vector<std::vector<double> > add_noise( const std::vector<std::vector<double> > &data, const double noise_sd) {
     std::vector<std::vector<double> > noisy = data;
     const int n_points = data.size();
     const int dim = data[0].size();
@@ -59,7 +33,7 @@ std::vector<std::vector<double> > add_noise(
     std::random_device rd;
     std::mt19937 gen(rd());
     for (int d = 0; d < dim; ++d) {
-        std::normal_distribution<> dist(0.0,  noise_ratio);
+        std::normal_distribution<> dist(0.0,  noise_sd);
         for (int i = 0; i < n_points; ++i) {
             noisy[i][d] += dist(gen);
         }
@@ -72,16 +46,26 @@ int main() {
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
     std::vector<double> p0 = {3.2, 0.075, 1.25, 12, 0.15, 0.121, 0.18, 0.10};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
+    std::vector u = u0;
 
-    constexpr int num_samples = 200;
+    constexpr double noise_sd = 0.05;
+    constexpr int num_samples = 80;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
 
-    constexpr double noise_ratio = 0.05;
+    const xt::xtensor<double, 1> t_eval = xt::linspace(t0, t1, num_samples);
+    std::vector<state_type> u_eval;
+    std::vector<double> t_vec;
 
-    const xt::xtensor<double,1> t_eval = xt::linspace(t0,t1, num_samples);
-    const auto u_star = integrate_(u0, p_star, t0, 0.01, t_eval);
-    const auto u_noisy = add_noise(u_star, noise_ratio);
+    auto observer = [&](const state_type &x, double t) {
+        u_eval.push_back(x);
+        t_vec.push_back(t);
+    };
+
+    runge_kutta4<state_type> stepper;
+    integrate_times(stepper, GoodwinODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+
+    const auto u_noisy = add_noise(u_eval, noise_sd);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
@@ -101,7 +85,7 @@ int main() {
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     try {
 
-       Wendy wendy(system_eqs, U, p0, tt, true);
+       Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 
@@ -116,8 +100,8 @@ int main() {
         std::cout << mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
         std::cout << mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
 
-       // wendy.inspect_equations();
-       // wendy.optimize_parameters();
+       wendy.inspect_equations();
+       wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

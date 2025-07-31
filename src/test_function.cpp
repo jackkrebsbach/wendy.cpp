@@ -132,8 +132,7 @@ xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> 
     return V_full;
 }
 
-std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt,
-                              double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
+std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_error(xtensor<double, 2> &U, xtensor<double, 1> &tt, double radius_min, double radius_max, int num_radii, int sub_sample_rate) {
     auto Mp1 = U.shape()[0]; // Number of data points
     auto D = U.shape()[1]; // Dimension of the system
 
@@ -158,10 +157,10 @@ std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_err
         //Fast Fourier Transform
         auto f_hat_G = calculate_fft(GT_reshaped);
         auto f_hat_G_imag = xt::eval(xt::imag(xt::col(f_hat_G, IX)));
-        errors[i] = std::log(xt::norm_l2(f_hat_G_imag)());
+        errors[i] = xt::norm_l2(f_hat_G_imag)();
     }
 
-    auto ix = get_corner_index(errors);
+    const xtensor<double, 1> radii_dbl = xt::cast<double>(radii);
+    auto ix = get_corner_index(xt::log(errors), &radii_dbl);
     return std::make_tuple(ix, errors, radii);
 }
-

@@ -27,7 +27,7 @@ MLE::MLE(
    Ju_g(Ju_g_), Jp_g(Jp_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
    S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
     J = Jp_Ju_g.grad2_len;
-    constant_term = K*D*std::log(2*std::numbers::pi);
+    constant_term = static_cast<double>(K)*static_cast<double>(D)*std::log(2*std::numbers::pi);
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
@@ -36,7 +36,15 @@ double MLE::operator()(const std::vector<double> &p) const {
     const auto r = g(p) - b;
     const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
     const auto quad = xt::linalg::dot(xt::transpose(r), xt::linalg::solve(S, r))();
-    const auto logdetS = std::log(xt::linalg::det(S));
+
+
+    auto logdetS = std::log(xt::linalg::det(S));
+    if (std::isinf(logdetS) && logdetS < 0.0) {
+        const auto C = xt::linalg::cholesky(S);
+        const auto diagL = xt::diag(C);
+        const auto filtered_diag = xt::filter(diagL, xt::not_equal(diagL, 0.0));
+        logdetS = 2.0 * xt::sum(xt::log(filtered_diag))();
+     }
     const auto wnll = 0.5*(logdetS + quad + constant_term)  ;
     return (wnll);
 }

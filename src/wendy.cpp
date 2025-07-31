@@ -86,24 +86,24 @@ void Wendy::inspect_equations() const {
 
     std::cout << std::endl;
 
-    const auto analytical_hessian = obj->Hessian(p0);
-    const auto finite_hessian = hessian_3rd_order(*obj, p0);
-
-    std::cout << "\nAnalytical Hessian" << std::endl;
-    for (const auto& row : analytical_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
-
-    std::cout << "\n Finite Hessian" << std::endl;
-    for (const auto& row : finite_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
+    // const auto analytical_hessian = obj->Hessian(p0);
+    // const auto finite_hessian = hessian_3rd_order(*obj, p0);
+    //
+    // std::cout << "\nAnalytical Hessian" << std::endl;
+    // for (const auto& row : analytical_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
+    //
+    // std::cout << "\n Finite Hessian" << std::endl;
+    // for (const auto& row : finite_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
 }
 
 void Wendy::optimize_parameters() {
@@ -132,66 +132,74 @@ void Wendy::optimize_parameters() {
 
 void Wendy::build_full_test_function_matrices() {
     const double dt = xt::mean(xt::diff(tt))();
-    const auto mp1 = static_cast<double>(U.shape()[0]); // Number of observations
+    const int mp1 = static_cast<int>(U.shape()[0]); // Number of observations
 
     auto radii = test_function_params.radius_params;
     auto radius_min_time = test_function_params.radius_min_time;
     auto radius_max_time = test_function_params.radius_max_time;
 
-    int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time / dt), 1.0));
+    int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time / dt), 2.0));
+    int max_radius = static_cast<int>(std::floor(radius_max_time / dt)); // The diameter shouldn't be larger than the interior domain available
 
-    // The diameter shouldn't be larger than the interior domain available
-    int max_radius = static_cast<int>(std::floor(radius_max_time / dt));
+    int radius_min_max = static_cast<int>(std::floor(max_radius / xt::amax(radii)()));
+
+    if (radius_min_max < min_radius) {
+        radius_min_max = min_radius*10;
+    }
+
     if (int max_radius_for_interior = static_cast<int>(std::floor((mp1 - 2) / 2));
         max_radius > max_radius_for_interior) {
         max_radius = max_radius_for_interior;
     }
 
-    const auto [ix, errors, _] = find_min_radius_int_error(U, tt, min_radius, max_radius);
+    std::cout << "Min radius: " << min_radius << std::endl;
+    std::cout << "Max radius: " << max_radius << std::endl;
+    std::cout << "Minmax radius: " << radius_min_max << std::endl;
 
-    const int min_radius_int_error = _[ix];
+    const auto [ix, errors,radii_sweep ] = find_min_radius_int_error(U, tt, min_radius, radius_min_max);
+
+    auto min_radius_int_error = radii_sweep[ix];
 
     this->min_radius_errors = errors;
-    this->min_radius_radii = _;
+    this->min_radius_radii = radii_sweep;
     this->min_radius_ix = ix;
     this->min_radius = min_radius_int_error;
 
-    std::cout << "Minimum Radis: " << min_radius_int_error << std::endl;
+    std::cout << "Integral Error min radius: " << min_radius_int_error << std::endl;
 
     radii = test_function_params.radius_params * min_radius_int_error;
 
     this->radii = radii;
 
-    const auto radii_ = xt::filter(radii, radii < max_radius);
+    auto radii_ = xt::eval(xt::filter(radii, radii < max_radius));
 
-    auto V = build_full_test_function_matrix(tt, radii_, 0);
-    auto V_prime = build_full_test_function_matrix(tt, radii_, 1);
-
-    if (!compute_svd) {
-        this->V = V;
-        this->V_prime = V_prime;
-        return;
+    if (radii_.size() == 0) {
+        radii_ = xt::xtensor<int,1>({max_radius});
     }
 
-    const auto k_full = static_cast<double>(V.shape()[0]);
+    std::cout << "Radii " << radii_ << std::endl;
 
-    constexpr bool COMPUTE_FULL_MATRICES = false;
-    const auto SVD = xt::linalg::svd(V, COMPUTE_FULL_MATRICES);
+    auto V_ = build_full_test_function_matrix(tt, radii_, 0);
+    auto V_prime_ = build_full_test_function_matrix(tt, radii_, 1);
+
+    if (!compute_svd) { this->V = V_; this->V_prime = V_prime_; return; }
+
+    const auto k_full = static_cast<int>(V_.shape()[0]);
+
+    std::cout << "K Full: " << k_full << std::endl;
+
+    const auto SVD = xt::linalg::svd(V_, false);
+
     const xt::xtensor<double, 2> U_ = std::get<0>(SVD);
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
     const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
 
-    // const double corner_index = static_cast<double>(get_corner_index(xt::log(xt::cumsum(singular_values)))); // Change point in cumulative sum of singular values
-    const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
     double sum_singular_values = xt::sum(singular_values)();
-
-    int k_max = static_cast<int>(std::min({ k_full, mp1, max_test_fun_matrix }));
+    int k_max = std::min({ k_full, mp1, test_function_params.k_max });
 
     // Natural information is the ratio of the first k singular values to the sum
     xt::xtensor<double, 1> info_numbers = xt::zeros<double>({k_max});
-    for (int i = 1; i < k_max; i++) {
-        info_numbers[i] = xt::sum(xt::view(singular_values, xt::range(0, i)))() / sum_singular_values;
-    }
+    for (int i = 1; i < k_max; i++) { info_numbers[i] = xt::sum(xt::view(singular_values, xt::range(0, i)))() / sum_singular_values; }
 
     xt::xtensor<double, 1> condition_numbers = singular_values(0) / singular_values; // Recall the condition number of a matrix is σ_max/σ_min, σ_i are ordered
 
@@ -206,6 +214,7 @@ void Wendy::build_full_test_function_matrices() {
     if (k1 == -1) { k1 = std::numeric_limits<int>::max(); }
     if (k2 == -1) { k2 = std::numeric_limits<int>::max(); }
 
+    // const int change_point_singular_values = static_cast<int>(get_corner_index(xt::log(xt::cumsum(singular_values)))) +1;
     auto K = std::min({k1, k2, k_max});
 
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
@@ -214,8 +223,9 @@ void Wendy::build_full_test_function_matrices() {
 
     this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K), xt::all()));
 
-    // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-    const auto UtV_prime = xt::linalg::dot(xt::transpose(U_), V_prime);
+    // ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ.
+    // V has columns that form an O.N. for the row space of ϕ.
+    // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
 
-    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K), xt::all()));
+    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), xt::linalg::dot(xt::transpose(U_), V_prime_)), xt::range(0, K), xt::all()));
 }
