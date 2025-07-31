@@ -66,6 +66,7 @@ public:
     double min_radius{};
     xt::xtensor<double,1> min_radius_errors;
     xt::xtensor<double,1> min_radius_radii;
+    xt::xtensor<double,1> radii;
     size_t min_radius_ix{};
 
 
@@ -83,7 +84,7 @@ public:
 
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-          const xt::xtensor<double, 1> &tt_, bool compute_svd_ = true);
+          const xt::xtensor<double, 1> &tt_, double noise_sd = 0.05, bool compute_svd_ = true);
 
     void build_full_test_function_matrices();
 
@@ -92,10 +93,6 @@ public:
     void inspect_equations() const;
 
     void optimize_parameters();
-
-    [[nodiscard]] const xt::xtensor<double, 2> &getU() const { return this->U; }
-    [[nodiscard]] const xt::xtensor<double, 2> &getV() const { return this->V; }
-    [[nodiscard]] const xt::xtensor<double, 2> &getV_prime() const { return this->V_prime; }
 };
 
 #endif // WENDY_H

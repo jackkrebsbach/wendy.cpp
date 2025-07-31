@@ -151,7 +151,7 @@ g_functor::g_functor(const F_functor &F_,
 
 xt::xtensor<double, 1> g_functor::operator()(const std::vector<double> &p) const {
     const auto F_eval = F(p);
-    return (xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, F_eval)));
+    return (xt::reshape_view(xt::transpose(xt::linalg::dot(V, F_eval)), {V.shape()[0]*F_eval.shape()[1]}));
 }
 
 // ∇g(p) Jacobian of g w.r.t all state variables J_f is respect to at all the time points, function of p. The data are known.
@@ -206,7 +206,7 @@ xt::xtensor<double, 5> H_g_functor::operator()(
 
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
-        const auto &u = xt::view(U, i, xt::all());
+        const auto &u = xt::row(U, i);
         xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = H_f(p, u, t);
     }
     //Compute Hg                               // V_expanded has dimension (K, mp1, 1,       1, 1)
@@ -239,7 +239,7 @@ xt::xtensor<double, 6> T_g_functor::operator()(
 
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
-        const auto &u = xt::view(U, i, xt::all());
+        const auto &u = xt::row(U, i);
         xt::view(H_F, i, xt::all(), xt::all(), xt::all()) = T_f(p, u, t);
     }
     //Compute Tg                                                        // V_expanded has dimension (K, mp1, 1, 1, 1)

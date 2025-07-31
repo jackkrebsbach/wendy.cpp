@@ -12,7 +12,46 @@
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
-#include <limits.h>
+
+
+template<typename T>
+void print_xtensor2d(const T &tensor) {
+    auto shape = tensor.shape();
+    if (shape.size() != 2) {
+        std::cerr << "Tensor is not 2D!" << std::endl;
+        return;
+    }
+    for (std::size_t i = 0; i < shape[0]; ++i) {
+        for (std::size_t j = 0; j < shape[1]; ++j) {
+            std::cout << tensor(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+inline void print_system(const std::vector<SymEngine::Expression> &system) {
+    std::cout << "\n==================== ODE system ====================\n";
+    for (size_t i = 0; i < system.size(); ++i) {
+        std::cout << "f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
+            << std::endl;
+    }
+    std::cout << "===================================================\n"
+        << std::endl;
+}
+
+inline void print_jacobian(
+  const std::vector<std::vector<SymEngine::Expression> > &jac) {
+    std::cout << "\n==================== Jacobian =====================\n";
+    for (size_t i = 0; i < jac.size(); ++i) {
+        for (size_t j = 0; j < jac[i].size(); ++j) {
+            std::cout << SymEngine::str(*jac[i][j].get_basic()) << "  ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "===================================================\n"
+        << std::endl;
+}
+
 
 
 inline std::vector<double> gradient_4th_order(

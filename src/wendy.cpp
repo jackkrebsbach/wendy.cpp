@@ -12,8 +12,10 @@
 #include <iostream>
 #include <vector>
 
+#include <cppoptlib/solver/solver.h>
+
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_, bool compute_svd_):
+             const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_):
     // Data
     tt(tt_),
     U(U_),
@@ -28,14 +30,14 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     // Callable functions
     f(build_f(f_symbolic, D, J)),
-    F(f, U, tt),
+    F(F_functor(f, U, tt)),
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
 
     Ju_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)), D, J)),
-    Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
-    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
     Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)), D, J)),
+    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
+    Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
 
     Jp_Jp_JU_f(build_T_f(
             build_symbolic_jacobian(
@@ -44,11 +46,9 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
             ), D, J
         )
     ),
-    // Standard deviation of the noise from the data
-    Sigma(xt::diag(0.05*xt::ones<double>({D}))),
-    compute_svd(compute_svd_) {}
-
-
+    Sigma(xt::diag(noise_sd*xt::ones<double>({D}))), // Standard deviation of the noise from the data
+    compute_svd(compute_svd_) {
+}
 
 void Wendy::build_objective_function() {
     g = std::make_unique<g_functor>(F, V);
@@ -58,7 +58,7 @@ void Wendy::build_objective_function() {
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_JU_f);
     L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g);
-    b = xt::eval(-1.0 * xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V_prime, U)));
+    b = xt::eval( xt::reshape_view(xt::linalg::dot(-1.0*V_prime, U), {V_prime.shape()[0]*D}));
     S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
     obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
 }
@@ -66,10 +66,7 @@ void Wendy::build_objective_function() {
 
 void Wendy::inspect_equations() const {
 
-    if (obj == nullptr) {
-        std::cout << "ERROR: Objective Function not Initialized" << std::endl;
-        return;
-    }
+    if (!obj) { std::cout << "ERROR: Objective Function not Initialized" << std::endl; return; }
 
     const auto analytical_jacobian = obj->Jacobian(p0);
     const auto finite_jacobian = gradient_4th_order(*obj, p0);
@@ -111,23 +108,20 @@ void Wendy::inspect_equations() const {
 
 void Wendy::optimize_parameters() {
 
-    if (!obj) {
-        std::cout << "Warning: Objective Function not Initialized" << std::endl;
-        return;
-    }
+    if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
-    const MyMLEProblem problem(*obj);
-    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), p0.size());
+    const auto mle = *obj;
+    const MleProblem problem(mle);
+    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
 
-    cppoptlib::solver::Lbfgs<MyMLEProblem> solver;
+    cppoptlib::solver::Lbfgs<MleProblem> solver;
 
     const auto initial_state = cppoptlib::function::FunctionState(x_init);
 
-    // solver.SetCallback(cppoptlib::solver::PrintProgressCallback<MyMLEProblem, decltype(initial_state)>(std::cout));
-
     auto [solution, solver_state] = solver.Minimize(problem, initial_state);
 
-    std::cout << "\nSolver finished!" << std::endl;
+
+    std::cout << "\nSolver finished" << std::endl;
     std::cout << "Final Status: " << solver_state.status << std::endl;
     std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 
@@ -144,7 +138,7 @@ void Wendy::build_full_test_function_matrices() {
     auto radius_min_time = test_function_params.radius_min_time;
     auto radius_max_time = test_function_params.radius_max_time;
 
-    int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time / dt), 2.0)); // At least two data points
+    int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time / dt), 1.0));
 
     // The diameter shouldn't be larger than the interior domain available
     int max_radius = static_cast<int>(std::floor(radius_max_time / dt));
@@ -162,7 +156,12 @@ void Wendy::build_full_test_function_matrices() {
     this->min_radius_ix = ix;
     this->min_radius = min_radius_int_error;
 
-    radii = radii * min_radius_int_error;
+    std::cout << "Minimum Radis: " << min_radius_int_error << std::endl;
+
+    radii = test_function_params.radius_params * min_radius_int_error;
+
+    this->radii = radii;
+
     const auto radii_ = xt::filter(radii, radii < max_radius);
 
     auto V = build_full_test_function_matrix(tt, radii_, 0);
@@ -182,11 +181,11 @@ void Wendy::build_full_test_function_matrices() {
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
     const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
 
-    const double corner_index = static_cast<double>(get_corner_index(xt::cumsum(singular_values))); // Change point in cumulative sum of singular values
+    // const double corner_index = static_cast<double>(get_corner_index(xt::log(xt::cumsum(singular_values)))); // Change point in cumulative sum of singular values
     const double max_test_fun_matrix = test_function_params.k_max; // Max # of test functions from user
     double sum_singular_values = xt::sum(singular_values)();
 
-    int k_max = static_cast<int>(std::ranges::min({k_full, mp1, max_test_fun_matrix, corner_index + 1 }));
+    int k_max = static_cast<int>(std::min({ k_full, mp1, max_test_fun_matrix }));
 
     // Natural information is the ratio of the first k singular values to the sum
     xt::xtensor<double, 1> info_numbers = xt::zeros<double>({k_max});
@@ -211,11 +210,12 @@ void Wendy::build_full_test_function_matrices() {
 
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
     std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
+    std::cout << "K is: " << K <<std::endl;
 
-    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K-1), xt::all()));
+    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K), xt::all()));
 
     // We have ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ. V has columns that form an O.N. for the row space of ϕ. Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
     const auto UtV_prime = xt::linalg::dot(xt::transpose(U_), V_prime);
 
-    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K-1), xt::all()));
+    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), UtV_prime), xt::range(0, K), xt::all()));
 }

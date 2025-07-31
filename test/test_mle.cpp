@@ -3,11 +3,9 @@
 #include "../src/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
-#include "../src/utils.h"
-#include <iostream>
 #include <xtensor/containers/xtensor.hpp>
-#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/generators/xrandom.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <numbers>
 
 constexpr auto J = 5;
@@ -68,20 +66,6 @@ static xt::xtensor<double, 2> integrate_(
     return result;
 }
 
-template<typename T>
-void print_xtensor2d(const T &tensor) {
-    auto shape = tensor.shape();
-    if (shape.size() != 2) {
-        std::cerr << "Tensor is not 2D!" << std::endl;
-        return;
-    }
-    for (std::size_t i = 0; i < shape[0]; ++i) {
-        for (std::size_t j = 0; j < shape[1]; ++j) {
-            std::cout << tensor(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-}
 
 
 const auto U = integrate_(p, u0, 0.0, mp1 - 1, mp1, f);

@@ -103,8 +103,10 @@ size_t get_corner_index(const xt::xtensor<double, 1> &yy, const xt::xtensor<doub
         // Calculate the errors (add in small # in denominator to avoid division by zero)
         auto y1_view = xt::view(yy_scaled, xt::range(0, i + 1));
         auto err1 = xt::sum(xt::abs(l1 - y1_view) / (y1_view + 1e-12));
+
         auto y2_view = xt::view(yy_scaled, xt::range(i, yy_scaled.size()));
         auto err2 = xt::sum(xt::abs(l2 - y2_view) / (y2_view + 1e-12));
+
         errors[i] = err1() + err2();
     }
 

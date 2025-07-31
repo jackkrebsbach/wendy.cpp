@@ -40,9 +40,18 @@ TEST_CASE("create_all_symbolic_inputs creates u, p, t symbols") {
 TEST_CASE("create_symbolic_system parses character vector to expressions") {
   std::vector<std::string> f = {"p1 - p3 / (36 + p2 * u2)", "p4 * u1 - p5"};
   auto dx = build_symbolic_f(f);
+
   REQUIRE(dx.size() == 2);
+
   CHECK(SymEngine::str(*dx[0].get_basic()).find("p1") != std::string::npos);
+  CHECK(SymEngine::str(*dx[0].get_basic()).find("p2") != std::string::npos);
+  CHECK(SymEngine::str(*dx[0].get_basic()).find("p3") != std::string::npos);
+  CHECK(SymEngine::str(*dx[0].get_basic()).find("u2") != std::string::npos);
+
   CHECK(SymEngine::str(*dx[1].get_basic()).find("p4") != std::string::npos);
+  CHECK(SymEngine::str(*dx[1].get_basic()).find("u1") != std::string::npos);
+  CHECK(SymEngine::str(*dx[1].get_basic()).find("p5") != std::string::npos);
+
 }
 
 TEST_CASE("expressions_to_vec_basic converts expressions to basics") {

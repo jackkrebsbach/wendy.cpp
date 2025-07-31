@@ -17,6 +17,13 @@ double phi(const double &t, const double &eta) {
     return (std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
 }
 
+double dphi_dt(const double &t, const double &eta) {
+    double denom = 1 - t * t;
+    double phi_val = std::exp(-eta / denom);
+    return phi_val * (-eta * 2 * t) / (denom * denom);
+}
+
+
 std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
     std::vector<double> result;
 
@@ -28,12 +35,12 @@ std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
     return result;
 }
 
-auto test_function_derivative(const double radius, const double dt, const int order) {
-    const auto scale_factor = std::pow((static_cast<double>(radius) * static_cast<double>(dt)), (-1.0 * order));
-    // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
-    const SymEngine::RCP<const SymEngine::Symbol> t = SymEngine::symbol("t");
-    const SymEngine::Expression expression = SymEngine::exp( -9 * SymEngine::pow((1 - SymEngine::pow(SymEngine::Expression(t), 2)), -1));
-    const auto derivative = SymEngine::expand(scale_factor * expression.diff(t));
+
+std::function<double(double)> test_function_derivative(const double radius, const double dt, const int order) {
+    const auto scale_factor = std::pow((radius*dt), -1.0 * order); // Chain rule to account for (t/a)^2 we get factors of (1/a), a=dt*radius
+    const auto t = SymEngine::symbol("t");
+    const SymEngine::Expression expression = SymEngine::exp( -9.0 * SymEngine::pow((1.0 - SymEngine::pow(SymEngine::Expression(t), 2)), -1));
+    const auto derivative = scale_factor * expression.diff(t);
     return (make_scalar_function(derivative, t));
 }
 
@@ -85,8 +92,11 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
         if (order == 0) {
             return (phi(t, 9));
         }
-        const std::function<double(double)> phi_deriv = test_function_derivative((radius + 0.5), dt, order);
-        return (phi_deriv(t));
+
+        return dphi_dt(t, 9) * std::pow(dt*radius, -1);
+
+        // const std::function<double(double)> phi_deriv = test_function_derivative(radius , dt, order);
+        // return (phi_deriv(t));
     };
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
     auto phi_vec = xt::vectorize(f);
@@ -148,7 +158,7 @@ std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_err
         //Fast Fourier Transform
         auto f_hat_G = calculate_fft(GT_reshaped);
         auto f_hat_G_imag = xt::eval(xt::imag(xt::col(f_hat_G, IX)));
-        errors[i] = xt::norm_l2(f_hat_G_imag)(); // Have to actually evaluate the expression ()
+        errors[i] = std::log(xt::norm_l2(f_hat_G_imag)());
     }
 
     auto ix = get_corner_index(errors);

@@ -13,42 +13,55 @@ std::vector<double> goodwin_3d(double t, const std::vector<double> &u, const std
     double du3 = p[6] * u[1] - p[7] * u[2];
     return {du1, du2, du3};
 }
-
-std::vector<std::vector<double> > integrate_goodwin(
+std::vector<std::vector<double>> integrate_(
     const std::vector<double> &u0,
     const std::vector<double> &p,
-    double t0, double t1, int npoints) {
-    int dim = u0.size();
-    std::vector<std::vector<double> > result(npoints, std::vector<double>(dim));
-    double dt = (t1 - t0) / (npoints - 1);
+    double t0,
+    double dt,
+    const xt::xtensor<double,1> &t_eval
+) {
+    const int dim = u0.size();
+    std::vector<std::vector<double>> result;
     std::vector<double> u = u0;
     double t = t0;
 
-    for (int i = 0; i < npoints; ++i) {
-        result[i] = u;
+    size_t eval_idx = 0;
+    const size_t n_eval = t_eval.size();
+
+    while (eval_idx < n_eval) {
+        // Save current u if t has passed t_eval[eval_idx]
+        if (t >= t_eval[eval_idx] - 1e-10) {  // small tolerance
+            result.push_back(u);
+            ++eval_idx;
+        }
+
+        // Euler step
         auto du = goodwin_3d(t, u, p);
         for (int d = 0; d < dim; ++d) {
             u[d] += du[d] * dt;
         }
         t += dt;
     }
+
     return result;
 }
 
 
+
+
 std::vector<std::vector<double> > add_noise(
     const std::vector<std::vector<double> > &data,
-    double noise_ratio) {
+    const double noise_ratio) {
     std::vector<std::vector<double> > noisy = data;
-    int npoints = data.size();
-    int dim = data[0].size();
+    const int n_points = data.size();
+    const int dim = data[0].size();
 
     std::random_device rd;
     std::mt19937 gen(rd());
     for (int d = 0; d < dim; ++d) {
-        std::normal_distribution<> dist(0.0,  1);
-        for (int i = 0; i < npoints; ++i) {
-            noisy[i][d] += noise_ratio*dist(gen);
+        std::normal_distribution<> dist(0.0,  noise_ratio);
+        for (int i = 0; i < n_points; ++i) {
+            noisy[i][d] += dist(gen);
         }
     }
     return noisy;
@@ -57,16 +70,17 @@ std::vector<std::vector<double> > add_noise(
 int main() {
 
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
-    std::vector<double> p_perturbed = {2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10};
+    std::vector<double> p0 = {3.2, 0.075, 1.25, 12, 0.15, 0.121, 0.18, 0.10};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
 
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 200;
     constexpr double t0 = 0.0;
-    constexpr double t1 = 80.0;
+    constexpr double t1 = 80;
 
     constexpr double noise_ratio = 0.05;
 
-    const auto u_star = integrate_goodwin(u0, p_star, t0, t1, num_samples);
+    const xt::xtensor<double,1> t_eval = xt::linspace(t0,t1, num_samples);
+    const auto u_star = integrate_(u0, p_star, t0, 0.01, t_eval);
     const auto u_noisy = add_noise(u_star, noise_ratio);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
@@ -85,12 +99,25 @@ int main() {
     };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
-    const std::vector<double> p0(p_star.begin(), p_star.end());
     try {
 
-       Wendy wendy(system_eqs, U, p_perturbed, tt, true);
+       Wendy wendy(system_eqs, U, p0, tt, true);
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
+
+        const auto mle = *wendy.obj;
+
+        std::cout << "\n pstar" << std::endl;
+        std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
+        std::cout << std::endl;
+
+        std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
+        std::cout << mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
+        std::cout << mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
+        std::cout << mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
+
+       // wendy.inspect_equations();
+       // wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

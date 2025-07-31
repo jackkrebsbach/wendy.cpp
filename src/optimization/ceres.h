@@ -4,12 +4,12 @@
 #include <cppoptlib/solver/lbfgs.h>
 #include <cppoptlib/solver/newton_descent.h>
 
-class MyMLEProblem final : public cppoptlib::function::FunctionCRTP<MyMLEProblem, double, cppoptlib::function::DifferentiabilityMode::First> {
+class MleProblem final : public cppoptlib::function::FunctionCRTP<MleProblem, double, cppoptlib::function::DifferentiabilityMode::First> {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    const MLE &mle;
+    const MLE mle;
 
-    explicit MyMLEProblem(
+    explicit MleProblem(
         const MLE &mle_
     ) : mle(mle_) {}
 
@@ -24,7 +24,7 @@ public:
 
         if (grad) {
             grad->resize(x.size());
-            const auto g = gradient_4th_order(mle, p);
+            const auto g = mle.Jacobian(p);
 
             for (Eigen::Index i = 0; i < x.size(); ++i){
                 (*grad)(i) = g[i];

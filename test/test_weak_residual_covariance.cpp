@@ -2,19 +2,16 @@
 #include "../src/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
-#include <iostream>
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/generators/xrandom.hpp>
 #include <string>
 #include <vector>
-
-#include "../../../../../../../opt/homebrew/Cellar/xtensor/0.27.0/include/xtensor/generators/xrandom.hpp"
 
 constexpr auto J = 5;
 constexpr auto D = 2;
 constexpr auto K = 3;
 constexpr auto mp1 = 4;
-
 
 const auto u0 = xt::xtensor<double, 1>({2, 3});
 const auto p = std::vector<double>({1, 2, 3, 4, 5});
@@ -65,26 +62,12 @@ static xt::xtensor<double, 2> integrate_(
     return result;
 }
 
-template<typename T>
-void print_xtensor2d(const T &tensor) {
-    auto shape = tensor.shape();
-    if (shape.size() != 2) {
-        std::cerr << "Tensor is not 2D!" << std::endl;
-        return;
-    }
-    for (std::size_t i = 0; i < shape[0]; ++i) {
-        for (std::size_t j = 0; j < shape[1]; ++j) {
-            std::cout << tensor(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-}
 
 const auto U = integrate_(p, u0, 0.0, mp1 - 1, mp1, f);
 const xt::xtensor<double, 1> tt = xt::linspace<double>(0, mp1 - 1, mp1);
 const xt::xtensor<double, 2> V = xt::reshape_view(xt::linspace<double>(1, K * mp1, K * mp1), {K, mp1});
 
-const xt::xtensor<double, 2> Sigma = xt::diag(xt::ones<double>({D}));
+const xt::xtensor<double, 2> Sigma = xt::diag(xt::linspace(1,4, D));
 
 const auto Ju_g = J_g_functor(U, tt, V, Ju_f);
 const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
@@ -93,12 +76,7 @@ const auto Jp_Jp_Ju_g = T_g_functor(U, tt, V, Jp_Jp_Ju_f);
 
 const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
 
-// constexpr auto J = 5;
-// constexpr auto D = 2;
-// constexpr auto K = 3;
-// constexpr auto mp1 = 4;
-
-TEST_CASE("L is (∇ᵤg(p) + V' ⊙ I_D) (Σ ⊙ I_mp1)") {
+TEST_CASE("L is (∇ᵤg(p) + I_D ⊙ V') (Σ ⊙ I_mp1)") {
     const auto Lp = L(p);
 
     xt::xtensor<double, 2> Lp_first_bock = xt::view(Lp, xt::range(0, K), xt::range(0, mp1));
@@ -106,7 +84,7 @@ TEST_CASE("L is (∇ᵤg(p) + V' ⊙ I_D) (Σ ⊙ I_mp1)") {
 
     const auto Ju_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
 
-    xt::xarray<double> sqrt_diag = xt::sqrt(xt::diagonal(Sigma));
+    xt::xarray<double> sqrt_diag = xt::diagonal(Sigma);
 
     xt::xtensor<double, 2> L_manual_first_bock =
             xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(0, mp1)) + V) * sqrt_diag(0);

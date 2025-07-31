@@ -66,20 +66,6 @@ static xt::xtensor<double, 2> integrate_(
     return result;
 }
 
-template<typename T>
-void print_xtensor2d(const T &tensor) {
-    auto shape = tensor.shape();
-    if (shape.size() != 2) {
-        std::cerr << "Tensor is not 2D!" << std::endl;
-        return;
-    }
-    for (std::size_t i = 0; i < shape[0]; ++i) {
-        for (std::size_t j = 0; j < shape[1]; ++j) {
-            std::cout << tensor(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-}
 
 const auto U = integrate_(p, u0, 0.0, mp1 - 1, mp1, f);
 const xt::xtensor<double, 1> tt = xt::linspace<double>(0, mp1 - 1, mp1);
@@ -351,7 +337,7 @@ TEST_CASE("g  functor") {
     const auto Fp = F(p);
     const auto gp = g(p);
     const auto dot_result = xt::linalg::dot(V, Fp);
-    auto g_manual = xt::ravel<xt::layout_type::column_major>(dot_result);
+    auto g_manual = xt::eval(xt::ravel<xt::layout_type::column_major>(dot_result));
     CHECK(xt::allclose(gp, g_manual));
 }
 

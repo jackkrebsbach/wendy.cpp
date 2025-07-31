@@ -18,20 +18,20 @@ MLE::MLE(
     const xt::xtensor<double, 1> &b_,
     const J_g_functor &Ju_g_,
     const J_g_functor &Jp_g_,
-    const H_g_functor &Jp_JU_g_,
+    const H_g_functor &Jp_Ju_g_,
     const H_g_functor &Jp_Jp_g_,
-    const T_g_functor &Jp_Jp_JU_g_,
+    const T_g_functor &Jp_Jp_Ju_g_,
     const S_inv_r_functor &S_inv_r_
 
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
-   JU_g(Ju_g_), Jp_g(Jp_g_), Jp_JU_g(Jp_JU_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_JU_g(Jp_Jp_JU_g_),
+   Ju_g(Ju_g_), Jp_g(Jp_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
    S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
-    J = Jp_JU_g.grad2_len;
+    J = Jp_Ju_g.grad2_len;
     constant_term = K*D*std::log(2*std::numbers::pi);
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
-    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1});
+    const auto JU_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
     const auto Lp = L(p);
     const auto r = g(p) - b;
     const auto S = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
@@ -78,7 +78,7 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
     const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
-    const auto JU_gp = xt::reshape_view(JU_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
+    const auto JU_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
     const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     // Precomputed Hessian information of ∇p∇pg(p) w.r.t p⃗

@@ -2,72 +2,69 @@
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
-#include <xtensor/views/xview.hpp>
 #include <random>
-#include <cmath>
+#include <boost/numeric/odeint.hpp>
 #include <xtensor-blas/xlinalg.hpp>
+#include "src/utils.h"
 
-std::vector<double> logistic(double t, const std::vector<double> &u, const std::vector<double> &p) {
-    double du1 = u[0]*p[0]- p[1]*std::pow(u[0],2);
-    return {du1};
-}
 
-std::vector<std::vector<double> > integrate_(
-    const std::vector<double> &u0,
-    const std::vector<double> &p,
-    const double t0, const double t1, int n_points) {
-    const int dim = u0.size();
-    std::vector<std::vector<double> > result(n_points, std::vector<double>(dim));
-    const double dt = (t1 - t0) / (n_points - 1);
-    std::vector<double> u = u0;
-    double t = t0;
+using namespace boost::numeric::odeint;
 
-    for (int i = 0; i < n_points; ++i) {
-        result[i] = u;
-        auto du = logistic(t, u, p);
-        for (int d = 0; d < dim; ++d) {
-            u[d] += du[d] * dt;
-        }
-        t += dt;
-    }
-    return result;
-}
+using state_type = std::vector<double>;
 
-std::vector<std::vector<double>> add_noise(
-    const std::vector<std::vector<double>>& data,
-    const double noise_ratio) {
+
+std::vector<std::vector<double>> add_noise( const std::vector<std::vector<double>>& data, const double noise_ratio) {
     std::vector<std::vector<double>> noisy = data;
-    const int n_points = data.size();
-    const int dim = data[0].size();
+    const int n_points = static_cast<int>(data.size());
+    const int dim = static_cast<int>(data[0].size());
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<> dist(0, noise_ratio);
+    std::normal_distribution<> dist(0, 1);
 
     for (int i = 0; i < n_points; ++i) {
         for (int d = 0; d < dim; ++d) {
-            noisy[i][d] +=  dist(gen);
+            noisy[i][d] +=  noise_ratio*dist(gen);
         }
     }
     return noisy;
 }
 
+struct LogisticODE {
+    std::vector<double> p;
+    explicit LogisticODE(const std::vector<double>& p_) : p(p_) {}
+
+    void operator()(const state_type &u, state_type &du_dt, double /*t*/) const {
+        du_dt[0] = u[0]*p[0] - p[1]*std::pow(u[0], 2);
+    }
+};
 
 int main() {
 
-    const std::vector<double> p_star = {1.0, 1.0};
-    std::vector<double> p_perturbed = {0.25 ,0.25};
+    const std::vector<double> p_star = {1, 1};
+    std::vector<double> p0 = {0.5 ,0.5};
 
-    const std::vector<double> u0 = {0.01};
+    const std::vector<double> u0 = {0.005};
+    std::vector<double> u = u0;
 
-    constexpr double noise_ratio = 0.1;
-    constexpr int num_samples = 175;
+    constexpr double noise_sd = 0.05;
+    constexpr int num_samples = 100;
+
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
+    const xt::xtensor<double,1> t_eval = xt::linspace(t0,t1, num_samples);
+    std::vector<state_type> u_eval;
+    std::vector<double> t_vec;
 
-    const auto u_star = integrate_(u0, p_star, t0, t1, num_samples);
+    auto observer = [&](const state_type &x, double t) {
+        u_eval.push_back(x);
+        t_vec.push_back(t);
+    };
 
-    const auto u_noisy = add_noise(u_star, noise_ratio);
+    runge_kutta4<state_type> stepper;
+    integrate_times(stepper, LogisticODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+
+    const auto u_noisy = add_noise(u_eval, noise_sd);
 
     const std::vector shape = {static_cast<size_t>(num_samples), u0.size()};
 
@@ -81,13 +78,26 @@ int main() {
     const std::vector<std::string> system_eqs = { "u1*p1 - p2*u1^2" };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
-    const std::vector<double> p0(p_perturbed.begin(), p_perturbed.end());
     try {
-       Wendy wendy(system_eqs, U, p0, tt, true);
-       wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
+
+       Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
+       wendy.build_full_test_function_matrices();
        wendy.build_objective_function();
-       wendy.inspect_equations();
-       wendy.optimize_parameters();
+       // wendy.inspect_equations();
+
+        const auto mle = *wendy.obj;
+
+        std::cout << "\npstar: " <<  mle(p_star) << std::endl;
+        std::cout << std::endl;
+
+        std::cout << mle(std::vector<double>({0.9,0.9}))  << std::endl;
+        std::cout << mle(std::vector<double>({0.25,0.25}))  << std::endl;
+        std::cout << mle(std::vector<double>({0.5,0.5}))  << std::endl;
+        std::cout << mle(std::vector<double>({1.5,1.5}))  << std::endl;
+        std::cout << mle(std::vector<double>({2, 2}))  << std::endl;
+
+       // wendy.optimize_parameters();
+
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;
     }
