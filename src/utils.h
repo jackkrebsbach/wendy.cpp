@@ -6,7 +6,6 @@
 #include <xtensor/misc/xsort.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
-#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -117,46 +116,6 @@ inline void print_cwd() {
         std::cout << "Working dir: " << cwd << std::endl;
     }
 }
-
-inline xt::xtensor<double, 2> read_csv(const std::string& filename) {
-    std::ifstream file(filename);
-    std::vector<std::vector<double>> rows;
-    std::string line;
-
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        std::string cell;
-        std::vector<double> row;
-
-        while (std::getline(ss, cell, ',')) {
-            cell.erase(std::remove_if(cell.begin(), cell.end(), ::isspace), cell.end());
-            if (!cell.empty()) {
-                try {
-                    row.push_back(std::stod(cell));
-                } catch (...) {
-                    std::cerr << "Warning: Non-numeric cell: " << cell << '\n';
-                    row.push_back(0.0);
-                }
-            }
-        }
-
-        if (!row.empty()) {
-            rows.push_back(std::move(row));
-        }
-    }
-
-    size_t num_rows = rows.size();
-    size_t num_cols = rows[0].size();
-    std::vector<double> flat_data;
-    flat_data.reserve(num_rows * num_cols);
-
-    for (const auto& row : rows) {
-        flat_data.insert(flat_data.end(), row.begin(), row.end());
-    }
-    return xt::adapt(flat_data, std::vector<std::size_t>{num_rows, num_cols});
-
-}
-
 
 
 template<typename T, typename Predicate>
