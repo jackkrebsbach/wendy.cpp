@@ -73,7 +73,6 @@ inline std::vector<double> gradient_4th_order(
     return grad;
 }
 
-
 inline std::vector<std::vector<double>> hessian_3rd_order(
     const std::function<double(const std::vector<double>&)>& f,
     const std::vector<double>& x,

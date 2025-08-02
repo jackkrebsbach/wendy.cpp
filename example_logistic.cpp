@@ -62,7 +62,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 101;
+    constexpr int num_samples = 251;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -97,8 +97,8 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
-        // wendy.inspect_equations();
-        wendy.optimize_parameters();
+        wendy.inspect_equations();
+        // wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

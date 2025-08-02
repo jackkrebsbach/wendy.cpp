@@ -33,16 +33,11 @@ MLE::MLE(
 double MLE::operator()(const std::vector<double> &p) const {
     const auto Lp = L(p);
     auto S_ = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
-    constexpr double diagReg = 1e-9;
+    constexpr double diagReg = 1e-10;
     constexpr double weight = 1.0 - diagReg;
     const std::size_t n = S_.shape()[0];
 
     xt::xtensor<double, 2> S = xt::eval(weight * S_) + diagReg * xt::eye<double>(n);
-
-    const auto [U, s, Vt] = xt::linalg::svd(S);
-
-    // std::cout << "Condition Number: " << s(0) / s(s.size() - 1) << std::endl;
-
     const auto r = g(p) - b;
 
     double logDetS;
@@ -69,11 +64,17 @@ double MLE::operator()(const std::vector<double> &p) const {
 std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
     const auto Lp = L(p); // L(p)
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
-    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (covariance)
-    const auto r = g(p) - b; // r(p) = g(p) - b
-    const auto S_inv_rp = S_inv_r(p); // S^(-1)r(p)
 
-    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
+    auto S_ = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
+    constexpr double diagReg = 1e-10;
+    constexpr double weight = 1.0 - diagReg;
+    const std::size_t n = S_.shape()[0];
+
+    xt::xtensor<double, 2> S = xt::eval(weight * S_) + diagReg * xt::eye<double>(n);
+
+    const auto r = g(p) - b; // r(p) = g(p) - b
+    const auto S_inv_rp = xt::linalg::solve(S, r) ;
+    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {2}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     std::vector<double> J_wnn(p.size()); // Output
     for (int j = 0; j < p.size(); ++j) {
@@ -104,14 +105,18 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
 
     // Precomputed partial information of g(p) w.r.t p⃗ and U⃗
     const auto JU_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1}); // ∇ᵤg(p) ∈ ℝ^(K*D x D*mp1)
-    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {3}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
+    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {2}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
 
     // Precomputed Hessian information of ∇p∇pg(p) w.r.t p⃗
     const auto Hp_gp = xt::reshape_view(xt::sum(Jp_Jp_g(p), {2}), {K * D, J, J});
 
     // Precompute S(p) = LLᵀ
-    const auto Sp = xt::linalg::dot(Lp, xt::transpose(Lp)); // S(p) (Covariance)
-    const auto F = xt::linalg::cholesky(Sp);
+    auto S_ = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
+    constexpr double diagReg = 1e-10;
+    constexpr double weight = 1.0 - diagReg;
+    const std::size_t n = S_.shape()[0];
+
+    xt::xtensor<double, 2> Sp = xt::eval(weight * S_) + diagReg * xt::eye<double>(n);
 
     std::vector<std::vector<double> > H_wnn(p.size(), std::vector<double>(p.size()));
     for (int j = 0; j < p.size(); ++j) {

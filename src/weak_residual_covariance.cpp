@@ -29,8 +29,8 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_Ju_g.grad2_len;
 
-    Sigma_I_mp1 = xt::linalg::kron( Sigma, xt::eye(mp1));
-    I_D_phi_prime = xt::linalg::kron(  xt::eye(D), V_prime ); // I_d x ϕ'
+    Sigma_I_mp1 = xt::linalg::kron( xt::eye(mp1), Sigma);
+    I_D_phi_prime = xt::linalg::kron(   V_prime, xt::eye(D)); // I_d x ϕ'
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
@@ -55,9 +55,9 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
 
 // ∇ₚ∇ₚL(p) Hessian of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
 xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
-    const auto Jp_Jp_JU_gp = xt::reshape_view(Jp_Jp_Ju_g(p), {D * K, D * mp1, J, J});
+    const auto Jp_Jp_Ju_gp = xt::reshape_view(Jp_Jp_Ju_g(p), {D * K, D * mp1, J, J});
                                                                                                 // Sigma_I_mp1 shape (D*mp1 x D*mp1)
-    const auto Jp_H_ = xt::linalg::tensordot(Jp_Jp_JU_gp, Sigma_I_mp1, {1}, {0}); // shape: (D*K,J, J, D*mp1)
+    const auto Jp_H_ = xt::linalg::tensordot(Jp_Jp_Ju_gp, Sigma_I_mp1, {1}, {0}); // shape: (D*K,J, J, D*mp1)
     const auto Jp_H = xt::transpose(Jp_H_, {0, 3, 1, 2}); // shape: (D*K, D*mp1, J, J)
 
     return (Jp_H);

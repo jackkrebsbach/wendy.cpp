@@ -58,7 +58,7 @@ void Wendy::build_objective_function() {
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
     L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g);
-    b = xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(-1.0*V_prime, U));
+    b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
     S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
     obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
 }
@@ -107,6 +107,8 @@ void Wendy::inspect_equations() const {
 }
 
 void Wendy::optimize_parameters() {
+
+    std::cout << "Optimizing for parameters: " << std::endl;
 
     if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 

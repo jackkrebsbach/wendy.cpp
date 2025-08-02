@@ -50,7 +50,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.01;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 80;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
 
@@ -90,7 +90,7 @@ int main() {
        wendy.build_full_test_function_matrices(); // Builds both full V and V_prime
        wendy.build_objective_function();
 
-        const auto mle = *wendy.obj;
+        // const auto mle = *wendy.obj;
 
         // std::cout << "\n pstar" << std::endl;
         // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
