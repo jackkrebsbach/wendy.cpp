@@ -8,7 +8,7 @@
 #include <xtensor-blas/xlinalg.hpp>
 
 
-constexpr double DIAG_REG = 1e-10;
+constexpr double DIAG_REG = 1e-12;
 
 MLE::MLE(
     const xt::xtensor<double, 2> &U_,

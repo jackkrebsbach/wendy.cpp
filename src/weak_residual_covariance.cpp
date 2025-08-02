@@ -75,25 +75,11 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
 // ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) const {
 
-    const auto sig = xt::eval(xt::diag(Sigma));  // shape (D,)
-    const auto sig_kron = xt::tile(sig, mp1);
-
     const auto Jp_Ju_gp = xt::reshape_view(Jp_Ju_g(p), {D * K, mp1 * D, J});
-
-    const auto& shape = Jp_Ju_gp.shape();
-    size_t N = shape[0];
-    size_t M = shape[1];
-    size_t L = shape[2];
-
-    xt::xtensor<double, 3> Jp_L = xt::zeros<double>({N, M, L});
-
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < M; ++j) {
-            for (size_t l = 0; l < L; ++l) {
-                Jp_L(i, j, l) = Jp_Ju_gp(i, j, l) * sig_kron(l);
-            }
-        }
-    }
+    const auto sig = xt::eval(xt::diag(Sigma)); // shape (D,)
+    xt::xtensor<double, 1> sig_kron = xt::tile(sig, mp1); // (D * mp1)
+    auto sig_view = xt::reshape_view(sig_kron, std::vector<size_t>{1, 1, Jp_Ju_gp.shape()[2]});
+    auto Jp_L = xt::eval(Jp_Ju_gp * sig_view);
 
     return (Jp_L);
 };

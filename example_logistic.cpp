@@ -54,7 +54,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 501;
+    constexpr int num_samples = 201;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -90,18 +90,17 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
+        // wendy.inspect_equations();
         wendy.optimize_parameters();
 
-        // const auto mle = *wendy.obj;
-        // mle.Jacobian(p0);
-
+        // auto mle = *wendy.obj;
         // std::cout << "\n pstar" << std::endl;
         // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
         // std::cout << std::endl;
         // std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
         // std::cout << mle(std::vector<double>({0.55, 0.55}))  << std::endl; // pstar
         // std::cout << mle(std::vector<double>({1.5, 1.5}))  << std::endl; // pstar
-        // wendy.inspect_equations();
+
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: " << e.what() << std::endl;
     }
