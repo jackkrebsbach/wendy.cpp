@@ -90,7 +90,7 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_objective_function();
 
-        // const auto mle = *wendy.obj;
+        const auto mle = *wendy.obj;
         // std::cout << "\n pstar" << std::endl;
         // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
         // std::cout << std::endl;
@@ -101,10 +101,10 @@ int main() {
         // std::cout << mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
 
        wendy.inspect_equations();
-       //wendy.optimize_parameters();
+       // wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
-        std::cout << "Exception occurred: {}" << e.what() << std::endl;
+        std::cout << "Exception occurred: " << e.what() << std::endl;
     }
     return 0;
 }

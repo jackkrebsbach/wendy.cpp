@@ -46,6 +46,7 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             fftw3
             CppNumericalSolvers
             Ceres::ceres
+            OpenMP::OpenMP_CXX
             ${BLAS_LIBRARIES}
             ${LAPACK_LIBRARIES}
             ${FLINT_LIBRARY}
@@ -54,14 +55,13 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${FFTW3_LIBRARY}
     )
 
-    # Optimization flags
     target_compile_options(${EXAMPLE_NAME} PRIVATE
             -O3
             -march=native
             -ffast-math
             -funroll-loops
             -flto
-            -DNDEBUG
+#            -DNDEBUG
     )
 endfunction()
 

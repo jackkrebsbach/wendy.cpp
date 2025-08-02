@@ -15,12 +15,14 @@ struct CovarianceFactor {
     const J_g_functor &Ju_g;
     const H_g_functor &Jp_Ju_g;
     const T_g_functor &Jp_Jp_Ju_g;
+    const J_f_functor &Ju_f;
     size_t D;
     size_t mp1;
     size_t K;
     size_t J;
     xt::xtensor<double, 2> Sigma_I_mp1;
     xt::xtensor<double, 2> I_D_phi_prime;
+    xt::xtensor<double, 2> L0;
 
     CovarianceFactor(
         const xt::xtensor<double, 2> &U_,
@@ -30,7 +32,8 @@ struct CovarianceFactor {
         const xt::xtensor<double, 2> &Sigma_,
         const J_g_functor &Ju_g_,
         const H_g_functor &Jp_Ju_g_,
-        const T_g_functor &Jp_Jp_Ju_g_
+        const T_g_functor &Jp_Jp_Ju_g_,
+        const J_f_functor &Ju_f_
     );
 
     xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;

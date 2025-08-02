@@ -45,18 +45,6 @@ struct LogisticODE {
         du_dt[0] = u[0] * p[0] - p[1] * std::pow(u[0], 2);
     }
 };
-xt::xtensor<double, 1> logistic_fun(const std::vector<double>& p, const xt::xarray<double>& u, double t) {
-    xt::xtensor<double, 1> du_dt = xt::zeros<double>({1});
-    du_dt[0] = p[0] * u[0] - p[1] * std::pow(u[0], 2);
-    return du_dt;
-}
-
-
-xt::xtensor<double, 2> logistic_jacobian(const std::vector<double>& p, const xt::xarray<double>& u, double t) {
-    xt::xtensor<double, 2> J = xt::zeros<double>({1, 1});
-    J(0, 0) = p[0] - 2.0 * p[1] * u[0];
-    return J;
-}
 
 int main() {
     const std::vector p_star = {1.0, 1.0};
@@ -66,7 +54,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 501;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -98,27 +86,24 @@ int main() {
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
+        std::cout << "<< Building symbolic functions >>" << std::endl;
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
+        wendy.optimize_parameters();
 
         // const auto mle = *wendy.obj;
-        // auto start_time = std::chrono::high_resolution_clock::now();
-        // auto _ = mle.Hessian(p_star);
-        // auto end_time = std::chrono::high_resolution_clock::now();
-        // auto duration_s     = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-        // auto duration_ms    = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        // auto duration_ns    = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
-        //
-        // std::cout << "Computation took: " << duration_s.count() << " seconds" << std::endl;
-        // std::cout << "Computation took: " << duration_ms.count() << " milliseconds" << std::endl;
-        // std::cout << "Computation took: " << duration_ns.count() << " nanoseconds" << std::endl;
+        // mle.Jacobian(p0);
 
-        wendy.inspect_equations();
-        // wendy.optimize_parameters();
-
+        // std::cout << "\n pstar" << std::endl;
+        // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
+        // std::cout << std::endl;
+        // std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
+        // std::cout << mle(std::vector<double>({0.55, 0.55}))  << std::endl; // pstar
+        // std::cout << mle(std::vector<double>({1.5, 1.5}))  << std::endl; // pstar
+        // wendy.inspect_equations();
     } catch (const std::exception &e) {
-        std::cout << "Exception occurred: {}" << e.what() << std::endl;
+        std::cout << "Exception occurred: " << e.what() << std::endl;
     }
     return 0;
 }

@@ -51,13 +51,14 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 }
 
 void Wendy::build_objective_function() {
+    std::cout << "\n<< Initializing objective functions >>" << std::endl;
     g = std::make_unique<g_functor>(F, V);
     Ju_g = std::make_unique<J_g_functor>(U, tt, V, Ju_f);
     Jp_g = std::make_unique<J_g_functor>(U, tt, V, Jp_f);
     Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
-    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g);
+    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f);
     b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
     S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
     obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
@@ -107,8 +108,7 @@ void Wendy::inspect_equations() const {
 }
 
 void Wendy::optimize_parameters() {
-
-    std::cout << "Optimizing for parameters: " << std::endl;
+    std::cout << "\n<< Optimizing parameters >>" << std::endl;
 
     if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
@@ -128,38 +128,11 @@ void Wendy::optimize_parameters() {
     std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 
     p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
-
-    // const auto mle = *obj;
-    //
-    // auto* cost_function = new MleCeresCostFunction(mle, p0);
-    // double* p = p0.data();
-    //
-    // ceres::Problem problem;
-    // problem.AddResidualBlock(cost_function, nullptr, p);
-    //
-    // ceres::Solver::Options options;
-    // ceres::Solver::Summary summary;
-    // ceres::Solve(options, &problem, &summary);
-    //
-    // // std::cout << summary.FullReport() << "\n";
-    //
-    // std::cout << "Phat: " << std::endl;
-    // for (size_t i = 0; i <p0.size(); ++i) {
-    //     constexpr auto precision = 4;
-    //     std::cout << std::setw(precision + 6)
-    //               << std::setprecision(precision)
-    //               << std::fixed
-    //             <<  p[i] << " ";
-    // }
-    //
-    // std::cout << std::endl;
-    //
-    // p_hat = std::vector<double>(p, p + p0.size());
-
 }
 
 
 void Wendy::build_full_test_function_matrices() {
+    std::cout << "<< Building test matrices >>" << std::endl;
     const double dt = xt::mean(xt::diff(tt))();
     const int mp1 = static_cast<int>(U.shape()[0]); // Number of observations
 
@@ -181,9 +154,9 @@ void Wendy::build_full_test_function_matrices() {
         max_radius = max_radius_for_interior;
     }
 
-    std::cout << "Min radius: " << min_radius << std::endl;
-    std::cout << "Max radius: " << max_radius << std::endl;
-    std::cout << "Minmax radius: " << radius_min_max << std::endl;
+    std::cout << "  Min radius: " << min_radius << std::endl;
+    std::cout << "  Max radius: " << max_radius << std::endl;
+    std::cout << "  Minmax radius: " << radius_min_max << std::endl;
 
     const auto [ix, errors,radii_sweep ] = find_min_radius_int_error(U, tt, min_radius, radius_min_max);
 
@@ -194,7 +167,7 @@ void Wendy::build_full_test_function_matrices() {
     this->min_radius_ix = ix;
     this->min_radius = min_radius_int_error;
 
-    std::cout << "Integral Error min radius: " << min_radius_int_error << std::endl;
+    std::cout << "  Integral Error min radius: " << min_radius_int_error << std::endl;
 
     radii = test_function_params.radius_params * min_radius_int_error;
 
@@ -206,7 +179,7 @@ void Wendy::build_full_test_function_matrices() {
         radii_ = xt::xtensor<int,1>({max_radius});
     }
 
-    std::cout << "Radii " << radii_ << std::endl;
+    std::cout << "  Radii " << radii_ << std::endl;
 
     auto V_ = build_full_test_function_matrix(tt, radii_, 0);
     auto V_prime_ = build_full_test_function_matrix(tt, radii_, 1);
@@ -215,7 +188,7 @@ void Wendy::build_full_test_function_matrices() {
 
     const auto k_full = static_cast<int>(V_.shape()[0]);
 
-    std::cout << "K Full: " << k_full << std::endl;
+    std::cout << "  K Full: " << k_full << std::endl;
 
     const auto SVD = xt::linalg::svd(V_, false);
 
@@ -245,13 +218,22 @@ void Wendy::build_full_test_function_matrices() {
 
     auto K = std::min({k1, k2, k_max});
 
-    std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
-    std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
-    std::cout << "K is: " << K <<std::endl;
+    std::cout << "  Condition Number is now: " << condition_numbers[K] <<std::endl;
+    std::cout << "  Info Number is now: " << info_numbers[K] <<std::endl;
+    std::cout << "  K is: " << K <<std::endl;
 
 
     this->V = xt::eval(xt::view(Vt, xt::range(0, K), xt::all()));
     // ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ.
     // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-    this->V_prime = xt::eval(xt::view( xt::linalg::dot(xt::diag(1.0/singular_values), xt::linalg::dot(xt::transpose(U_), V_prime_)), xt::range(0, K), xt::all()));
+    std::cout << "  Calculating Vprime" << std::endl;
+
+    const auto U_T = xt::eval(xt::transpose(U_));                   // (D, K)
+    const auto UV = xt::eval(xt::linalg::dot(U_T, V_prime_));       // (D, mp1)
+    const auto inv_s = xt::eval(1.0 / singular_values);             // (D,)
+    const auto inv_s_view = xt::reshape_view(inv_s, std::vector<size_t>{inv_s.size(), 1});
+
+    const auto scaled = xt::eval(UV * inv_s_view);
+
+    this->V_prime = xt::eval(xt::view(scaled, xt::range(0, K), xt::all())); // (K, mp1)
 }
