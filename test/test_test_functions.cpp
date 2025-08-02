@@ -94,9 +94,8 @@ TEST_CASE("Decomposition of SVD") {
     const auto SVD = xt::linalg::svd(V, false);
     const xt::xtensor<double, 2> U = std::get<0>(SVD);
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
+    const xt::xtensor<double, 2> Vt = std::get<2>(SVD);
 
-    const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
-
-    CHECK(xt::allclose(V,xt::linalg::dot(U, xt::linalg::dot( xt::diag(singular_values), Vᵀ))));
+    CHECK(xt::allclose(V,xt::linalg::dot(U, xt::linalg::dot( xt::diag(singular_values), Vt))));
 
 }

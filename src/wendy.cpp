@@ -6,6 +6,7 @@
 #include "optimization/cpp_numerical.h"
 #include "optimization/ceres.h"
 
+#include <cppoptlib/solver/solver.h>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -13,10 +14,8 @@
 #include <iostream>
 #include <vector>
 
-#include <cppoptlib/solver/solver.h>
-
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_):
+    const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_):
     // Data
     tt(tt_),
     U(U_),
@@ -52,16 +51,6 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 }
 
 void Wendy::build_objective_function() {
-    // const auto row_V = xt::view(V, 0, xt::all());
-    // std::array<std::size_t, 2> new_shape = {1, row_V.shape()[0]};
-    // this->V = xt::eval(xt::reshape_view(row_V, new_shape));
-    //
-    //
-    // const auto row_Vp = xt::view(V_prime, 0, xt::all());
-    // std::array<std::size_t, 2> new_shape_p = {1, row_Vp.shape()[0]};
-    // this->V_prime = xt::eval(xt::reshape_view(row_Vp, new_shape_p));
-
-
     g = std::make_unique<g_functor>(F, V);
     Ju_g = std::make_unique<J_g_functor>(U, tt, V, Ju_f);
     Jp_g = std::make_unique<J_g_functor>(U, tt, V, Jp_f);
@@ -97,73 +86,73 @@ void Wendy::inspect_equations() const {
 
     std::cout << std::endl;
 
-    // const auto analytical_hessian = obj->Hessian(p0);
-    // const auto finite_hessian = hessian_3rd_order(*obj, p0);
-    //
-    // std::cout << "\nAnalytical Hessian" << std::endl;
-    // for (const auto& row : analytical_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
-    //
-    // std::cout << "\n Finite Hessian" << std::endl;
-    // for (const auto& row : finite_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
+    const auto analytical_hessian = obj->Hessian(p0);
+    const auto finite_hessian = hessian_3rd_order(*obj, p0);
+
+    std::cout << "\nAnalytical Hessian" << std::endl;
+    for (const auto& row : analytical_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
+
+    std::cout << "\n Finite Hessian" << std::endl;
+    for (const auto& row : finite_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
 }
 
 void Wendy::optimize_parameters() {
 
     if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
-    // const MleProblem problem(mle);
-    // const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
-    //
-    // cppoptlib::solver::NewtonDescent<MleProblem> solver;
-    //
-    // auto initial_state = cppoptlib::function::FunctionState(x_init);
-    //
-    //
-    // auto [solution, solver_state] = solver.Minimize(problem, initial_state);
-    //
-    //
-    // std::cout << "\nSolver finished" << std::endl;
-    // std::cout << "Final Status: " << solver_state.status << std::endl;
-    // std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
-
     const auto mle = *obj;
 
-    auto* cost_function = new MleCeresCostFunction(mle, p0);
-    double* p = p0.data();
+    const MleProblem problem(mle);
+    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
 
-    ceres::Problem problem;
-    problem.AddResidualBlock(cost_function, nullptr, p);
+    cppoptlib::solver::Lbfgs<MleProblem> solver;
 
-    ceres::Solver::Options options;
-    options.minimizer_progress_to_stdout = false;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
+    const auto initial_state = cppoptlib::function::FunctionState(x_init);
 
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
 
-    // std::cout << summary.FullReport() << "\n";
+    std::cout << "\nSolver finished" << std::endl;
+    std::cout << "Final Status: " << solver_state.status << std::endl;
+    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
 
-    const auto precision = 4;
-    std::cout << "Phat: " << std::endl;
-    for (size_t i = 0; i <p0.size(); ++i){
-        std::cout << std::setw(precision + 6)
-                  << std::setprecision(precision)
-                  << std::fixed
-                <<  p[i] << " ";
-    }
+    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
 
-    std::cout << std::endl;
-    p_hat = std::vector<double>(p, p + p0.size());
+    // const auto mle = *obj;
+    //
+    // auto* cost_function = new MleCeresCostFunction(mle, p0);
+    // double* p = p0.data();
+    //
+    // ceres::Problem problem;
+    // problem.AddResidualBlock(cost_function, nullptr, p);
+    //
+    // ceres::Solver::Options options;
+    // ceres::Solver::Summary summary;
+    // ceres::Solve(options, &problem, &summary);
+    //
+    // // std::cout << summary.FullReport() << "\n";
+    //
+    // std::cout << "Phat: " << std::endl;
+    // for (size_t i = 0; i <p0.size(); ++i) {
+    //     constexpr auto precision = 4;
+    //     std::cout << std::setw(precision + 6)
+    //               << std::setprecision(precision)
+    //               << std::fixed
+    //             <<  p[i] << " ";
+    // }
+    //
+    // std::cout << std::endl;
+    //
+    // p_hat = std::vector<double>(p, p + p0.size());
 
 }
 
@@ -182,7 +171,7 @@ void Wendy::build_full_test_function_matrices() {
     int radius_min_max = static_cast<int>(std::floor(max_radius / xt::amax(radii)()));
 
     if (radius_min_max < min_radius) {
-        radius_min_max = min_radius*10;
+        radius_min_max = min_radius * 10;
     }
 
     if (int max_radius_for_interior = static_cast<int>(std::floor((mp1 - 2) / 2));
@@ -230,7 +219,7 @@ void Wendy::build_full_test_function_matrices() {
 
     const xt::xtensor<double, 2> U_ = std::get<0>(SVD);
     const xt::xtensor<double, 1> singular_values = std::get<1>(SVD);
-    const xt::xtensor<double, 2> Vᵀ = std::get<2>(SVD);
+    const xt::xtensor<double, 2> Vt = std::get<2>(SVD);
 
     double sum_singular_values = xt::sum(singular_values)();
     int k_max = std::min({ k_full, mp1, test_function_params.k_max });
@@ -252,18 +241,15 @@ void Wendy::build_full_test_function_matrices() {
     if (k1 == -1) { k1 = std::numeric_limits<int>::max(); }
     if (k2 == -1) { k2 = std::numeric_limits<int>::max(); }
 
-    // const int change_point_singular_values = static_cast<int>(get_corner_index(xt::log(xt::cumsum(singular_values)))) +1;
     auto K = std::min({k1, k2, k_max});
 
     std::cout << "Condition Number is now: " << condition_numbers[K] <<std::endl;
     std::cout << "Info Number is now: " << info_numbers[K] <<std::endl;
     std::cout << "K is: " << K <<std::endl;
 
-    this->V = xt::eval(xt::view(Vᵀ, xt::range(0, K), xt::all()));
 
+    this->V = xt::eval(xt::view(Vt, xt::range(0, K), xt::all()));
     // ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ.
-    // V has columns that form an O.N. for the row space of ϕ.
     // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-
-    this->V_prime = xt::eval(xt::view(xt::linalg::dot( xt::diag(1.0 / singular_values), xt::linalg::dot(xt::transpose(U_), V_prime_)), xt::range(0, K), xt::all()));
+    this->V_prime = xt::eval(xt::view( xt::linalg::dot(xt::diag(1.0/singular_values), xt::linalg::dot(xt::transpose(U_), V_prime_)), xt::range(0, K), xt::all()));
 }

@@ -14,7 +14,7 @@
 using namespace xt;
 
 double phi(const double &t, const double &eta) {
-    return (std::exp(-eta * std::pow((1 - std::pow(t, 2)), -1)));
+    return (std::exp(-1.0*eta/(1 - t*t)));
 }
 
 double dphi_dt(const double &t, const double &eta) {
@@ -24,7 +24,7 @@ double dphi_dt(const double &t, const double &eta) {
 }
 
 
-std::vector<double> phi(const std::vector<double> &t_vec, double eta) {
+std::vector<double> phi(const xt::xtensor<double,1> &t_vec, double eta) {
     std::vector<double> result;
 
     result.reserve(t_vec.size());
@@ -85,8 +85,8 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
     const auto indices = get_test_function_support_indices(radius, len_tt);
 
     // Don't include the endpoints (support is zero)
-    auto lin = xt::linspace(-1.0, 1.0, diameter, true);
-    auto xx = xt::xarray<double>(xt::view(lin, xt::range(1, diameter  - 1)));
+    auto lin = xt::linspace(-1.0, 1.0, diameter);
+    auto xx = xt::xarray<double>(xt::view(lin, xt::range(1, diameter-1)));
 
     auto f = [order,radius,dt](const double t) -> double {
         if (order == 0) {
@@ -100,12 +100,14 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
     };
     // For a given radius, the evaluation of phi_k is the same for all k, just shifted so we only have to evaluate it once
     auto phi_vec = xt::vectorize(f);
+
     auto v_row = xt::eval(phi_vec(xx));
-    v_row /= xt::norm_l2(v_row)();
+
+    v_row /= xt::norm_l2(xt::vectorize([](const double t){return (phi(t, 9));})(xx))();
 
     // Add back in zero on the endpoints
     xt::xtensor<double, 1> v_row_padded = xt::zeros<double>({v_row.size() + 2});
-    xt::view(v_row_padded, xt::range(1, v_row.size() + 1)) = v_row;
+    xt::view(v_row_padded, xt::range(1, v_row.size()+1)) = v_row;
 
     xt::xtensor<double, 2> V = xt::zeros<double>({indices.size(), len_tt});
 

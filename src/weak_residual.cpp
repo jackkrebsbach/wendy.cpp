@@ -124,7 +124,6 @@ xt::xtensor<double, 4> T_f_functor::operator()(
 
 
 // F(p,U,t) ∈ ℝᵐ x ℝᴰ Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
-
 F_functor::F_functor(
     const f_functor &f_,
     const xt::xtensor<double, 2> &U_,
@@ -144,8 +143,7 @@ xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const
 }
 
 // g(p) = vec[Phi F(p,U,t)] ∈ ℝ^(mp1 x D) column wise vectorization
-g_functor::g_functor(const F_functor &F_,
-                     const xt::xtensor<double, 2> &V_): V(V_), F(F_) {
+g_functor::g_functor(const F_functor &F_, const xt::xtensor<double, 2> &V_): V(V_), F(F_) {
 }
 
 xt::xtensor<double, 1> g_functor::operator()(const std::vector<double> &p) const {
@@ -209,7 +207,7 @@ xt::xtensor<double, 5> H_g_functor::operator()(
     //Compute Hg                               // V_expanded has dimension (K, mp1, 1,       1, 1)
     const auto H_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂)
     const auto Hg = V_expanded * H_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂))
-    const auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 1, 3, 4}); // (K, D, mp1, len(∇₁), len(∇₂))
+    auto Hgt = xt::transpose(xt::eval(Hg), {0, 2, 1, 3, 4}); // (K, D, mp1, len(∇₁), len(∇₂))
     return Hgt;
 }
 
@@ -228,6 +226,7 @@ T_g_functor::T_g_functor(
     grad3_len = T_f.dx[0][0][0].size();
 }
 
+
 xt::xtensor<double, 6> T_g_functor::operator()(
     const std::vector<double> &p
 ) const {
@@ -242,6 +241,6 @@ xt::xtensor<double, 6> T_g_functor::operator()(
     //Compute Tg                                                        // V_expanded has dimension (K, mp1, 1, 1, 1)
     const auto T_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
     const auto Tg = V_expanded * T_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
-    const auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, len(∇₁), mp1, len(∇₂), len(∇₃))
+    auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 3, 1, 4, 5}); // (K, D, len(∇₁), mp1, len(∇₂), len(∇₃))
     return Tgt;
 }

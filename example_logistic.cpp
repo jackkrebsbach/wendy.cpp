@@ -1,12 +1,14 @@
 #include "src/wendy.h"
 #include "src/utils.h"
 
+#include <xtensor/containers/xarray.hpp>
+#include <xtensor/views/xview.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
 #include <random>
 #include <boost/numeric/odeint.hpp>
-#include <xtensor-blas/xlinalg.hpp>
 
 using namespace boost::numeric::odeint;
 
@@ -24,7 +26,7 @@ std::vector<std::vector<double> > add_noise(const std::vector<std::vector<double
 
     for (int i = 0; i < n_points; ++i) {
         for (int d = 0; d < dim; ++d) {
-            noisy[i][d] += noise_sd * dist(gen);
+             noisy[i][d] += noise_sd * dist(gen);
         }
     }
     return noisy;
@@ -40,7 +42,18 @@ struct LogisticODE {
         du_dt[0] = u[0] * p[0] - p[1] * std::pow(u[0], 2);
     }
 };
+xt::xtensor<double, 1> logistic_fun(const std::vector<double>& p, const xt::xarray<double>& u, double t) {
+    xt::xtensor<double, 1> du_dt = xt::zeros<double>({1});
+    du_dt[0] = p[0] * u[0] - p[1] * std::pow(u[0], 2);
+    return du_dt;
+}
 
+
+xt::xtensor<double, 2> logistic_jacobian(const std::vector<double>& p, const xt::xarray<double>& u, double t) {
+    xt::xtensor<double, 2> J = xt::zeros<double>({1, 1});
+    J(0, 0) = p[0] - 2.0 * p[1] * u[0];
+    return J;
+}
 int main() {
     const std::vector p_star = {1.0, 1.0};
     std::vector p0 = {0.25, 0.25};
@@ -49,10 +62,11 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 101;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
+
     const xt::xtensor<double, 1> t_eval = xt::linspace(t0, t1, num_samples);
     std::vector<state_type> u_eval;
     std::vector<double> t_vec;
@@ -63,7 +77,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, LogisticODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, LogisticODE(p_star), u, t_eval.begin(), t_eval.end(), 0.001, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -76,35 +90,15 @@ int main() {
 
     const xt::xtensor<double, 2> U = xt::adapt(u_flat, shape);
 
-
     try {
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-        Wendy wendy(system_eqs, U, p0, tt, noise_sd, false);
-
+        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
-
-        const auto mle = *wendy.obj;
-
-        std::cout << "\np*: " << mle(p_star) << std::endl;
-        std::cout << "p0: " << mle(p0) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({0.55, 0.55})) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({0.9, 0.9})) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({0.25, 0.25})) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({1.5, 1.5})) << std::endl;
-        std::cout << "    " << mle(std::vector<double>({2.0, 2.0})) << std::endl;
-
         // wendy.inspect_equations();
-        // wendy.optimize_parameters();
-
-
-        // std::cout << "P0: " << std::endl;
-        // print_vector(p0);
-        //
-        // std::cout << "Pstar: " << std::endl;
-        // print_vector(p_star);
+        wendy.optimize_parameters();
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: {}" << e.what() << std::endl;

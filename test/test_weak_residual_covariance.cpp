@@ -84,7 +84,7 @@ TEST_CASE("L is (∇ᵤg(p) + I_D ⊙ V') (Σ ⊙ I_mp1)") {
 
     const auto Ju_gp = xt::reshape_view(Ju_g(p), {K * D, D * mp1});
 
-    xt::xarray<double> sqrt_diag = xt::diagonal(Sigma);
+    xt::xarray<double> sqrt_diag = xt::diag(Sigma);
 
     xt::xtensor<double, 2> L_manual_first_bock =
             xt::eval(xt::view(Ju_gp, xt::range(0, K), xt::range(0, mp1)) + V) * sqrt_diag(0);
@@ -159,14 +159,13 @@ TEST_CASE("Expand matrix") {
 TEST_CASE("Matrix Solve"){
 
     const auto Lp = L(p);
-    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+    xt::xtensor<double,2> S = xt::linalg::dot(Lp, xt::transpose(Lp));
+    S = 0.5 * (S + xt::transpose(S));
 
     xt::xarray<double> A = xt::random::randn<double>(S.shape());
 
     const auto B = xt::linalg::solve(S, A);
 
     CHECK(xt::allclose(A, xt::linalg::dot(S,B)));
-
-
 
 }
