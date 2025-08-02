@@ -1,4 +1,5 @@
 #include "src/wendy.h"
+#include "src/symbolic_utils.h"
 #include "src/utils.h"
 
 #include <xtensor/containers/xarray.hpp>
@@ -9,6 +10,8 @@
 #include <xtensor/containers/xadapt.hpp>
 #include <random>
 #include <boost/numeric/odeint.hpp>
+
+#include "src/symbolic_utils.h"
 
 using namespace boost::numeric::odeint;
 
@@ -54,6 +57,7 @@ xt::xtensor<double, 2> logistic_jacobian(const std::vector<double>& p, const xt:
     J(0, 0) = p[0] - 2.0 * p[1] * u[0];
     return J;
 }
+
 int main() {
     const std::vector p_star = {1.0, 1.0};
     std::vector p0 = {0.25, 0.25};
@@ -62,7 +66,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 251;
+    constexpr int num_samples = 100;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -97,6 +101,19 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
+
+        // const auto mle = *wendy.obj;
+        // auto start_time = std::chrono::high_resolution_clock::now();
+        // auto _ = mle.Hessian(p_star);
+        // auto end_time = std::chrono::high_resolution_clock::now();
+        // auto duration_s     = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+        // auto duration_ms    = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        // auto duration_ns    = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+        //
+        // std::cout << "Computation took: " << duration_s.count() << " seconds" << std::endl;
+        // std::cout << "Computation took: " << duration_ms.count() << " milliseconds" << std::endl;
+        // std::cout << "Computation took: " << duration_ns.count() << " nanoseconds" << std::endl;
+
         wendy.inspect_equations();
         // wendy.optimize_parameters();
 

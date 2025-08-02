@@ -26,10 +26,10 @@ struct f_functor {
 // ∇f(p,u,t) ∈ ℝᴺ
 struct J_f_functor final {
     std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx;
+    size_t n_rows;
+    size_t n_cols;
 
     explicit J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_);
-
-    ~J_f_functor() = default;
 
     xt::xtensor<double, 2> operator()(
         const std::vector<double> &p,
@@ -41,11 +41,11 @@ struct J_f_functor final {
 // ∇∇f(p,u,t) ∈ ℝᵐ x ℝᴺ x ℝᴹ
 struct H_f_functor final {
     std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx;
+    size_t n_rows;
+    size_t n_cols;
+    size_t n_depth;
 
-    explicit H_f_functor(
-        std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx_);
-
-    ~H_f_functor() = default;
+    explicit H_f_functor(std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx_);
 
     xt::xtensor<double, 3> operator()(
         const std::vector<double> &p,
@@ -58,12 +58,14 @@ struct H_f_functor final {
 // ∇∇∇f(p,u,t) ∈ ℝᵐ x ℝᴺ x ℝᴹ x ℝᵁ
 struct T_f_functor final {
     std::vector<std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > > dx;
+    size_t n_rows;
+    size_t n_cols;
+    size_t n_depth;
+    size_t n_depth2;
 
     explicit T_f_functor(
         std::vector<std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > >
         dx_);
-
-    ~T_f_functor() = default;
 
     xt::xtensor<double, 4> operator()(
         const std::vector<double> &p,

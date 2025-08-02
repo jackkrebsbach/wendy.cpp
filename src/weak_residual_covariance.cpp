@@ -30,7 +30,7 @@ CovarianceFactor::CovarianceFactor(
     J = Jp_Ju_g.grad2_len;
 
     Sigma_I_mp1 = xt::linalg::kron( xt::eye(mp1), Sigma);
-    I_D_phi_prime = xt::linalg::kron(   V_prime, xt::eye(D)); // I_d x ϕ'
+    I_D_phi_prime = xt::linalg::kron(V_prime, xt::eye(D));
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
@@ -44,11 +44,9 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
 
 // ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
 xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) const {
-
     const auto Jp_Ju_gp = xt::reshape_view(Jp_Ju_g(p), {D * K, mp1 * D, J});
     const auto Jp_L_ = xt::linalg::tensordot(Jp_Ju_gp, Sigma_I_mp1, {1}, {0}); // shape (D*K, J, D*mp1)
     const auto Jp_L = xt::transpose(Jp_L_, {0, 2, 1}); // shape: (D*K, D*mp1, J)
-
     return (Jp_L);
 };
 

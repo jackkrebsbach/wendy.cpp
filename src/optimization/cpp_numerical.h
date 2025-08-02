@@ -24,9 +24,8 @@ public:
 
         if (grad) {
             grad->resize(x.size());
-            // const auto g = mle.Jacobian(p);
-            const auto g = gradient_4th_order(mle, p);
-
+            const auto g = mle.Jacobian(p);
+            // const auto g = gradient_4th_order(mle, p);
             for (Eigen::Index i = 0; i < x.size(); ++i){
                 (*grad)(i) = g[i];
             }

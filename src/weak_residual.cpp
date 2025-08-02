@@ -8,51 +8,51 @@
 #include <xtensor-blas/xlinalg.hpp>
 
 // f(p u, t) rhs of system, function of all variables
-
 f_functor::f_functor(
     std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > dx_,
     const size_t D_
-) : dx(std::move(dx_)), D(D_) {
-}
+) : dx(std::move(dx_)), D(D_) {}
 
 xt::xtensor<double, 1> f_functor::operator()(
     const std::vector<double> &p,
     const xt::xtensor<double, 1> &u,
     const double &t
 ) const {
-    std::vector<double> inputs = p;
+
+    std::vector<double> inputs;
+    inputs.reserve(p.size() + u.size() + 1);
+    inputs.insert(inputs.end(), p.begin(), p.end());
     inputs.insert(inputs.end(), u.begin(), u.end());
     inputs.emplace_back(t);
+
     xt::xtensor<double, 1> out = xt::empty<double>({D});
 
     for (std::size_t i = 0; i < D; ++i) {
-        out[i] = dx[i]->call(inputs);
+        out.unchecked(i) = dx[i]->call(inputs);
     }
     return out;
 }
 
 // ∇f(p,u,t) ∈ ℝᴺ
-
-J_f_functor::J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) : dx(
-    std::move(dx_)) {
-}
+J_f_functor::J_f_functor(std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > dx_) :
+dx(std::move(dx_)), n_rows(dx.size()), n_cols(dx[0].size()) {}
 
 xt::xtensor<double, 2> J_f_functor::operator()(
     const std::vector<double> &p,
     const xt::xtensor<double, 1> &u,
     const double &t
 ) const {
-    const size_t nrows = dx.size();
-    const size_t ncols = dx[0].size();
 
-    std::vector<double> inputs = p;
+    std::vector<double> inputs;
+    inputs.reserve(p.size() + u.size() + 1);
+    inputs.insert(inputs.end(), p.begin(), p.end());
     inputs.insert(inputs.end(), u.begin(), u.end());
     inputs.emplace_back(t);
-    xt::xtensor<double, 2> out = xt::empty<double>({nrows, ncols});
 
-    for (std::size_t i = 0; i < nrows; ++i) {
-        for (std::size_t j = 0; j < ncols; ++j) {
-            out(i, j) = dx[i][j]->call(inputs);
+    xt::xtensor<double, 2> out = xt::empty<double>({n_rows, n_cols});
+    for (std::size_t j = 0; j < n_cols; ++j) {
+       for (std::size_t i = 0; i < n_rows; ++i) {
+            out.unchecked(i, j) = dx[i][j]->call(inputs);
         }
     }
     return out;
@@ -60,28 +60,27 @@ xt::xtensor<double, 2> J_f_functor::operator()(
 
 // ∇∇f(p,u,t) ∈ ℝᵐ x ℝᴺ x ℝᴹ
 H_f_functor::H_f_functor(
-    std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx_) : dx(
-    std::move(dx_)) {
-}
+    std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > dx_) :
+    dx(std::move(dx_)), n_rows(dx.size()), n_cols(dx[0].size()), n_depth(dx[0][0].size()) {}
 
 xt::xtensor<double, 3> H_f_functor::operator()(
     const std::vector<double> &p,
     const xt::xtensor<double, 1> &u,
     const double &t
 ) const {
-    const size_t nrows = dx.size();
-    const size_t ncols = dx[0].size();
-    const size_t ndepth = dx[0][0].size();
 
-    std::vector<double> inputs = p;
+    std::vector<double> inputs;
+    inputs.reserve(p.size() + u.size() + 1);
+    inputs.insert(inputs.end(), p.begin(), p.end());
     inputs.insert(inputs.end(), u.begin(), u.end());
     inputs.emplace_back(t);
-    xt::xtensor<double, 3> out = xt::empty<double>({nrows, ncols, ndepth});
 
-    for (std::size_t i = 0; i < nrows; ++i) {
-        for (std::size_t j = 0; j < ncols; ++j) {
-            for (std::size_t k = 0; k < ndepth; ++k) {
-                out(i, j, k) = dx[i][j][k]->call(inputs);
+    xt::xtensor<double, 3> out = xt::empty<double>({n_rows, n_cols, n_depth});
+
+    for (std::size_t i = 0; i < n_rows; ++i) {
+        for (std::size_t j = 0; j < n_cols; ++j) {
+            for (std::size_t k = 0; k < n_depth; ++k) {
+                out.unchecked(i, j, k) = dx[i][j][k]->call(inputs);
             }
         }
     }
@@ -91,8 +90,7 @@ xt::xtensor<double, 3> H_f_functor::operator()(
 // ∇∇∇f(p,u,t) ∈ ℝᵐ x ℝᴺ x ℝᴹ x ℝᵁ
 T_f_functor::T_f_functor(
     std::vector<std::vector<std::vector<std::vector<std::shared_ptr<SymEngine::LambdaRealDoubleVisitor> > > > > dx_)
-    : dx(
-        std::move(dx_)) {
+    : dx(std::move(dx_)), n_rows(dx.size()), n_cols(dx[0].size()), n_depth(dx[0][0].size()), n_depth2(dx[0][0][0].size()) {
 }
 
 xt::xtensor<double, 4> T_f_functor::operator()(
@@ -100,28 +98,26 @@ xt::xtensor<double, 4> T_f_functor::operator()(
     const xt::xtensor<double, 1> &u,
     const double &t
 ) const {
-    const size_t nrows = dx.size();
-    const size_t ncols = dx[0].size();
-    const size_t ndepth = dx[0][0].size();
-    const size_t ndepth2 = dx[0][0][0].size();
 
-    std::vector<double> inputs = p;
+    std::vector<double> inputs;
+    inputs.reserve(p.size() + u.size() + 1);
+    inputs.insert(inputs.end(), p.begin(), p.end());
     inputs.insert(inputs.end(), u.begin(), u.end());
     inputs.emplace_back(t);
-    xt::xtensor<double, 4> out = xt::empty<double>({nrows, ncols, ndepth, ndepth2});
 
-    for (std::size_t i = 0; i < nrows; ++i) {
-        for (std::size_t j = 0; j < ncols; ++j) {
-            for (std::size_t k = 0; k < ndepth; ++k) {
-                for (std::size_t l = 0; l < ndepth2; ++l) {
-                    out(i, j, k, l) = dx[i][j][k][l]->call(inputs);
+    xt::xtensor<double, 4> out = xt::empty<double>({n_rows, n_cols, n_depth, n_depth2});
+
+    for (std::size_t i = 0; i < n_rows; ++i) {
+        for (std::size_t j = 0; j < n_cols; ++j) {
+            for (std::size_t k = 0; k < n_depth; ++k) {
+                for (std::size_t l = 0; l < n_depth2; ++l) {
+                    out.unchecked(i, j, k, l) = dx[i][j][k][l]->call(inputs);
                 }
             }
         }
     }
     return out;
 }
-
 
 // F(p,U,t) ∈ ℝᵐ x ℝᴰ Matrix valued function filled with u(t_0),...., u(t_m) where u(t_i) ∈ ℝᴰ
 F_functor::F_functor(
@@ -143,8 +139,7 @@ xt::xtensor<double, 2> F_functor::operator()(const std::vector<double> &p) const
 }
 
 // g(p) = vec[Phi F(p,U,t)] ∈ ℝ^(mp1 x D) column wise vectorization
-g_functor::g_functor(const F_functor &F_, const xt::xtensor<double, 2> &V_): V(V_), F(F_) {
-}
+g_functor::g_functor(const F_functor &F_, const xt::xtensor<double, 2> &V_): V(V_), F(F_) {}
 
 xt::xtensor<double, 1> g_functor::operator()(const std::vector<double> &p) const {
     return (xt::ravel(xt::linalg::dot(V, F(p))));
@@ -172,7 +167,7 @@ xt::xtensor<double, 4> J_g_functor::operator()(
         const double &t = tt[i];
         const auto &u = xt::row(U,i);
         xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
-    }                                 // // V_expanded has dimension (K, mp1, 1, 1)
+    }                                    // V_expanded has dimension (K, mp1, 1, 1)
     auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
     auto Jg = V_expanded * J_F_expanded;          // (K, mp1, D, len(∇))
     auto J_g_t = xt::transpose(xt::eval(Jg), {0, 2, 1, 3}); // (K, D, mp1, len(∇))
@@ -241,7 +236,7 @@ xt::xtensor<double, 6> T_g_functor::operator()(
     //Compute Tg                                                        // V_expanded has dimension (K, mp1, 1, 1, 1)
     const auto T_F_expanded = xt::expand_dims(H_F, 0); // (1, mp1, D, len(∇₁), len(∇₂), len(∇₃))
     const auto Tg = V_expanded * T_F_expanded; //  (K, mp1, D, len(∇₁), len(∇₂),len(∇₃) )
-    auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 1, 3, 4, 5}); // (K, D, len(∇₁), mp1, len(∇₂), len(∇₃))
+    auto Tgt = xt::transpose(xt::eval(Tg), {0, 2, 1, 3, 4, 5}); // (K, D, mp1, len(∇₁), len(∇₂), len(∇₃))
     return Tgt;
 }
 

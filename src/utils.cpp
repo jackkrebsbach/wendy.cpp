@@ -115,8 +115,9 @@ size_t get_corner_index(const xt::xtensor<double, 1>& y, const xt::xtensor<doubl
         E[k] = std::sqrt(sum1 + sum2);
     }
 
-    E[0] = std::numeric_limits<double>::infinity();
-    E[E.size() - 1] = std::numeric_limits<double>::infinity();
+    constexpr double INF_APPROX = 1e300;
+    E[0] = INF_APPROX;
+    E[E.size() - 1] = INF_APPROX;
 
     return xt::argmin(E)();
 }
