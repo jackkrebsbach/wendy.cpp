@@ -55,7 +55,7 @@ struct MLE {
 
     xt::xtensor<double, 3> Hp_r(const std::vector<double> &p) const;
 
-    static void S_inv(xt::xarray<double> &out_, const xt::xtensor<double,2> &S, const xt::xarray<double> &R);
+    static xt::xarray<double> S_inv(const xt::xtensor<double,2> &C, const xt::xarray<double> &R);
 
    std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
 

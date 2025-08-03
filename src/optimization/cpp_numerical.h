@@ -32,8 +32,8 @@ public:
         }
         // if (hessian) {
         //     hessian->resize(x.size(), x.size());
-        //     // const auto H = mle.Hessian(p);
-        //     const auto H = hessian_3rd_order(mle, p);
+        //     const auto H = mle.Hessian(p);
+        //     // const auto H = hessian_3rd_order(mle, p);
         //
         //     for (Eigen::Index i = 0; i < x.size(); ++i) {
         //         for (Eigen::Index j = 0; j < x.size(); ++j) {
@@ -41,8 +41,6 @@ public:
         //         }
         //     }
         // }
-        //
-        // std::cout << "Objective at x = " << x.transpose() << " is " << mle(p) << std::endl;
 
         return mle(p);
     }

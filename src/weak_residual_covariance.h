@@ -23,8 +23,6 @@ struct CovarianceFactor {
     size_t mp1;
     size_t K;
     size_t J;
-    xt::xtensor<double, 2> Sigma_I_mp1;
-    xt::xtensor<double, 2> I_D_phi_prime;
     xt::xtensor<double, 2> L0;
     const double REG = 1.0e-10;
 

@@ -54,7 +54,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 201;
+    constexpr int num_samples = 101;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -86,11 +86,10 @@ int main() {
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-        std::cout << "<< Building symbolic functions >>" << std::endl;
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
-        wendy.inspect_equations();
+        // wendy.inspect_equations();
         wendy.optimize_parameters();
 
         // auto mle = *wendy.obj;

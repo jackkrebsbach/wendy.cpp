@@ -34,9 +34,6 @@ CovarianceFactor::CovarianceFactor(
     K = V.shape()[0];
     J = Jp_Ju_g.grad2_len;
 
-    Sigma_I_mp1 = xt::linalg::kron( xt::eye(mp1), xt::diag(sig));
-    I_D_phi_prime = xt::linalg::kron(V_prime, xt::eye(D));
-
     xt::xtensor<double,4> L0_ = xt::zeros<double>({K, D, mp1, D});
 
     for (std::size_t k = 0; k < K; ++k)
