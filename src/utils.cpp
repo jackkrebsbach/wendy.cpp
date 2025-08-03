@@ -21,8 +21,8 @@ xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<
 
     // Ensure B is 2D: reshape if it's 1D
     xt::xarray<double> B_2D = (B.dimension() == 1)
-        ? xt::reshape_view(B, {n, 1})
-        : B;
+                                  ? xt::reshape_view(B, {n, 1})
+                                  : B;
 
     const int nrhs = static_cast<int>(B_2D.shape()[1]);
 
@@ -42,6 +42,78 @@ xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<
 
     return X;
 }
+
+
+QRFactor qr_factor(const xt::xarray<double> &A_in) {
+    using namespace cxxlapack;
+
+    auto A = xt::xarray<double, xt::layout_type::column_major>(A_in);
+    int m = A.shape()[0], n = A.shape()[1];
+
+    int lda = std::max(1, m);
+    std::vector<double> tau(std::min(m, n));
+
+    // Query optimal workspace
+    double work_query;
+    int lwork = -1;
+    int info = geqrf(m, n, A.data(), lda, tau.data(), &work_query, lwork);
+    if (info != 0) throw std::runtime_error("geqrf workspace query failed");
+
+    lwork = static_cast<int>(work_query);
+    std::vector<double> work(lwork);
+
+    // Actual QR factorization
+    info = geqrf(m, n, A.data(), lda, tau.data(), work.data(), lwork);
+    if (info != 0) throw std::runtime_error("QR factorization failed");
+
+    return {std::move(A), std::move(tau), m, n};
+}
+
+xt::xarray<double> solve_qr(const QRFactor &F, const xt::xarray<double> &B_in) {
+    using namespace cxxlapack;
+
+    auto B = xt::xarray<double, xt::layout_type::column_major>(B_in);
+    if (B.dimension() == 1)
+        B = xt::reshape_view(B, {F.m, 1});
+
+    int nrhs = B.shape()[1];
+    int ldb = std::max(1, F.m);
+
+    // Apply Qᵀ to B: B := Qᵀ * B
+    double work_query;
+    int lwork = -1;
+
+    int info = ormqr(
+        'L', 'T',
+        F.m, nrhs, std::min(F.m, F.n),
+        const_cast<double *>(F.A_fact.data()), F.m,
+        F.tau.data(),
+        B.data(), ldb,
+        &work_query, lwork
+    );
+
+    if (info != 0) throw std::runtime_error("ormqr workspace query failed");
+
+    lwork = static_cast<int>(work_query);
+    std::vector<double> work(lwork);
+
+    info = ormqr(
+        'L', 'T',
+        F.m, nrhs, std::min(F.m, F.n),
+        const_cast<double *>(F.A_fact.data()), F.m,
+        F.tau.data(),
+        B.data(), ldb,
+        work.data(), lwork
+    );
+
+    if (info != 0) throw std::runtime_error("ormqr failed");
+    // Solve R * X = Qᵀ * B using upper-triangular part of A_fact
+    info = trtrs('U', 'N', 'N', F.n, nrhs, F.A_fact.data(), F.m, B.data(), ldb);
+    if (info != 0) throw std::runtime_error("trtrs failed");
+
+    return xt::view(B, xt::range(0, F.n), xt::all());
+}
+
 
 std::function<double(double)>
 make_scalar_function(const SymEngine::Expression &expr, const SymEngine::RCP<const SymEngine::Symbol> &var) {

@@ -5,6 +5,7 @@
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/misc/xpad.hpp>
+
 /**
  * Calculate the covariance factor L for S(p,U,t) = (∇g + ϕ'∘I)(Σ²∘I)(∇gᵀ + ϕ'ᵀ∘I) = LL^T
  * We can factor Σ∘I =(Σ∘I)^1/2(Σ∘I)^1/2 because it is symmetric positive definite (it is also diagonal).
@@ -62,7 +63,7 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
         for (std::size_t d2 = 0; d2 < D; ++d2)
             for (std::size_t m = 0; m < mp1; ++m)
                 for (std::size_t d1 = 0; d1 < D; ++d1)
-                    L1_(k, d2, m, d1) = J_F(m, d2, d1) * V(k, m) * sig(d1);
+                    L1_(k, d1, m, d2) = J_F(m, d1, d2) * V(k, m) * sig(d2);
 
     auto L1 = xt::reshape_view(L1_, {K * D, mp1 * D});
     const auto L = xt::eval(L1 + L0);
@@ -92,7 +93,6 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
     }
 
     xt::xtensor<double, 5> J_ = xt::zeros<double>({K, D, mp1, D, J});
-
     for (std::size_t k = 0; k < K; ++k)
         for (std::size_t d1 = 0; d1 < D; ++d1)
             for (std::size_t m = 0; m < mp1; ++m)

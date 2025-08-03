@@ -1,6 +1,7 @@
 #ifndef MLE_H
 #define MLE_H
 
+#include "../utils.h"
 #include "../weak_residual_covariance.h"
 #include "../weak_residual.h"
 
@@ -45,6 +46,46 @@ struct MLE {
         const T_g_functor &Jp_Jp_Ju_g_
         );
 
+    struct InverseSolver {
+        virtual ~InverseSolver() = default;
+        virtual xt::xarray<double> solve(const xt::xarray<double>& b) const = 0;
+    };
+
+    struct CholeskySolver final : InverseSolver {
+        xt::xarray<double> L;
+
+        explicit CholeskySolver(const xt::xarray<double>& S) {
+            L = xt::linalg::cholesky(S);
+        }
+
+        xt::xarray<double> solve(const xt::xarray<double>& b) const override {
+            return solve_cholesky(L, b);
+        }
+    };
+
+    struct QRSolver final : InverseSolver {
+        QRFactor F;
+
+        explicit QRSolver(const xt::xarray<double>& S) {
+            F = qr_factor(S);
+        }
+
+        xt::xarray<double> solve(const xt::xarray<double>& b) const override {
+            return solve_qr(F, b);
+        }
+    };
+
+    struct RegularSolve final : InverseSolver {
+        xt::xarray<double> F;
+        explicit RegularSolve(const xt::xarray<double>& S) {
+            F = S;
+        }
+        xt::xarray<double> solve(const xt::xarray<double>& b) const override {
+            return xt::linalg::solve(F, b);
+        }
+    };
+
+
    double operator()(const std::vector<double> &p) const;
 
    std::vector<double> Jacobian(const std::vector<double> &p) const;
@@ -54,8 +95,6 @@ struct MLE {
     xt::xtensor<double ,2> Ju_r(const std::vector<double> &p) const;
 
     xt::xtensor<double, 3> Hp_r(const std::vector<double> &p) const;
-
-    static xt::xarray<double> S_inv(const xt::xtensor<double,2> &C, const xt::xarray<double> &R);
 
    std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
 

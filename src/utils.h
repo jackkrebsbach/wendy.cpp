@@ -162,7 +162,18 @@ inline void print_vector(const std::vector<double>& vec, const int precision = 3
     std::cout << std::endl;
 }
 
+
+struct QRFactor {
+    xt::xarray<double, xt::layout_type::column_major> A_fact; // overwritten A
+    std::vector<double> tau;
+    int m, n;
+};
+
 xt::xarray<double> solve_cholesky(const xt::xarray<double>& L, const xt::xarray<double>& B);
+
+xt::xarray<double> solve_qr(const QRFactor &F, const xt::xarray<double> &B_in);
+
+QRFactor qr_factor(const xt::xarray<double> &A_in);
 
 std::function<double(double)> make_scalar_function(const SymEngine::Expression &expr,
                                                    const SymEngine::RCP<const SymEngine::Symbol> &var);

@@ -63,6 +63,7 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             -flto
             -DNDEBUG
     )
+
 endfunction()
 
 add_wendy_example(example_logistic example_logistic.cpp)

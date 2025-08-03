@@ -89,7 +89,7 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
-        // wendy.inspect_equations();
+        wendy.inspect_equations();
         wendy.optimize_parameters();
 
         // auto mle = *wendy.obj;
