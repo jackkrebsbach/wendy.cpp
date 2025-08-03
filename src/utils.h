@@ -4,6 +4,7 @@
 #include "weak_residual.h"
 
 #include <xtensor/misc/xsort.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 #include <iomanip>
@@ -11,6 +12,7 @@
 #include <fstream>
 #include <sstream>
 #include <unistd.h>
+
 
 
 template<typename T>

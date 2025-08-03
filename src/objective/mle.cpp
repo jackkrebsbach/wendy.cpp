@@ -8,7 +8,7 @@
 #include <xtensor-blas/xlinalg.hpp>
 
 
-constexpr double DIAG_REG = 1e-12;
+constexpr double DIAG_REG = 1e-9;
 
 MLE::MLE(
     const xt::xtensor<double, 2> &U_,
@@ -18,6 +18,7 @@ MLE::MLE(
     const CovarianceFactor &L_,
     const g_functor &g_,
     const xt::xtensor<double, 1> &b_,
+    const J_f_functor &Jp_f_,
     const J_g_functor &Ju_g_,
     const J_g_functor &Jp_g_,
     const H_g_functor &Jp_Ju_g_,
@@ -26,67 +27,68 @@ MLE::MLE(
     const S_inv_r_functor &S_inv_r_
 
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
-   Ju_g(Ju_g_), Jp_g(Jp_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
+   Jp_f(Jp_f_), Ju_g(Ju_g_),Jp_g(Jp_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_g(Jp_Jp_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
    S_inv_r(S_inv_r_), K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
     J = Jp_Ju_g.grad2_len;
-    constant_term = static_cast<double>(K) * static_cast<double>(D) * std::log(2 * std::numbers::pi);
+    constant_term = K * D * std::log(2 * std::numbers::pi);
 }
 
 double MLE::operator()(const std::vector<double> &p) const {
     const auto Lp = L(p);
-    auto S_ = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
-    constexpr double weight = 1.0 - DIAG_REG;
-    const std::size_t n = S_.shape()[0];
-
-    xt::xtensor<double, 2> S = xt::eval(weight * S_) + DIAG_REG * xt::eye<double>(n);
+    const auto S = xt::linalg::dot(Lp, xt::eval(xt::transpose(Lp)));
     const auto r = g(p) - b;
 
-    double logDetS;
-    xt::xtensor<double, 1> quad_;
+    const double logDetS = std::log(xt::linalg::det(S));
 
-    try {
-        const auto C = xt::linalg::cholesky(S);
-        const auto diagC = xt::diag(C);
-        const auto filtered_diag = xt::filter(diagC, xt::not_equal(diagC, 0.0)); // optional safeguard
-        logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
-    } catch (const std::exception &e) {
-        logDetS = std::log(xt::linalg::det(S));
-    }
-
-    quad_ = xt::linalg::solve(S, r);
-
+    const auto quad_ = xt::linalg::solve(S, r);
     const auto quad = xt::linalg::dot(r, quad_)();
+
     const auto wnll = 0.5 * (logDetS + quad + constant_term);
 
     return (wnll);
 }
 
 std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
-    const auto Lp = L(p); // L(p)
+    const auto Lp = L(p);
+    const auto S = xt::linalg::dot(Lp, xt::transpose(Lp));
+
     const auto Jp_Lp = L.Jacobian(p); // ∇ₚL(p)
 
-    auto S_ = xt::eval(xt::linalg::dot(Lp, xt::transpose(Lp)));
+    const auto r = g(p) - b;
 
-    constexpr double weight = 1.0 - DIAG_REG;
-    const std::size_t n = S_.shape()[0];
+    xt::xtensor<double, 1> S_inv_rp = xt::linalg::solve(S, r);
 
-    xt::xtensor<double, 2> S = xt::eval(weight * S_) + DIAG_REG * xt::eye<double>(n);
+    xt::xtensor<double, 3> Jp_F({mp1, D, J});
 
-    const auto r = g(p) - b; // r(p) = g(p) - b
-    const auto S_inv_rp = xt::linalg::solve(S, r);
-    const auto Jp_gp = xt::reshape_view(xt::sum(Jp_g(p), {2}), {K * D, J}); // ∇ₚg(p) ∈ ℝ^(K*D x J)
+    for (size_t i = 0; i < mp1; ++i) {
+        const double &t = tt[i];
+        const xt::xtensor<double,1> &u = xt::row(U, i);
+        xt::view(Jp_F, i, xt::all(), xt::all()) = Jp_f(p, u, t);
+    }
 
-    std::vector<double> J_wnn(p.size()); // Output
+    xt::xtensor<double,4> Jp_r_ = xt::zeros<double>({K, mp1, D, J});
+
+    for (int k = 0; k < K; ++k)
+        for (int m = 0; m < mp1; ++m)
+            for (int d1 = 0; d1 < D; ++d1)
+                    for (int j = 0; j < J; ++j)
+                        Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(m, d1, j) ;
+
+    const auto Jp_r = xt::reshape_view(xt::sum(Jp_r_, {1}), {K * D, J}); // ∇ₚr(p) ∈ ℝ^(K*D x J)
+
+    std::vector<double> J_wnn(p.size());
+
     for (int j = 0; j < p.size(); ++j) {
-        // Extract partial information for each p_i from the gradients
-        const auto Jp_LLT_j = xt::linalg::dot(xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(), j)),
-                                              xt::eval(xt::transpose(Lp)));
-        const auto Jp_Sp_j = Jp_LLT_j + xt::transpose(Jp_LLT_j);
-        const auto Jp_gp_j = xt::view(Jp_gp, xt::all(), j);
 
-        const double prt1 = xt::linalg::trace(xt::linalg::solve(S, Jp_Sp_j))();
-        const double prt2 = 2.0 * xt::linalg::dot(xt::eval(xt::transpose(Jp_gp_j)), S_inv_rp)();
-        const double prt3 = -1.0 * xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_Sp_j), S_inv_rp)();
+        const xt::xtensor<double, 2> Jp_L_j = xt::view(Jp_Lp, xt::all(), xt::all(), j);
+
+        const auto Jp_ = xt::linalg::dot(Jp_L_j, xt::transpose(Lp));
+        const auto Jp_S = Jp_ + xt::transpose(Jp_);
+        const auto Jp_r_j = xt::view(Jp_r, xt::all(), j);
+
+        const double prt1 = xt::linalg::trace(xt::linalg::solve(S, Jp_S))();
+        const double prt2 = 2.0 * xt::linalg::dot(xt::eval(xt::transpose(Jp_r_j)), S_inv_rp)();
+        const double prt3 = -1.0 * xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_S), S_inv_rp)();
 
         J_wnn[j] = 0.5 * (prt1 + prt2 + prt3);
     }
@@ -191,3 +193,12 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
     }
     return H_wnn;
 }
+
+    // std::cout << "Condition Number: " << xt::linalg::cond(S,2) << std::endl;
+    // try {
+    //     const auto C = xt::linalg::cholesky(S);
+    //     const auto diagC = xt::diag(C);
+    //     const auto filtered_diag = xt::filter(diagC, xt::not_equal(diagC, 0.0));
+    //     logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
+    // } catch (const std::exception &e) {
+    // }

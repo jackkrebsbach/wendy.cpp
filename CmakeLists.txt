@@ -55,14 +55,14 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${FFTW3_LIBRARY}
     )
 
-    target_compile_options(${EXAMPLE_NAME} PRIVATE
-            -O3
-            -march=native
-            -ffast-math
-            -funroll-loops
-            -flto
-#            -DNDEBUG
-    )
+#    target_compile_options(${EXAMPLE_NAME} PRIVATE
+#            -O3
+#            -march=native
+#            -ffast-math
+#            -funroll-loops
+#            -flto
+##            -DNDEBUG
+#    )
 endfunction()
 
 add_wendy_example(example_logistic example_logistic.cpp)

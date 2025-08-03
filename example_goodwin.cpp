@@ -46,13 +46,15 @@ int main() {
 
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
     std::vector<double> p0 = {3.0, 0.1, 4 , 12, 0.1, 0.1, 0.1, 0.1};
+    // p₀ = [3.0, 0.1, 4, 12, 0.1, 0.1, 0.1, 0.1]
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
+    // u₀ = [0.3617, 0.9137, 1.3934]
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
     constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
-    constexpr double t1 = 80;
+    constexpr double t1 = 50;
 
     const xt::xtensor<double, 1> t_eval = xt::linspace(t0, t1, num_samples);
     std::vector<state_type> u_eval;
@@ -89,12 +91,15 @@ int main() {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
        wendy.build_objective_function();
-       wendy.inspect_equations();
+       // wendy.inspect_equations();
        // wendy.optimize_parameters();
 
-        // const auto mle = *wendy.obj;
+        const auto mle = *wendy.obj;
         // std::cout << "\n pstar" << std::endl;
         // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
+        std::cout << "\n p0" << std::endl;
+        std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
+
         // std::cout << std::endl;
         // std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
         // std::cout << mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;

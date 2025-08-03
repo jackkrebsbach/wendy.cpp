@@ -90,19 +90,19 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_objective_function();
-        // wendy.inspect_equations();
-        wendy.optimize_parameters();
+        wendy.inspect_equations();
+        // wendy.optimize_parameters();
 
         // auto mle = *wendy.obj;
-        // std::cout << "\n pstar" << std::endl;
-        // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
+        // std::cout << "\n pstar: " << mle(p_star) << std::endl;
         // std::cout << std::endl;
-        // std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
-        // std::cout << mle(std::vector<double>({0.55, 0.55}))  << std::endl; // pstar
-        // std::cout << mle(std::vector<double>({1.5, 1.5}))  << std::endl; // pstar
+        // std::cout << mle(std::vector<double>(p0))  << std::endl;
+        // std::cout << mle(std::vector<double>({0.55, 0.55}))  << std::endl;
+        // std::cout << mle(std::vector<double>({1.5, 1.5}))  << std::endl;
+        // std::cout << mle(std::vector<double>({1.25, 1.25}))  << std::endl;
 
     } catch (const std::exception &e) {
-        std::cout << "Exception occurred: " << e.what() << std::endl;
+        std::cout << "Error occurred: " << e.what() << std::endl;
     }
     return 0;
 }

@@ -154,9 +154,9 @@ J_g_functor::J_g_functor(
 )
     : U(U_), tt(tt_), V(V_), J_f(J_f_),
       D(U_.shape()[1]), mp1(U_.shape()[0]), K(V_.shape()[0]) {
-    // V_expanded = xt::expand_dims(xt::expand_dims(V, 2), 3); // (K, mp1, 1, 1)
+    V_expanded = xt::expand_dims(xt::expand_dims(V, 2), 3); // (K, mp1, 1, 1)
     grad_len = J_f.dx[0].size();
-    V_expanded = xt::broadcast(xt::reshape_view(V, std::vector<size_t>({K, mp1, 1, 1})), {K, mp1, D, grad_len});
+    // V_expanded = xt::broadcast(xt::reshape_view(V, std::vector<size_t>({K, mp1, 1, 1})), {K, mp1, D, grad_len});
 }
 
 xt::xtensor<double, 4> J_g_functor::operator()(
@@ -169,8 +169,8 @@ xt::xtensor<double, 4> J_g_functor::operator()(
         const auto &u = xt::row(U,i);
         xt::view(J_F, i, xt::all(), xt::all()) = J_f(p, u, t);
     }                                    // V_expanded has dimension (K, mp1, 1, 1)
-    // auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
-    auto J_F_expanded = xt::broadcast(J_F, {K, mp1, D, grad_len});
+    auto J_F_expanded = xt::expand_dims(J_F, 0); // (1, mp1, D, len(∇))
+    // auto J_F_expanded = xt::broadcast(J_F, {K, mp1, D, grad_len});
     auto Jg = xt::eval(V_expanded * J_F_expanded);          // (K, mp1, D, len(∇))
     auto J_g_t = xt::transpose(Jg, {0, 2, 1, 3}); // (K, D, mp1, len(∇))
 

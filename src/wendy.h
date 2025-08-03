@@ -57,7 +57,7 @@ public:
     T_f_functor Jp_Jp_Ju_f; // ∇ₚ∇ₚ∇ᵤf(p,u,t) 4D Tensor with mixed partials
 
     // Weak residual functors and related objects
-    xt::xtensor<double, 2> Sigma; // Variance estimates for each dimension diagonal Matrix (D x D)
+    xt::xtensor<double, 1> sigma; // Standard deviation estimates for each dimension diagonal Matrix (D x D)
 
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;

@@ -12,6 +12,7 @@ struct MLE {
     const xt::xtensor<double, 2> &V_prime;
     const xt::xtensor<double, 1> &b;
     const g_functor &g;
+    const J_f_functor &Jp_f;
     const J_g_functor &Ju_g;
     const J_g_functor &Jp_g;
     const H_g_functor &Jp_Ju_g;
@@ -33,6 +34,7 @@ struct MLE {
         const CovarianceFactor &L_,
         const g_functor &g_,
         const xt::xtensor<double, 1> &b_,
+        const J_f_functor &Jp_f_,
         const J_g_functor &Ju_g_,
         const J_g_functor &Jp_g_,
         const H_g_functor &Jp_Ju_g_,

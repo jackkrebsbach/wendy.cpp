@@ -13,6 +13,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
     const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_):
@@ -46,7 +47,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
             ), D, J
         )
     ),
-    Sigma(xt::diag(noise_sd*xt::ones<double>({D}))), // Standard deviation of the noise from the data
+    sigma(xt::eval(noise_sd*xt::ones<double>({D}))), // Standard deviation of the noise from the data
     compute_svd(compute_svd_) {
 }
 
@@ -58,10 +59,10 @@ void Wendy::build_objective_function() {
     Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
-    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, Sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f);
+    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f,Jp_f, Jp_Ju_f);
     b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
     S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
-    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
+    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
 }
 
 
@@ -69,13 +70,18 @@ void Wendy::inspect_equations() const {
 
     if (!obj) { std::cout << "ERROR: Objective Function not Initialized" << std::endl; return; }
 
+    std::cout << std::fixed << std::setprecision(3);
+
+    std::cout << "\nCalculating Analytical Jacobian" << std::endl;
     const auto analytical_jacobian = obj->Jacobian(p0);
+
+    std::cout << "\nCalculating Finite Jacobian" << std::endl;
     const auto finite_jacobian = gradient_4th_order(*obj, p0);
 
     std::cout << "\nAnalytical Jacobian" << std::endl;
     for (const auto& row : analytical_jacobian) {
             std::cout << row << " ";
-        std::cout << std::endl; // Newline after each row
+        std::cout << std::endl;
     }
     std::cout << std::endl;
 
@@ -84,27 +90,26 @@ void Wendy::inspect_equations() const {
             std::cout << row << " ";
         std::cout << std::endl; // Newline after each row
     }
-
     std::cout << std::endl;
 
-    const auto analytical_hessian = obj->Hessian(p0);
-    const auto finite_hessian = hessian_3rd_order(*obj, p0);
+    // const auto analytical_hessian = obj->Hessian(p0);
+    // const auto finite_hessian = hessian_3rd_order(*obj, p0);
 
-    std::cout << "\nAnalytical Hessian" << std::endl;
-    for (const auto& row : analytical_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
-
-    std::cout << "\n Finite Hessian" << std::endl;
-    for (const auto& row : finite_hessian) {
-        for (const auto& val : row) {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl; // Newline after each row
-    }
+    // std::cout << "\nAnalytical Hessian" << std::endl;
+    // for (const auto& row : analytical_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
+    //
+    // std::cout << "\n Finite Hessian" << std::endl;
+    // for (const auto& row : finite_hessian) {
+    //     for (const auto& val : row) {
+    //         std::cout << val << " ";
+    //     }
+    //     std::cout << std::endl; // Newline after each row
+    // }
 }
 
 void Wendy::optimize_parameters() {
