@@ -58,9 +58,11 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
     target_compile_options(${EXAMPLE_NAME} PRIVATE
             -O3
             -march=native
+            -mtune=native
             -ffast-math
             -funroll-loops
             -flto
+            -fstrict-aliasing
             -DNDEBUG
     )
 
@@ -68,4 +70,6 @@ endfunction()
 
 add_wendy_example(example_logistic example_logistic.cpp)
 add_wendy_example(example_goodwin example_goodwin.cpp)
+
 add_subdirectory(test)
+
