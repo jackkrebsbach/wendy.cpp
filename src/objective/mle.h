@@ -18,7 +18,6 @@ struct MLE {
     const H_g_functor &Jp_Ju_g;
     const H_g_functor &Jp_Jp_g;
     const T_g_functor &Jp_Jp_Ju_g;
-    const S_inv_r_functor &S_inv_r;
     size_t K;
     size_t mp1;
     size_t D;
@@ -39,13 +38,16 @@ struct MLE {
         const J_g_functor &Jp_g_,
         const H_g_functor &Jp_Ju_g_,
         const H_g_functor &Jp_Jp_g_,
-        const T_g_functor &Jp_Jp_Ju_g_,
-        const S_inv_r_functor & S_inv_r_
+        const T_g_functor &Jp_Jp_Ju_g_
         );
 
    double operator()(const std::vector<double> &p) const;
 
    std::vector<double> Jacobian(const std::vector<double> &p) const;
+
+    xt::xtensor<double ,2> Jp_r(const std::vector<double> &p) const;
+
+    static void S_inv(xt::xarray<double> &out_, const xt::xtensor<double,2> &S, const xt::xarray<double> &R);
 
    std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
 

@@ -77,7 +77,6 @@ xt::xtensor<double, 2> CovarianceFactor::Cov( const std::vector<double> &p ) con
     const double WEIGHT = 1.0 - REG;
     const auto eye = REG * xt::eye<double>(S_.shape()[0]);
     xt::xtensor<double, 2> S = xt::eval(WEIGHT * S_ + eye);
-
     return (S);
 };
 

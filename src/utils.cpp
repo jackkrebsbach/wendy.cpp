@@ -11,23 +11,29 @@
 
 // The solve_cholesky and solve_triangular from xt is busted as of now
 // https://github.com/xtensor-stack/xtensor-blas/issues/242
-xt::xarray<double> solve_cholesky(const xt::xarray<double>& L, const xt::xarray<double>& B) {
+xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<double> &B) {
     using namespace cxxlapack;
 
-    const int n = static_cast<int>(L.shape()[0]);
-    const int nrhs = static_cast<int>(B.shape()[1]);
-
-    xt::xarray<double, xt::layout_type::column_major> A = L;
+    xt::xarray<double, xt::layout_type::column_major> A = xt::eval(L);
     xt::xarray<double, xt::layout_type::column_major> X = B;
 
+    const int n = static_cast<int>(L.shape()[0]);
+
+    // Ensure B is 2D: reshape if it's 1D
+    xt::xarray<double> B_2D = (B.dimension() == 1)
+        ? xt::reshape_view(B, {n, 1})
+        : B;
+
+    const int nrhs = static_cast<int>(B_2D.shape()[1]);
+
     const int info = cxxlapack::potrs(
-        'L',        // Lower triangle
-        n,          // Matrix size
-        nrhs,       // Number of RHS columns
-        A.data(),   // Cholesky factor
-        n,          // Leading dimension of A
-        X.data(),   // RHS, overwritten with solution
-        n           // Leading dimension of B/X
+        'L', // Lower triangle
+        n, // Matrix size
+        nrhs, // Number of RHS columns
+        A.data(), // Cholesky factor
+        n, // Leading dimension of A
+        X.data(), // RHS, overwritten with solution
+        n // Leading dimension of B/X
     );
 
     if (info != 0) {
@@ -73,7 +79,7 @@ T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymE
 }
 
 
-size_t get_corner_index(const xt::xtensor<double, 1>& y, const xt::xtensor<double, 1> *xx_in) {
+size_t get_corner_index(const xt::xtensor<double, 1> &y, const xt::xtensor<double, 1> *xx_in) {
     const size_t N = y.size();
     const size_t M = N - 1;
 

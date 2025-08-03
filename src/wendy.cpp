@@ -61,8 +61,7 @@ void Wendy::build_objective_function() {
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
     L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f,Jp_f, Jp_Ju_f);
     b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
-    S_inv_r = std::make_unique<S_inv_r_functor>(*L, *g, b);
-    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g, *S_inv_r);
+    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g);
 }
 
 
