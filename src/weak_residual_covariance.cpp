@@ -23,9 +23,11 @@ CovarianceFactor::CovarianceFactor(
     const T_g_functor &Jp_Jp_Ju_g_,
     const J_f_functor &Ju_f_,
     const J_f_functor &Jp_f_,
-    const H_f_functor &Jp_Ju_f_
+    const H_f_functor &Jp_Ju_f_,
+    const T_f_functor &Jp_Jp_Ju_f_
 )
-    : U(U_), tt(tt_), V(V_), V_prime(V_prime_), sig(sig_), Ju_g(Ju_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_), Ju_f(Ju_f_), Jp_f(Jp_f_), Jp_Ju_f(Jp_Ju_f_) {
+    : U(U_), tt(tt_), V(V_), V_prime(V_prime_), sig(sig_), Ju_g(Ju_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
+      Ju_f(Ju_f_), Jp_f(Jp_f_), Jp_Ju_f(Jp_Ju_f_), Jp_Jp_Ju_f(Jp_Jp_Ju_f_) {
 
     mp1 = U.shape()[0];
     D = U.shape()[1];
@@ -109,10 +111,26 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
 
 // ∇ₚ∇ₚL(p) Hessian of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
 xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
-    const auto Jp_Jp_Ju_gp = xt::reshape_view(Jp_Jp_Ju_g(p), {D * K, D * mp1, J, J});
-                                                                                                // Sigma_I_mp1 shape (D*mp1 x D*mp1)
-    const auto Jp_H_ = xt::linalg::tensordot(Jp_Jp_Ju_gp, Sigma_I_mp1, {1}, {0}); // shape: (D*K,J, J, D*mp1)
-    const auto Jp_H = xt::transpose(Jp_H_, {0, 3, 1, 2}); // shape: (D*K, D*mp1, J, J)
+
+    xt::xtensor<double, 5> T_F({mp1, D, D, J, J});
+
+    for (size_t i = 0; i < mp1; ++i){
+        const xt::xtensor<double,1> &u = xt::row(U, i);
+        const auto &t = tt[i];
+        xt::view(T_F, i, xt::all(), xt::all(), xt::all(), xt::all()) = Jp_Jp_Ju_f(p, u, t);
+    }
+
+    xt::xtensor<double, 5> H_ = xt::zeros<double>({K, D, mp1, D, J});
+
+    for (std::size_t k = 0; k < K; ++k)
+        for (std::size_t d1 = 0; d1 < D; ++d1)
+            for (std::size_t m = 0; m < mp1; ++m)
+                for (std::size_t d2 = 0; d2 < D; ++d2)
+                    for (std::size_t j1 = 0; j1 < J; ++j1)
+                        for (std::size_t j2 = 0; j2 < J; ++j2)
+                            H_(k, d1, m, d2, j1, j2) = T_F(m, d1, d2, j1, j2) * V(k, m) * sig(d2);
+
+    const auto Jp_H = xt::eval(xt::reshape_view(H_, {K*D, mp1*D, J , J}));
 
     return (Jp_H);
 };

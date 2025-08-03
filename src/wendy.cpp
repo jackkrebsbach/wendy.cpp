@@ -59,11 +59,10 @@ void Wendy::build_objective_function() {
     Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
     Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
     Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
-    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f,Jp_f, Jp_Ju_f);
+    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f,Jp_f, Jp_Ju_f, Jp_Jp_Ju_f);
     b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
-    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g);
+    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Ju_f, Jp_f, Jp_Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g);
 }
-
 
 void Wendy::inspect_equations() const {
 
@@ -91,24 +90,24 @@ void Wendy::inspect_equations() const {
     }
     std::cout << std::endl;
 
-    // const auto analytical_hessian = obj->Hessian(p0);
-    // const auto finite_hessian = hessian_3rd_order(*obj, p0);
+    const auto analytical_hessian = obj->Hessian(p0);
+    const auto finite_hessian = hessian_3rd_order(*obj, p0);
 
-    // std::cout << "\nAnalytical Hessian" << std::endl;
-    // for (const auto& row : analytical_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
-    //
-    // std::cout << "\n Finite Hessian" << std::endl;
-    // for (const auto& row : finite_hessian) {
-    //     for (const auto& val : row) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << std::endl; // Newline after each row
-    // }
+    std::cout << "\nAnalytical Hessian" << std::endl;
+    for (const auto& row : analytical_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
+
+    std::cout << "\n Finite Hessian" << std::endl;
+    for (const auto& row : finite_hessian) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl; // Newline after each row
+    }
 }
 
 void Wendy::optimize_parameters() {

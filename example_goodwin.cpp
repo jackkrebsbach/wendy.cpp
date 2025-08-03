@@ -87,8 +87,8 @@ int main() {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
        wendy.build_objective_function();
-       // wendy.inspect_equations();
-       wendy.optimize_parameters();
+       wendy.inspect_equations();
+       // wendy.optimize_parameters();
 
         //const auto mle = *wendy.obj;
         // std::cout << "\n pstar" << std::endl;
