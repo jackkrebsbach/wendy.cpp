@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "weak_residual_covariance.h"
 #include "weak_residual.h"
+
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -13,27 +14,23 @@
  **/
 
 
-CovarianceFactor::CovarianceFactor(
+Covariance::Covariance(
     const xt::xtensor<double, 2> &U_,
     const xt::xtensor<double, 1> &tt_,
     const xt::xtensor<double, 2> &V_,
     const xt::xtensor<double, 2> &V_prime_,
     const xt::xtensor<double, 1> &sig_,
-    const J_g_functor &Ju_g_,
-    const H_g_functor &Jp_Ju_g_,
-    const T_g_functor &Jp_Jp_Ju_g_,
     const J_f_functor &Ju_f_,
     const J_f_functor &Jp_f_,
     const H_f_functor &Jp_Ju_f_,
     const T_f_functor &Jp_Jp_Ju_f_
 )
-    : U(U_), tt(tt_), V(V_), V_prime(V_prime_), sig(sig_), Ju_g(Ju_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
-      Ju_f(Ju_f_), Jp_f(Jp_f_), Jp_Ju_f(Jp_Ju_f_), Jp_Jp_Ju_f(Jp_Jp_Ju_f_) {
+    : U(U_), tt(tt_), V(V_), V_prime(V_prime_), sig(sig_), Ju_f(Ju_f_), Jp_f(Jp_f_), Jp_Ju_f(Jp_Ju_f_), Jp_Jp_Ju_f(Jp_Jp_Ju_f_) {
 
     mp1 = U.shape()[0];
     D = U.shape()[1];
     K = V.shape()[0];
-    J = Jp_Ju_g.grad2_len;
+    J = Jp_f.dx[0].size();
 
     xt::xtensor<double,4> L0_ = xt::zeros<double>({K, D, mp1, D});
 
@@ -46,7 +43,7 @@ CovarianceFactor::CovarianceFactor(
 }
 
 // L(p) where Covariance = S(p) = L(p)L(p)ᵀ
-xt::xtensor<double, 2> CovarianceFactor::operator()(
+xt::xtensor<double, 2> Covariance::operator()(
     const std::vector<double> &p
 ) const {
     const auto sig_view = xt::reshape_view(sig, std::vector<size_t>({1, 1, 1, D}));
@@ -60,9 +57,9 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
     xt::xtensor<double, 4> L1_ = xt::zeros<double>({K, D, mp1, D});
 
     for (std::size_t k = 0; k < K; ++k)
-        for (std::size_t d2 = 0; d2 < D; ++d2)
+        for (std::size_t d1 = 0; d1 < D; ++d1)
             for (std::size_t m = 0; m < mp1; ++m)
-                for (std::size_t d1 = 0; d1 < D; ++d1)
+                for (std::size_t d2 = 0; d2 < D; ++d2)
                     L1_(k, d1, m, d2) = J_F(m, d1, d2) * V(k, m) * sig(d2);
 
     auto L1 = xt::reshape_view(L1_, {K * D, mp1 * D});
@@ -71,7 +68,7 @@ xt::xtensor<double, 2> CovarianceFactor::operator()(
     return (L);
 };
 
-xt::xtensor<double, 2> CovarianceFactor::Cov( const std::vector<double> &p ) const {
+xt::xtensor<double, 2> Covariance::Cov( const std::vector<double> &p ) const {
     const auto L = operator()(p);
     const auto S_  = xt::linalg::dot(L, xt::transpose(L));
     const double WEIGHT = 1.0 - REG;
@@ -82,7 +79,7 @@ xt::xtensor<double, 2> CovarianceFactor::Cov( const std::vector<double> &p ) con
 
 
 // ∇ₚL(p) gradient of the Covariance factor where ∇ₚS(p) = ∇ₚLLᵀ + (∇ₚLLᵀ)ᵀ
-xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) const {
+xt::xtensor<double, 3> Covariance::Jacobian(const std::vector<double> &p) const {
 
     xt::xtensor<double, 4> H_F({mp1, D, D, J});
 
@@ -107,7 +104,7 @@ xt::xtensor<double, 3> CovarianceFactor::Jacobian(const std::vector<double> &p) 
 
 
 // ∇ₚ∇ₚL(p) Hessian of the Covariance factor where ∇ₚ∇ₚS(p) = ∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ + (∇ₚ∇ₚLLᵀ + ∇ₚL∇ₚLᵀ)ᵀ
-xt::xtensor<double, 4> CovarianceFactor::Hessian(const std::vector<double> &p) const {
+xt::xtensor<double, 4> Covariance::Hessian(const std::vector<double> &p) const {
 
     xt::xtensor<double, 5> T_F({mp1, D, D, J, J});
 

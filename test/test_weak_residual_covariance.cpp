@@ -74,7 +74,7 @@ const auto Jp_g = J_g_functor(U, tt, V, Jp_f);
 const auto Jp_Ju_g = H_g_functor(U, tt, V, Jp_Ju_f);
 const auto Jp_Jp_Ju_g = T_g_functor(U, tt, V, Jp_Jp_Ju_f);
 
-const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
+const auto L = Covariance(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
 
 TEST_CASE("L is (∇ᵤg(p) + I_D ⊙ V') (Σ ⊙ I_mp1)") {
     const auto Lp = L(p);
@@ -130,7 +130,7 @@ TEST_CASE("∇ₚ∇ₚL") {
 TEST_CASE("S_inv_r"){
 
     const auto F = F_functor(f, U, tt);
-    const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
+    const auto L = Covariance(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
     const auto g = g_functor(F, V);
     const auto b = xt::eval(-1*xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, U)));
     const auto S_inv_r = S_inv_r_functor(L, g, b);

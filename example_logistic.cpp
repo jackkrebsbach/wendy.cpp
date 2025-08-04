@@ -1,5 +1,4 @@
 #include "src/wendy.h"
-#include "src/symbolic_utils.h"
 #include "src/utils.h"
 
 #include <xtensor/containers/xarray.hpp>
@@ -10,8 +9,6 @@
 #include <xtensor/containers/xadapt.hpp>
 #include <random>
 #include <boost/numeric/odeint.hpp>
-
-#include "src/symbolic_utils.h"
 
 using namespace boost::numeric::odeint;
 
@@ -88,7 +85,7 @@ int main() {
 
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
-        wendy.build_objective_function();
+        wendy.build_cost_function();
         wendy.inspect_equations();
         wendy.optimize_parameters();
 

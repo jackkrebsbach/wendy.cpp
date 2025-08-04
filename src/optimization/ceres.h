@@ -1,11 +1,11 @@
 #pragma once
-#include "../objective/mle.h"
+#include "../cost/wnll.h"
 #include <ceres/ceres.h>
 
 class MleCeresCostFunction final : public ceres::CostFunction {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    MleCeresCostFunction(const MLE& mle_, const std::vector<double>& p0)
+    MleCeresCostFunction(const WNLL& mle_, const std::vector<double>& p0)
         : parameter_dim(static_cast<int>(p0.size())), mle(mle_) {
         set_num_residuals(1);
         mutable_parameter_block_sizes()->push_back(parameter_dim);
@@ -31,5 +31,5 @@ public:
     }
 
     int parameter_dim;
-    const MLE mle;
+    const WNLL mle;
 };

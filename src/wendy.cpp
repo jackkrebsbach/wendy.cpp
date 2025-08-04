@@ -2,7 +2,7 @@
 #include "utils.h"
 #include "wendy.h"
 #include "test_function.h"
-#include "objective/mle.h"
+#include "cost/wnll.h"
 #include "optimization/cpp_numerical.h"
 #include "optimization/ceres.h"
 
@@ -51,17 +51,12 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     compute_svd(compute_svd_) {
 }
 
-void Wendy::build_objective_function() {
-    std::cout << "\n<< Initializing objective functions >>" << std::endl;
+void Wendy::build_cost_function() {
+    std::cout << "\n<< Initializing cost functions >>" << std::endl;
     g = std::make_unique<g_functor>(F, V);
-    Ju_g = std::make_unique<J_g_functor>(U, tt, V, Ju_f);
-    Jp_g = std::make_unique<J_g_functor>(U, tt, V, Jp_f);
-    Jp_Ju_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Ju_f);
-    Jp_Jp_g = std::make_unique<H_g_functor>(U, tt, V, Jp_Jp_f);
-    Jp_Jp_Ju_g = std::make_unique<T_g_functor>(U, tt, V, Jp_Jp_Ju_f);
-    L = std::make_unique<CovarianceFactor>(U, tt, V, V_prime, sigma, *Ju_g, *Jp_Ju_g, *Jp_Jp_Ju_g, Ju_f,Jp_f, Jp_Ju_f, Jp_Jp_Ju_f);
-    b = xt::ravel(xt::linalg::dot(-1.0*V_prime, U));
-    obj = std::make_unique<MLE>(U, tt, V, V_prime, *L, *g, b, Ju_f, Jp_f, Jp_Jp_f, *Ju_g, *Jp_g, *Jp_Ju_g, *Jp_Jp_g, *Jp_Jp_Ju_g);
+    b = xt::eval(xt::ravel(xt::linalg::dot(-1.0*V_prime, U)));
+    L = std::make_unique<Covariance>(U, tt, V, V_prime, sigma, Ju_f,Jp_f, Jp_Ju_f, Jp_Jp_Ju_f);
+    obj = std::make_unique<WNLL>(U, tt, V, V_prime, *L, *g, b, Ju_f, Jp_f, Jp_Jp_f);
 }
 
 void Wendy::inspect_equations() const {

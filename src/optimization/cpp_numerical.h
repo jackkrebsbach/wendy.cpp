@@ -1,5 +1,5 @@
 #pragma once
-#include "../objective/mle.h"
+#include "../cost/wnll.h"
 #include <cppoptlib/function.h>
 #include <cppoptlib/solver/lbfgs.h>
 #include <cppoptlib/solver/newton_descent.h>
@@ -7,10 +7,10 @@
 class MleProblem final : public cppoptlib::function::FunctionCRTP<MleProblem, double, cppoptlib::function::DifferentiabilityMode::First> {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    const MLE mle;
+    const WNLL mle;
 
     explicit MleProblem(
-        const MLE &mle_
+        const WNLL &mle_
     ) : mle(mle_) {}
 
     ScalarType operator()(const VectorType &x) const {

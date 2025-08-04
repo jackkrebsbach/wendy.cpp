@@ -1,6 +1,5 @@
-#include "mle.h"
+#include "wnll.h"
 #include "../utils.h"
-
 #include <numbers>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
@@ -8,36 +7,28 @@
 #include <xtensor-blas/xlinalg.hpp>
 
 
-constexpr double DIAG_REG = 1e-10;
-
-MLE::MLE(
+WNLL::WNLL(
     const xt::xtensor<double, 2> &U_,
     const xt::xtensor<double, 1> &tt_,
     const xt::xtensor<double, 2> &V_,
     const xt::xtensor<double, 2> &V_prime_,
-    const CovarianceFactor &L_,
+    const Covariance &L_,
     const g_functor &g_,
     const xt::xtensor<double, 1> &b_,
     const J_f_functor &Ju_f_,
     const J_f_functor &Jp_f_,
-    const H_f_functor &Hp_f_,
-    const J_g_functor &Ju_g_,
-    const J_g_functor &Jp_g_,
-    const H_g_functor &Jp_Ju_g_,
-    const H_g_functor &Jp_Jp_g_,
-    const T_g_functor &Jp_Jp_Ju_g_
+    const H_f_functor &Hp_f_
 
 ): L(L_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
-   Ju_f(Ju_f_), Jp_f(Jp_f_), Hp_f(Hp_f_), Ju_g(Ju_g_), Jp_g(Jp_g_), Jp_Ju_g(Jp_Ju_g_), Jp_Jp_g(Jp_Jp_g_),
-   Jp_Jp_Ju_g(Jp_Jp_Ju_g_),
+   Ju_f(Ju_f_), Jp_f(Jp_f_), Hp_f(Hp_f_),
    K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
-    J = Jp_Ju_g.grad2_len;
+    J = Jp_f.dx[0].size();
     constant_term = 0.5 * K * D * std::log(2 * std::numbers::pi);
 }
 
 
 // ∇ᵤr(p) ∈ ℝ^(K*D x J x J)
-xt::xtensor<double, 2> MLE::Ju_r(const std::vector<double> &p) const {
+xt::xtensor<double, 2> WNLL::Ju_r(const std::vector<double> &p) const {
     xt::xtensor<double, 3> Ju_F({mp1, D, D});
 
     for (size_t i = 0; i < mp1; ++i) {
@@ -54,14 +45,14 @@ xt::xtensor<double, 2> MLE::Ju_r(const std::vector<double> &p) const {
                 for (int d2 = 0; d2 < D; ++d2)
                     Ju_r_(k, m, d1, d2) = V(k, m) * Ju_F(m, d1, d2);
 
-    const auto Ju_r = xt::reshape_view(Ju_r_, {K * D, mp1 * D}); // ∇ₚr(p) ∈ ℝ^(K*D x J)
+    const auto Ju_r = xt::eval(xt::reshape_view(Ju_r_, {K * D, mp1 * D})); // ∇ₚr(p) ∈ ℝ^(K*D x J)
 
     return Ju_r;
 }
 
 
 // ∇ₚr(p) ∈ ℝ^(K*D x J x J)
-xt::xtensor<double, 2> MLE::Jp_r(const std::vector<double> &p) const {
+xt::xtensor<double, 2> WNLL::Jp_r(const std::vector<double> &p) const {
     xt::xtensor<double, 3> Jp_F({mp1, D, J});
 
     for (size_t i = 0; i < mp1; ++i) {
@@ -78,13 +69,13 @@ xt::xtensor<double, 2> MLE::Jp_r(const std::vector<double> &p) const {
                 for (int j = 0; j < J; ++j)
                     Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(m, d1, j);
 
-    const auto Jp_r = xt::reshape_view(xt::sum(Jp_r_, {1}), {K * D, J}); // ∇ₚr(p) ∈ ℝ^(K*D x J)
+    const auto Jp_r = xt::eval(xt::reshape_view(xt::sum(Jp_r_, {1}), {K * D, J})); // ∇ₚr(p) ∈ ℝ^(K*D x J)
 
     return Jp_r;
 }
 
 // Hₚr(p) ∈ ℝ^(K*D x J x J)
-xt::xtensor<double, 3> MLE::Hp_r(const std::vector<double> &p) const {
+xt::xtensor<double, 3> WNLL::Hp_r(const std::vector<double> &p) const {
     xt::xtensor<double, 4> Hp_F({mp1, D, J, J});
 
     for (size_t i = 0; i < mp1; ++i) {
@@ -102,13 +93,13 @@ xt::xtensor<double, 3> MLE::Hp_r(const std::vector<double> &p) const {
                     for (int j2 = 0; j2 < J; ++j2)
                         Hp_r_(k, m, d1, j1, j2) = V(k, m) * Hp_F(m, d1, j1, j2);
 
-    const auto Hp_r = xt::reshape_view(xt::sum(Hp_r_, {1}), {K * D, J, J});
+    const auto Hp_r = xt::eval(xt::reshape_view(xt::sum(Hp_r_, {1}), {K * D, J, J}));
 
     return Hp_r;
 }
 
 
-double MLE::operator()(const std::vector<double> &p) const {
+double WNLL::operator()(const std::vector<double> &p) const {
     auto S = L.Cov(p);
 
     std::unique_ptr<InverseSolver> S_inv;
@@ -120,7 +111,10 @@ double MLE::operator()(const std::vector<double> &p) const {
         } catch (...) {
             S_inv = std::make_unique<RegularSolve>(S);
         }
+
     }
+
+
 
     auto r = g(p) - b;
 
@@ -145,7 +139,7 @@ double MLE::operator()(const std::vector<double> &p) const {
     return (wnll);
 }
 
-std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
+std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
     auto S = L.Cov(p);
 
     std::unique_ptr<InverseSolver> S_inv;
@@ -183,12 +177,13 @@ std::vector<double> MLE::Jacobian(const std::vector<double> &p) const {
         const double prt3 = -1.0 * xt::linalg::dot(xt::linalg::dot(xt::transpose(S_inv_rp), Jp_S), S_inv_rp)();
 
         J_wnn[j] = 0.5 * (prt1 + prt2 + prt3);
+
     }
 
     return (J_wnn);
 }
 
-std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) const {
+std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) const {
     const auto Lp = L(p);
     const auto Sp = L.Cov(p);
 
@@ -219,7 +214,6 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
         const auto Jp_j = xt::eval(xt::linalg::dot(Jp_L_j, xt::transpose(Lp)));
         const auto Jp_Sp_j = Jp_j + xt::transpose(Jp_j);
 
-
         const xt::xtensor<double, 1> Jp_rp_j = xt::view(Jp_rp, xt::all(), j);
         const xt::xtensor<double, 1> Ju_rp_j = xt::view(Ju_rp, xt::all(), j);
         const xt::xtensor<double, 2> Jp_Lp_j = xt::view(Jp_Lp, xt::all(), xt::all(), j);
@@ -229,9 +223,8 @@ std::vector<std::vector<double> > MLE::Hessian(const std::vector<double> &p) con
         for (int i = j; i < p.size(); ++i) {
             // 𝜕ᵢS(p) (Jacobian information)
             const xt::xtensor<double, 2> Jp_L_i = xt::view(Jp_Lp, xt::all(), xt::all(), i);
-            const auto Jp_i = xt::eval(xt::linalg::dot(Jp_L_j, xt::transpose(Lp)));
+            const auto Jp_i = xt::eval(xt::linalg::dot(Jp_L_i, xt::transpose(Lp)));
             const auto Jp_Sp_i = Jp_i + xt::transpose(Jp_i);
-
 
             const xt::xtensor<double, 1> Jp_rp_i = xt::view(Jp_rp, xt::all(), i); // 𝜕ᵢg(p) (Jacobian information)
 

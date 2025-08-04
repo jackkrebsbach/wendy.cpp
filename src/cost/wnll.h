@@ -1,12 +1,12 @@
-#ifndef MLE_H
-#define MLE_H
+#ifndef WNLL_H
+#define WNLL_H
 
 #include "../utils.h"
 #include "../weak_residual_covariance.h"
 #include "../weak_residual.h"
 
-struct MLE {
-    const CovarianceFactor &L;
+struct WNLL {
+    const Covariance &L;
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
@@ -16,11 +16,6 @@ struct MLE {
     const J_f_functor &Ju_f;
     const J_f_functor &Jp_f;
     const H_f_functor &Hp_f;
-    const J_g_functor &Ju_g;
-    const J_g_functor &Jp_g;
-    const H_g_functor &Jp_Ju_g;
-    const H_g_functor &Jp_Jp_g;
-    const T_g_functor &Jp_Jp_Ju_g;
     size_t K;
     size_t mp1;
     size_t D;
@@ -28,22 +23,17 @@ struct MLE {
 
     double constant_term;
 
-    MLE(
+    WNLL(
         const xt::xtensor<double, 2> &U_,
         const xt::xtensor<double, 1> &tt_,
         const xt::xtensor<double, 2> &V_,
         const xt::xtensor<double, 2> &V_prime_,
-        const CovarianceFactor &L_,
+        const Covariance &L_,
         const g_functor &g_,
         const xt::xtensor<double, 1> &b_,
         const J_f_functor &Ju_f_,
         const J_f_functor &Jp_f_,
-        const H_f_functor &Hp_f_,
-        const J_g_functor &Ju_g_,
-        const J_g_functor &Jp_g_,
-        const H_g_functor &Jp_Ju_g_,
-        const H_g_functor &Jp_Jp_g_,
-        const T_g_functor &Jp_Jp_Ju_g_
+        const H_f_functor &Hp_f_
         );
 
     struct InverseSolver {
@@ -100,4 +90,4 @@ struct MLE {
 
 };
 
-#endif //MLE_H
+#endif //WNLL_H

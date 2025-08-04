@@ -2,7 +2,7 @@
 #define WENDY_H
 
 
-#include "objective/mle.h"
+#include "cost/wnll.h"
 #include "weak_residual.h"
 #include "weak_residual_covariance.h"
 #include <symengine/expression.h>
@@ -79,9 +79,9 @@ public:
     std::unique_ptr<H_g_functor> Jp_Ju_g;
     std::unique_ptr<H_g_functor> Jp_Jp_g;
     std::unique_ptr<T_g_functor> Jp_Jp_Ju_g;
-    std::unique_ptr<CovarianceFactor> L;
+    std::unique_ptr<Covariance> L;
     xt::xtensor<double, 1> b;
-    std::shared_ptr<MLE> obj;
+    std::shared_ptr<WNLL> obj;
 
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
@@ -89,7 +89,7 @@ public:
 
     void build_full_test_function_matrices();
 
-    void build_objective_function();
+    void build_cost_function();
 
     void inspect_equations() const;
 

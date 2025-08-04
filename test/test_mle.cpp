@@ -1,5 +1,5 @@
 #include "./doctest.h"
-#include "../src/objective/mle.h"
+#include "../src/cost/wnll.h"
 #include "../src/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
@@ -82,7 +82,7 @@ const auto Jp_Ju_g = H_g_functor(U, tt, V, Jp_Ju_f);
 const auto Jp_Jp_g = H_g_functor(U, tt, V, Jp_Jp_f);
 const auto Jp_Jp_Ju_g = T_g_functor(U, tt, V, Jp_Jp_Ju_f);
 
-const auto L = CovarianceFactor(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
+const auto L = Covariance(U, tt, V, V, Sigma, Ju_g, Jp_Ju_g, Jp_Jp_Ju_g);
 
 const auto b = xt::eval(-xt::ravel<xt::layout_type::column_major>(xt::linalg::dot(V, U)));
 const auto S_inv_r = S_inv_r_functor(L, g, b);
@@ -92,7 +92,7 @@ const auto S_inv_r = S_inv_r_functor(L, g, b);
 // constexpr auto K = 3;
 // constexpr auto mp1 = 4;
 
-const auto mle = MLE(U, tt, V, V, L, g, b, Ju_g, Jp_g, Jp_Ju_g, Jp_Jp_g, Jp_Jp_Ju_g, S_inv_r);
+const auto mle = WNLL(U, tt, V, V, L, g, b, Ju_g, Jp_g, Jp_Ju_g, Jp_Jp_g, Jp_Jp_Ju_g, S_inv_r);
 
 // The solve_cholesky and solve_triangular from xt is busted as of now
 // https://github.com/xtensor-stack/xtensor-blas/issues/242
