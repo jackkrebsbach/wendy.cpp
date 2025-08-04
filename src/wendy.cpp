@@ -31,7 +31,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     // Callable functions
     f(build_f(f_symbolic, D, J)),
-    F(F_functor(f, U, tt)),
+    F(f, U, tt),
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
 
@@ -56,20 +56,17 @@ void Wendy::build_cost_function() {
     g = std::make_unique<g_functor>(F, V);
     b = xt::eval(xt::ravel(xt::linalg::dot(-1.0*V_prime, U)));
     L = std::make_unique<Covariance>(U, tt, V, V_prime, sigma, Ju_f,Jp_f, Jp_Ju_f, Jp_Jp_Ju_f);
-    obj = std::make_unique<WNLL>(U, tt, V, V_prime, *L, *g, b, Ju_f, Jp_f, Jp_Jp_f);
+    cost = std::make_unique<WNLL>(U, tt, V, V_prime, *L, *g, b, Ju_f, Jp_f, Jp_Jp_f);
 }
 
 void Wendy::inspect_equations() const {
 
-    if (!obj) { std::cout << "ERROR: Objective Function not Initialized" << std::endl; return; }
+    if (!cost) { std::cout << "ERROR: Objective Function not Initialized" << std::endl; return; }
 
     std::cout << std::fixed << std::setprecision(3);
 
-    std::cout << "\nCalculating Analytical Jacobian" << std::endl;
-    const auto analytical_jacobian = obj->Jacobian(p0);
-
-    std::cout << "\nCalculating Finite Jacobian" << std::endl;
-    const auto finite_jacobian = gradient_4th_order(*obj, p0);
+    const auto analytical_jacobian = cost->Jacobian(p0);
+    const auto finite_jacobian = gradient_4th_order(*cost, p0);
 
     std::cout << "\nAnalytical Jacobian" << std::endl;
     for (const auto& row : analytical_jacobian) {
@@ -85,8 +82,8 @@ void Wendy::inspect_equations() const {
     }
     std::cout << std::endl;
 
-    const auto analytical_hessian = obj->Hessian(p0);
-    const auto finite_hessian = hessian_3rd_order(*obj, p0);
+    const auto analytical_hessian = cost->Hessian(p0);
+    const auto finite_hessian = hessian_3rd_order(*cost, p0);
 
     std::cout << "\nAnalytical Hessian" << std::endl;
     for (const auto& row : analytical_hessian) {
@@ -108,9 +105,9 @@ void Wendy::inspect_equations() const {
 void Wendy::optimize_parameters() {
     std::cout << "\n<< Optimizing parameters >>" << std::endl;
 
-    if (!obj) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
+    if (!cost) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
-    const auto mle = *obj;
+    const auto mle = *cost;
 
     const MleProblem problem(mle);
     const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));

@@ -80,6 +80,7 @@ int main() {
     };
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
+
     try {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
@@ -87,7 +88,7 @@ int main() {
        wendy.inspect_equations();
      // wendy.optimize_parameters();
 
-     const auto mle = *wendy.obj;
+     const auto mle = *wendy.cost;
 
      std::cout << "\np_star: " << mle(std::vector<double>(p_star)) << std::endl;
      std::cout << "p0:  " << mle(std::vector<double>(p0))  << std::endl; // pstar

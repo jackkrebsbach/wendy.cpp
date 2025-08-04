@@ -20,6 +20,7 @@ struct Covariance {
     size_t K;
     size_t J;
     xt::xtensor<double, 2> L0;
+    xt::xtensor<double, 2> Reg_I;
     const double REG = 1.0e-12;
 
     Covariance(
@@ -34,13 +35,16 @@ struct Covariance {
         const T_f_functor &Jp_Jp_Ju_f_
     );
 
-    xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
+    xt::xtensor<double, 2> L( const std::vector<double> &p) const;
 
-    xt::xtensor<double, 2> Cov( const std::vector<double> &p) const;
+    xt::xtensor<double, 3> Jp_L(const std::vector<double> &p) const;
+
+    xt::xtensor<double, 4> Hp_L(const std::vector<double> &p) const;
+
+    xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
 
     xt::xtensor<double, 3> Jacobian(const std::vector<double> &p) const;
 
-    xt::xtensor<double, 4> Hessian(const std::vector<double> &p) const;
 };
 
 #endif //WEAK_RESIDUAL_COVARIANCE_H

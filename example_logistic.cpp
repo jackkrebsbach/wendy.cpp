@@ -89,11 +89,9 @@ int main() {
         wendy.inspect_equations();
         wendy.optimize_parameters();
 
-        // auto mle = *wendy.obj;
+        // auto wnll = *wendy.obj;
         // std::cout << "\n p0" << std::endl;
-        // const auto S = mle(p0);
-        // std::cout << "Condition Number: " <<  xt::linalg::cond(S,2) << std::endl; // pstar
-
+        // const auto S = wnll.Hessian(p0);
         // std::cout << "\n pstar: " << mle(p_star) << std::endl;
         // std::cout << std::endl;
         // std::cout << mle(std::vector<double>(p0))  << std::endl;

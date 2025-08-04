@@ -6,7 +6,7 @@
 #include "../weak_residual.h"
 
 struct WNLL {
-    const Covariance &L;
+    const Covariance &S;
     const xt::xtensor<double, 2> &U;
     const xt::xtensor<double, 1> &tt;
     const xt::xtensor<double, 2> &V;
@@ -28,7 +28,7 @@ struct WNLL {
         const xt::xtensor<double, 1> &tt_,
         const xt::xtensor<double, 2> &V_,
         const xt::xtensor<double, 2> &V_prime_,
-        const Covariance &L_,
+        const Covariance &S_,
         const g_functor &g_,
         const xt::xtensor<double, 1> &b_,
         const J_f_functor &Ju_f_,
@@ -76,15 +76,15 @@ struct WNLL {
     };
 
 
-   double operator()(const std::vector<double> &p) const;
-
-   std::vector<double> Jacobian(const std::vector<double> &p) const;
-
     xt::xtensor<double ,2> Jp_r(const std::vector<double> &p) const;
 
     xt::xtensor<double ,2> Ju_r(const std::vector<double> &p) const;
 
     xt::xtensor<double, 3> Hp_r(const std::vector<double> &p) const;
+
+   double operator()(const std::vector<double> &p) const;
+
+   std::vector<double> Jacobian(const std::vector<double> &p) const;
 
    std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
 
