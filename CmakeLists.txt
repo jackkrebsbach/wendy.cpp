@@ -69,7 +69,8 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
 endfunction()
 
 add_wendy_example(example_logistic example_logistic.cpp)
-add_wendy_example(example_goodwin example_goodwin.cpp)
+add_wendy_example(example_goodwin_2d example_goodwin_2d.cpp)
+add_wendy_example(example_goodwin_3d example_goodwin_3d.cpp)
 
 add_subdirectory(test)
 

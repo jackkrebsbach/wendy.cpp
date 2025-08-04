@@ -86,22 +86,15 @@ int main() {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
-       // wendy.inspect_equations();
+       wendy.inspect_equations();
        // wendy.optimize_parameters();
 
-        const auto mle = *wendy.obj;
-         // std::cout << "\n pstar" << std::endl;
-         // std::cout << mle(std::vector<double>(p_star))  << std::endl; // pstar
-
-        // std::cout << "\n p0" << std::endl;
-        // const auto S = mle.L.Cov(p0);
-        // std::cout << "Condition Number: " <<  xt::linalg::cond(S,2) << std::endl; // pstar
-
-         // std::cout << std::endl;
-         // std::cout << mle(std::vector<double>(p0))  << std::endl; // pstar
-         // std::cout << mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
-         // std::cout << mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
-         // std::cout << mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
+     // const auto mle = *wendy.obj;
+     // std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;
+     // std::cout << "p0:  " << mle(std::vector<double>(p0))  << std::endl; // pstar
+     // std::cout << "   " <<  mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
+     // std::cout << "   " <<mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
+     // std::cout << "   " <<mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: " << e.what() << std::endl;
