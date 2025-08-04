@@ -2,11 +2,10 @@
 #include "../cost/wnll.h"
 #include <ceres/ceres.h>
 
-class FirstOrderCostFunctionCeres final : public ceres::FirstOrderFunction {
+class FirstOrderCostFunction final : public ceres::FirstOrderFunction {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-    FirstOrderCostFunctionCeres(const WNLL& cost_)
+    explicit FirstOrderCostFunction(const WNLL& cost_)
         : cost(cost_) {}
 
     int NumParameters() const override {

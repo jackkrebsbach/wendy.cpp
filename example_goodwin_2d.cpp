@@ -50,8 +50,8 @@ int main() {
     std::vector<double> p0 = {76, 1.5, 2.2, 1.5, 2};
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
-    constexpr double noise_sd = 0.15;
-    constexpr int num_samples = 120;
+    constexpr double noise_sd = 0.05;
+    constexpr int num_samples = 121;
     constexpr double t0 = 0.0;
     constexpr double t1 = 60;
 
@@ -84,7 +84,7 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        // wendy.inspect_equations();
-       // wendy.optimize_parameters();
+       wendy.optimize_parameters();
 
      // const auto cost = *wendy.cost;
      //

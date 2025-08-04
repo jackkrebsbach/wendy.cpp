@@ -13,6 +13,43 @@
 #include <sstream>
 #include <unistd.h>
 
+struct FilteredData {
+    xt::xtensor<double, 1> tt_filtered;
+    xt::xtensor<double, 2> logU_filtered;
+    std::vector<size_t> valid_indices;
+};
+
+inline FilteredData preprocess_log_normal_data(const xt::xtensor<double, 2> &U,
+                                               const xt::xtensor<double, 1> &tt,
+                                               const size_t _Mp1) {
+    const size_t N = U.shape()[0];
+    std::vector<size_t> valid_rows;
+
+    for (size_t i = 0; i < N; ++i) {
+        const auto row = xt::view(U, i, xt::all());
+        const bool valid = xt::all(row > 0.0);
+        if (!valid) {
+            std::cout << "Row " << i << " excluded: " << row << std::endl;
+        } else {
+            valid_rows.push_back(i);
+        }
+    }
+
+    if (valid_rows.empty()) {
+        throw std::runtime_error("All rows are invalid: no strictly positive rows in U");
+    }
+
+    if (valid_rows.size() < _Mp1) {
+        std::cout << "[INFO] Removing data so that logarithms are well defined: "
+                << (_Mp1 - valid_rows.size()) << " data point(s) are invalid\n";
+    }
+
+    const xt::xtensor<double, 2> U_filtered = xt::view(U, xt::keep(valid_rows), xt::all());
+    const xt::xtensor<double, 2> logU_filtered = xt::log(U_filtered);
+    const xt::xtensor<double, 1> tt_filtered = xt::view(tt, xt::keep(valid_rows));
+
+    return {tt_filtered, logU_filtered, valid_rows};
+}
 
 
 template<typename T>
@@ -34,14 +71,14 @@ inline void print_system(const std::vector<SymEngine::Expression> &system) {
     std::cout << "\n==================== ODE system ====================\n";
     for (size_t i = 0; i < system.size(); ++i) {
         std::cout << "f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
-            << std::endl;
+                << std::endl;
     }
     std::cout << "===================================================\n"
-        << std::endl;
+            << std::endl;
 }
 
 inline void print_jacobian(
-  const std::vector<std::vector<SymEngine::Expression> > &jac) {
+    const std::vector<std::vector<SymEngine::Expression> > &jac) {
     std::cout << "\n==================== Jacobian =====================\n";
     for (size_t i = 0; i < jac.size(); ++i) {
         for (size_t j = 0; j < jac[i].size(); ++j) {
@@ -50,14 +87,13 @@ inline void print_jacobian(
         std::cout << std::endl;
     }
     std::cout << "===================================================\n"
-        << std::endl;
+            << std::endl;
 }
 
 
-
 inline std::vector<double> gradient_4th_order(
-    const std::function<double(const std::vector<double>&)>& f,
-    const std::vector<double>& x,
+    const std::function<double(const std::vector<double> &)> &f,
+    const std::vector<double> &x,
     double h = 1e-5
 ) {
     const size_t n = x.size();
@@ -65,32 +101,32 @@ inline std::vector<double> gradient_4th_order(
 
     for (size_t i = 0; i < n; ++i) {
         std::vector<double> xp2h = x, xph = x, xmh = x, xm2h = x;
-        xp2h[i] += 2*h;
-        xph[i]  += h;
-        xmh[i]  -= h;
-        xm2h[i] -= 2*h;
+        xp2h[i] += 2 * h;
+        xph[i] += h;
+        xmh[i] -= h;
+        xm2h[i] -= 2 * h;
 
-        grad[i] = (-f(xp2h) + 8*f(xph) - 8*f(xmh) + f(xm2h)) / (12*h);
+        grad[i] = (-f(xp2h) + 8 * f(xph) - 8 * f(xmh) + f(xm2h)) / (12 * h);
     }
     return grad;
 }
 
-inline std::vector<std::vector<double>> hessian_3rd_order(
-    const std::function<double(const std::vector<double>&)>& f,
-    const std::vector<double>& x,
+inline std::vector<std::vector<double> > hessian_3rd_order(
+    const std::function<double(const std::vector<double> &)> &f,
+    const std::vector<double> &x,
     double h = 1e-6
 ) {
     const size_t n = x.size();
-    std::vector<std::vector<double>> H(n, std::vector<double>(n, 0.0));
+    std::vector<std::vector<double> > H(n, std::vector<double>(n, 0.0));
 
     // Diagonal: 5-point stencil (4th order)
     for (size_t i = 0; i < n; ++i) {
         std::vector<double> xpp = x, xp = x, xm = x, xmm = x;
-        xpp[i] += 2*h;
-        xp[i]  += h;
-        xm[i]  -= h;
-        xmm[i] -= 2*h;
-        H[i][i] = (-f(xpp) + 16*f(xp) - 30*f(x) + 16*f(xm) - f(xmm)) / (12 * h * h);
+        xpp[i] += 2 * h;
+        xp[i] += h;
+        xm[i] -= h;
+        xmm[i] -= 2 * h;
+        H[i][i] = (-f(xpp) + 16 * f(xp) - 30 * f(x) + 16 * f(xm) - f(xmm)) / (12 * h * h);
     }
 
     // Off-diagonal: 3rd-order central difference for mixed partials
@@ -98,10 +134,14 @@ inline std::vector<std::vector<double>> hessian_3rd_order(
         for (size_t j = i + 1; j < n; ++j) {
             std::vector<double> xpp = x, xpm = x, xmp = x, xmm = x;
 
-            xpp[i] += h; xpp[j] += h;
-            xpm[i] += h; xpm[j] -= h;
-            xmp[i] -= h; xmp[j] += h;
-            xmm[i] -= h; xmm[j] -= h;
+            xpp[i] += h;
+            xpp[j] += h;
+            xpm[i] += h;
+            xpm[j] -= h;
+            xmp[i] -= h;
+            xmp[j] += h;
+            xmm[i] -= h;
+            xmm[j] -= h;
 
             H[i][j] = H[j][i] = (f(xpp) - f(xpm) - f(xmp) + f(xmm)) / (4 * h * h);
         }
@@ -152,12 +192,12 @@ inline void print_matrix(const std::vector<std::vector<double> > &mat, const int
     }
 }
 
-inline void print_vector(const std::vector<double>& vec, const int precision = 3) {
-    for (const double val : vec) {
+inline void print_vector(const std::vector<double> &vec, const int precision = 3) {
+    for (const double val: vec) {
         std::cout << std::setw(precision + 6)
-                  << std::setprecision(precision)
-                  << std::fixed
-                  << val << " ";
+                << std::setprecision(precision)
+                << std::fixed
+                << val << " ";
     }
     std::cout << std::endl;
 }
@@ -169,7 +209,7 @@ struct QRFactor {
     int m, n;
 };
 
-xt::xarray<double> solve_cholesky(const xt::xarray<double>& L, const xt::xarray<double>& B);
+xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<double> &B);
 
 xt::xarray<double> solve_qr(const QRFactor &F, const xt::xarray<double> &B_in);
 

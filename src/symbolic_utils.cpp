@@ -2,8 +2,12 @@
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 #include <symengine/parser.h>
+#include <symengine/subs.h>
+
+#include "wendy.h"
 
 using namespace SymEngine;
+
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              const size_t count) {
@@ -43,6 +47,45 @@ vec_basic expressions_to_vec_basic(const std::vector<Expression> &exprs) {
   for (const auto &e: exprs)
     basics.push_back(e.get_basic());
   return basics;
+}
+
+std::vector<Expression> lognormal_transform(const std::vector<Expression> &dx) {
+  const size_t D = dx.size();
+
+  const auto u_vars = create_symbolic_vars("u", D);
+
+  // Build substitution map: uᵢ ↦ exp(uᵢ)
+  map_basic_basic sub_map;
+  for (const auto &xi : u_vars) {
+    sub_map[xi.get_basic()] = exp(xi);
+  }
+
+  // Perform: duᵢ / uᵢ, substitute uᵢ ↦ exp(uᵢ), simplify
+  std::vector<Expression> result;
+  result.reserve(D);
+  for (size_t i = 0; i < D; ++i) {
+    Expression fud = dx[i] / u_vars[i];
+    result.emplace_back(fud.subs(sub_map));
+  }
+
+  return result;
+}
+
+std::vector<SymEngine::Expression>
+build_symbolic_f(const std::vector<std::string> &f, const size_t D, const NoiseDist noise_dist) {
+
+  if (f.empty()) throw std::runtime_error("Empty symbolic expression list passed to build_symbolic_f.");
+
+  std::vector<SymEngine::Expression> dx;
+  dx.reserve(f.size());
+  for (const auto &s: f) dx.emplace_back(SymEngine::parse(s));
+
+  if (noise_dist == NoiseDist::AddGaussian) return dx;
+
+  if (noise_dist == NoiseDist::LogNormal) {
+      return lognormal_transform(dx);
+  }
+  return dx;
 }
 
 std::vector<std::shared_ptr<LambdaRealDoubleVisitor> >
@@ -184,15 +227,6 @@ build_jacobian_visitors(
   return visitors;
 }
 
-std::vector<SymEngine::Expression>
-build_symbolic_f(const std::vector<std::string> &f) {
-  std::vector<SymEngine::Expression> dx;
-  dx.reserve(f.size());
-  for (const auto &s: f) {
-    dx.emplace_back(SymEngine::parse(s));
-  }
-  return dx;
-}
 
 
 // For vector input

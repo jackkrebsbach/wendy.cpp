@@ -1,13 +1,17 @@
 #ifndef SYMBOLIC_UTILS_H
 #define SYMBOLIC_UTILS_H
 
+#include "wendy.h"
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 
 using namespace SymEngine;
 
 std::vector<SymEngine::Expression>
-build_symbolic_f(const std::vector<std::string> &f);
+build_symbolic_f(const std::vector<std::string> &f, size_t D, NoiseDist noise_dist);
+
+std::vector<Expression> lognormal_transform(const std::vector<Expression> &dx);
+
 
 std::vector<Expression> create_symbolic_vars(const std::string &base_name,
                                              size_t count);

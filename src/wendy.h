@@ -19,6 +19,17 @@ struct TestFunctionParams {
     double min_test_fun_info_number = 0.95; // Double check where these come from
 };
 
+enum class NoiseDist {
+    LogNormal,
+    AddGaussian
+};
+
+inline NoiseDist noise_dist_from_string(const std::string& str) {
+    if (str == "AddGaussian") return NoiseDist::AddGaussian;
+    if (str == "LogNormal") return NoiseDist::LogNormal;
+    throw std::invalid_argument("Unknown noise distribution: " + str);
+}
+
 /**
  * @brief Weak form estimation of nonlinear dynamics (WENDy)
  */
@@ -62,7 +73,7 @@ public:
     // Input parameters for solving wendy system
     TestFunctionParams test_function_params;
     bool compute_svd = true; // If true then the test function matrices are orthonormal
-
+    NoiseDist noise_dist = noise_dist_from_string("AddGaussian");
     std::vector<double> p_hat;
 
     double min_radius{};
@@ -73,12 +84,12 @@ public:
 
     // Weak Residual Equations
     std::unique_ptr<g_functor> g;
-    std::unique_ptr<Covariance> L;
+    std::unique_ptr<Covariance> S;
     xt::xtensor<double, 1> b;
     std::shared_ptr<WNLL> cost;
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-          const xt::xtensor<double, 1> &tt_, double noise_sd = 0.05, bool compute_svd_ = true);
+          const xt::xtensor<double, 1> &tt_, double noise_sd = 0.05, bool compute_svd_ = true, const std::string &noise_dist = "AddGaussian" );
 
     void build_full_test_function_matrices();
 
@@ -87,6 +98,8 @@ public:
     void inspect_equations() const;
 
     void optimize_parameters();
+
+
 };
 
 #endif // WENDY_H
