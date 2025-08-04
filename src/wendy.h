@@ -74,11 +74,6 @@ public:
 
     // Weak Residual Equations
     std::unique_ptr<g_functor> g;
-    std::unique_ptr<J_g_functor> Ju_g;
-    std::unique_ptr<J_g_functor> Jp_g;
-    std::unique_ptr<H_g_functor> Jp_Ju_g;
-    std::unique_ptr<H_g_functor> Jp_Jp_g;
-    std::unique_ptr<T_g_functor> Jp_Jp_Ju_g;
     std::unique_ptr<Covariance> L;
     xt::xtensor<double, 1> b;
     std::shared_ptr<WNLL> obj;
