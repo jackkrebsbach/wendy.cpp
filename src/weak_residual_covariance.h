@@ -21,7 +21,7 @@ struct Covariance {
     size_t J;
     xt::xtensor<double, 2> L0;
     xt::xtensor<double, 2> Reg_I;
-    const double REG = 1.0e-12;
+    const double REG = 1.0e-8;
 
     Covariance(
         const xt::xtensor<double, 2> &U_,

@@ -23,6 +23,11 @@ struct GoodwinODE {
     }
 };
 
+    const std::vector<std::string> system_eqs = {
+        "p1 / (36 + p2 * u2) - p3",
+        "p4 * u1 - p5",
+    };
+
 
 std::vector<std::vector<double> > add_noise( const std::vector<std::vector<double> > &data, const double noise_sd) {
     std::vector<std::vector<double> > noisy = data;
@@ -32,22 +37,21 @@ std::vector<std::vector<double> > add_noise( const std::vector<std::vector<doubl
     std::random_device rd;
     std::mt19937 gen(rd());
     for (int d = 0; d < dim; ++d) {
-        std::normal_distribution<> dist(0.0,  noise_sd);
+        std::normal_distribution<> dist(0.0,  1);
         for (int i = 0; i < n_points; ++i) {
-            noisy[i][d] += dist(gen);
+            noisy[i][d] += noise_sd * dist(gen);
         }
     }
     return noisy;
 }
 
-
 int main() {
     std::vector<double> p_star = {72, 1, 2, 1, 1};
-    std::vector<double> p0 = {65, 2.5, 3, 1.5, 2};
+    std::vector<double> p0 = {76, 1.5, 2.2, 1.5, 2};
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
-    constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 70;
+    constexpr double noise_sd = 0.15;
+    constexpr int num_samples = 120;
     constexpr double t0 = 0.0;
     constexpr double t1 = 60;
 
@@ -73,27 +77,21 @@ int main() {
     }
 
     const xt::xtensor<double,2> U = xt::adapt(u_flat, shape);
-
-    const std::vector<std::string> system_eqs = {
-        "p1 / (36 + p2 * u2) - p3",
-        "p4 * u1 - p5",
-    };
-
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
 
     try {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
-       wendy.inspect_equations();
-     // wendy.optimize_parameters();
+       // wendy.inspect_equations();
+       // wendy.optimize_parameters();
 
-     const auto mle = *wendy.cost;
-
-     std::cout << "\np_star: " << mle(std::vector<double>(p_star)) << std::endl;
-     std::cout << "p0:  " << mle(std::vector<double>(p0))  << std::endl; // pstar
-     std::cout << "   " <<mle(std::vector<double>({ 66, 2.6, 3.0, 1.6, 2}))  << std::endl;
-     std::cout << "   " <<mle(std::vector<double>({ 76, 2.6, 0.01, 1.6, 2}))  << std::endl;
+     // const auto cost = *wendy.cost;
+     //
+     // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;
+     // std::cout << "   " << cost(std::vector<double>({74.0135, 3.40219, 0.872318,  3.03537, 1.97943}))  << std::endl;
+     // std::cout << "p0:  " << cost(std::vector<double>(p0))  << std::endl; // pstar
+     // std::cout << "   " << cost(std::vector<double>({ 66, 2.6, 3.0, 1.6, 2}))  << std::endl;
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: " << e.what() << std::endl;

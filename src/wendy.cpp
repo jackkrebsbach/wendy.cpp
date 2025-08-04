@@ -3,10 +3,8 @@
 #include "wendy.h"
 #include "test_function.h"
 #include "cost/wnll.h"
-#include "optimization/cpp_numerical.h"
 #include "optimization/ceres.h"
 
-#include <cppoptlib/solver/solver.h>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -107,22 +105,24 @@ void Wendy::optimize_parameters() {
 
     if (!cost) { std::cout << "Warning: Objective Function not Initialized" << std::endl; return; }
 
-    const auto mle = *cost;
+    const ceres::GradientProblem problem(new FirstOrderCostFunctionCeres(*cost));
 
-    const MleProblem problem(mle);
-    const Eigen::VectorXd x_init = Eigen::Map<const Eigen::VectorXd>(p0.data(), static_cast<int>(p0.size()));
+    ceres::GradientProblemSolver::Options options;
+    options.max_num_iterations = 1000;
+    options.function_tolerance = 1e-9;
+    options.gradient_tolerance = 1e-9;
 
-    cppoptlib::solver::Lbfgs<MleProblem> solver;
+    ceres::GradientProblemSolver::Summary summary;
 
-    const auto initial_state = cppoptlib::function::FunctionState(x_init);
+    ceres::Solve(options, problem, p0.data(), &summary);
 
-    auto [solution, solver_state] = solver.Minimize(problem, initial_state);
+    std::cout << summary.FullReport() << std::endl;
 
-    std::cout << "\nSolver finished" << std::endl;
-    std::cout << "Final Status: " << solver_state.status << std::endl;
-    std::cout << "Found minimum at: " << solution.x.transpose() << std::endl;
+    std::cout << "Optimized params:\n";
+    for (double val : p0) std::cout << val << " ";
 
-    p_hat = std::vector<double>(solution.x.data(), solution.x.data() + solution.x.size());
+    p_hat = p0;
+
 }
 
 
@@ -223,12 +223,11 @@ void Wendy::build_full_test_function_matrices() {
     // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
     std::cout << "  Calculating Vprime" << std::endl;
 
-    const auto U_T = xt::eval(xt::transpose(U_));                   // (D, K)
+    const auto U_T = xt::eval(xt::view(xt::transpose(U_), xt::range(0,K)));                   // (D, K)
     const auto UV = xt::eval(xt::linalg::dot(U_T, V_prime_));       // (D, mp1)
-    const auto inv_s = xt::eval(1.0 / singular_values);             // (D,)
-    const auto inv_s_view = xt::reshape_view(inv_s, std::vector<size_t>{inv_s.size(), 1});
-
+    const auto inv_s = xt::eval(xt::view(1.0 / singular_values, xt::range(0, K))); // (K,)
+    const auto inv_s_view = xt::reshape_view(inv_s, {K, 1}); // (K, 1)
     const auto scaled = xt::eval(UV * inv_s_view);
 
-    this->V_prime = xt::eval(xt::view(scaled, xt::range(0, K), xt::all())); // (K, mp1)
+    this->V_prime = scaled ; // (K, mp1)
 }

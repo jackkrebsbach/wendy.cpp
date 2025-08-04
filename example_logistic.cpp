@@ -45,7 +45,7 @@ struct LogisticODE {
 
 int main() {
     const std::vector p_star = {1.0, 1.0};
-    std::vector p0 = {0.25, 0.25};
+    std::vector p0 = {0.5, 0.5};
 
     const std::vector u0 = {0.005};
     std::vector u = u0;
@@ -86,12 +86,14 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        wendy.inspect_equations();
+        // wendy.inspect_equations();
         wendy.optimize_parameters();
 
-        // auto wnll = *wendy.obj;
+        // auto wnll = *wendy.cost;
+        // auto S = wnll.S(p0);
+        // std::cout << "Condition Number: " << xt::linalg::cond(S, 2) << std::endl;
+
         // std::cout << "\n p0" << std::endl;
-        // const auto S = wnll.Hessian(p0);
         // std::cout << "\n pstar: " << mle(p_star) << std::endl;
         // std::cout << std::endl;
         // std::cout << mle(std::vector<double>(p0))  << std::endl;

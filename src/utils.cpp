@@ -2,7 +2,6 @@
 #include "symbolic_utils.h"
 #include "weak_residual.h"
 
-#include <limits>
 #include <cmath>
 #include <xtensor/misc/xsort.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -73,7 +72,8 @@ xt::xarray<double> solve_qr(const QRFactor &F, const xt::xarray<double> &B_in) {
     using namespace cxxlapack;
 
     auto B = xt::xarray<double, xt::layout_type::column_major>(B_in);
-    if (B.dimension() == 1)
+    bool was_vector = (B.dimension() == 1);
+    if (was_vector)
         B = xt::reshape_view(B, {F.m, 1});
 
     int nrhs = B.shape()[1];
@@ -107,13 +107,17 @@ xt::xarray<double> solve_qr(const QRFactor &F, const xt::xarray<double> &B_in) {
     );
 
     if (info != 0) throw std::runtime_error("ormqr failed");
-    // Solve R * X = Qᵀ * B using upper-triangular part of A_fact
+
+    // Solve R * X = Qᵀ * B
     info = trtrs('U', 'N', 'N', F.n, nrhs, F.A_fact.data(), F.m, B.data(), ldb);
     if (info != 0) throw std::runtime_error("trtrs failed");
 
-    return xt::view(B, xt::range(0, F.n), xt::all());
-}
+    auto X = xt::view(B, xt::range(0, F.n), xt::all());
 
+    if (was_vector)
+        return xt::reshape_view(X, {F.n});
+    return X;
+}
 
 std::function<double(double)>
 make_scalar_function(const SymEngine::Expression &expr, const SymEngine::RCP<const SymEngine::Symbol> &var) {
@@ -149,7 +153,6 @@ T_f_functor build_T_f(const std::vector<std::vector<std::vector<std::vector<SymE
     const auto dx = build_jacobian_visitors(T_f_symbolic, D, J); // Symengine object to call numerical input
     return T_f_functor(dx);
 }
-
 
 size_t get_corner_index(const xt::xtensor<double, 1> &y, const xt::xtensor<double, 1> *xx_in) {
     const size_t N = y.size();

@@ -2,34 +2,31 @@
 #include "../cost/wnll.h"
 #include <ceres/ceres.h>
 
-class MleCeresCostFunction final : public ceres::CostFunction {
+class FirstOrderCostFunctionCeres final : public ceres::FirstOrderFunction {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    MleCeresCostFunction(const WNLL& mle_, const std::vector<double>& p0)
-        : parameter_dim(static_cast<int>(p0.size())), mle(mle_) {
-        set_num_residuals(1);
-        mutable_parameter_block_sizes()->push_back(parameter_dim);
+
+    FirstOrderCostFunctionCeres(const WNLL& cost_)
+        : cost(cost_) {}
+
+    int NumParameters() const override {
+        return static_cast<int>(cost.J);
     }
 
-    bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const override {
+    bool Evaluate(const double* x, double* f, double* grad) const override {
+        const std::vector<double> p(x, x + NumParameters());
+        *f = cost(p);
 
-        const double* x_ptr = parameters[0];
-        const std::vector p(x_ptr, x_ptr + parameter_dim);
-
-        residuals[0] = mle(p);
-
-        if (jacobians && jacobians[0]) {
-            // const std::vector<double> g = gradient_4th_order(mle, p);
-            const std::vector<double> g = mle.Jacobian(p);
-
-            for (int i = 0; i < parameter_dim; ++i) {
-                jacobians[0][i] = g[i];
+        if (grad) {
+            const std::vector<double> g = cost.Jacobian(p);
+            for (int i = 0; i < NumParameters(); ++i) {
+                grad[i] = g[i];
             }
         }
 
         return true;
     }
 
-    int parameter_dim;
-    const WNLL mle;
+private:
+    const WNLL& cost;
 };
