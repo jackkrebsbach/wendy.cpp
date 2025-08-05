@@ -15,25 +15,20 @@
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_,
              const std::string &noise_dist):
-    // Data
-    tt(tt_),
-    U(U_),
     p0(p0_),
     D(U_.shape()[1]),
     J(p0_.size()),
+    // Symbolics
     f_symbolic(build_symbolic_f(f_, D, noise_dist_from_string(noise_dist))),
     Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
-    // Symbolics
     Jp_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
+    // Callable functions
     f(build_f(f_symbolic, D, J)),
     F(f, U, tt),
-
-    // Callable functions
     Ju_f(build_J_f(Ju_f_symbolic, D, J)),
     Jp_f(build_J_f(Jp_f_symbolic, D, J)),
     Ju_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)), D, J)),
     Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)), D, J)),
-
     Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
     Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
     Jp_Jp_Ju_f(build_T_f(
@@ -49,14 +44,17 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     noise_dist(noise_dist_from_string(noise_dist)) {
 
     switch (this->noise_dist) {
-        case NoiseDist::LogNormal: {
-            const auto filtered = preprocess_log_normal_data(U_, tt_, U_.shape()[0]);
-            tt = filtered.tt_filtered;
-            U = filtered.logU_filtered;
+        case NoiseDist::AddGaussian: {
+            this->tt = tt_;
+            this->U = U_;
             break;
         }
-        case NoiseDist::AddGaussian:
+        case NoiseDist::LogNormal: {
+            const auto filtered = preprocess_log_normal_data(U_, tt_, U_.shape()[0]);
+            this->tt = xt::eval(filtered.tt_filtered);
+            this->U = xt::eval(filtered.logU_filtered);
             break;
+        }
         default:
             break;
     }
@@ -123,7 +121,8 @@ void Wendy::optimize_parameters() {
         return;
     }
 
-    const ceres::GradientProblem problem(new FirstOrderCostFunction(*cost));
+    auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
+    const ceres::GradientProblem problem(fn.release());
 
     ceres::GradientProblemSolver::Options options;
     options.line_search_direction_type = ceres::LBFGS;
@@ -135,7 +134,7 @@ void Wendy::optimize_parameters() {
 
     ceres::Solve(options, problem, p0.data(), &summary);
 
-    std::cout << summary.FullReport() << std::endl;
+    // std::cout << summary.FullReport() << std::endl;
 
     std::cout << "Optimized params:\n";
     for (double val: p0) std::cout << val << " ";
@@ -155,8 +154,8 @@ void Wendy::build_full_test_function_matrices() {
 
     int min_radius = static_cast<int>(std::max(std::ceil(radius_min_time / dt), 2.0));
     int max_radius = static_cast<int>(std::floor(radius_max_time / dt));
-    // The diameter shouldn't be larger than the interior domain available
 
+    // The diameter shouldn't be larger than the interior domain available
     int radius_min_max = static_cast<int>(std::floor(max_radius / xt::amax(radii)()));
 
     if (radius_min_max < min_radius) {

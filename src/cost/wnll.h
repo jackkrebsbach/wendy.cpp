@@ -45,7 +45,7 @@ struct WNLL {
         xt::xarray<double> L;
 
         explicit CholeskySolver(const xt::xarray<double>& S) {
-            L = xt::linalg::cholesky(S);
+            L = cholesky_factor(S);
         }
 
         xt::xarray<double> solve(const xt::xarray<double>& b) const override {

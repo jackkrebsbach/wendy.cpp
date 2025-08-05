@@ -44,9 +44,9 @@ inline FilteredData preprocess_log_normal_data(const xt::xtensor<double, 2> &U,
                 << (_Mp1 - valid_rows.size()) << " data point(s) are invalid\n";
     }
 
-    const xt::xtensor<double, 2> U_filtered = xt::view(U, xt::keep(valid_rows), xt::all());
-    const xt::xtensor<double, 2> logU_filtered = xt::log(U_filtered);
-    const xt::xtensor<double, 1> tt_filtered = xt::view(tt, xt::keep(valid_rows));
+    const xt::xtensor<double, 2> U_filtered = xt::eval(xt::view(U, xt::keep(valid_rows), xt::all()));
+    const xt::xtensor<double, 2> logU_filtered = xt::eval(xt::log(U_filtered));
+    const xt::xtensor<double, 1> tt_filtered = xt::eval(xt::view(tt, xt::keep(valid_rows)));
 
     return {tt_filtered, logU_filtered, valid_rows};
 }
@@ -208,6 +208,8 @@ struct QRFactor {
     std::vector<double> tau;
     int m, n;
 };
+
+xt::xarray<double> cholesky_factor(const xt::xarray<double> &S);
 
 xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<double> &B);
 

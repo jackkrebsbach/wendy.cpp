@@ -55,23 +55,24 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${FFTW3_LIBRARY}
     )
 
-#    target_compile_options(${EXAMPLE_NAME} PRIVATE
-#            -O3
-#            -march=native
-#            -mtune=native
-#            -ffast-math
-#            -funroll-loops
-#            -flto
-#            -fstrict-aliasing
-#            -DNDEBUG
-#    )
+    target_compile_options(${EXAMPLE_NAME} PRIVATE
+            -O3
+            -march=native
+            -mtune=native
+            -ffast-math
+            -funroll-loops
+            -flto
+            -fstrict-aliasing
+            -DNDEBUG
+    )
 
 
 endfunction()
 
+add_wendy_example(example_lorenz example_lorenz.cpp)
 add_wendy_example(example_logistic example_logistic.cpp)
-add_wendy_example(example_goodwin_2d example_goodwin_2d.cpp)
-add_wendy_example(example_goodwin_3d example_goodwin_3d.cpp)
+#add_wendy_example(example_goodwin_2d example_goodwin_2d.cpp)
+#add_wendy_example(example_goodwin_3d example_goodwin_3d.cpp)
 
 add_subdirectory(test)
 

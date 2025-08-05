@@ -12,10 +12,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct GoodwinODE {
+struct LorenzODE {
     std::vector<double> p;
 
-    explicit GoodwinODE(const std::vector<double> &p_) : p(p_) {}
+    explicit LorenzODE(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
@@ -62,7 +62,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, GoodwinODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, LorenzODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 

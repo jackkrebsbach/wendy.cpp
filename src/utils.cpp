@@ -42,6 +42,40 @@ xt::xarray<double> solve_cholesky(const xt::xarray<double> &L, const xt::xarray<
     return X;
 }
 
+xt::xarray<double> cholesky_factor(const xt::xarray<double> &S) {
+    using namespace cxxlapack;
+
+    // Ensure input is square
+    if (S.dimension() != 2 || S.shape()[0] != S.shape()[1]) {
+        throw std::invalid_argument("Matrix must be square for Cholesky factorization.");
+    }
+
+    const int n = static_cast<int>(S.shape()[0]);
+
+    // Work on a mutable copy with column-major layout
+    xt::xarray<double, xt::layout_type::column_major> A = xt::eval(S);
+
+    // Compute Cholesky factor in-place in A
+    const int info = cxxlapack::potrf(
+        'L', // Lower triangle
+        n,   // Size of matrix
+        A.data(), // Data pointer
+        n    // Leading dimension
+    );
+
+    if (info != 0) {
+        throw std::runtime_error("Cholesky factorization failed with info = " + std::to_string(info));
+    }
+
+    // Zero out upper triangle for clarity
+    for (int i = 0; i < n; ++i)
+        for (int j = i + 1; j < n; ++j)
+            A(i, j) = 0.0;
+
+    return A;
+}
+
+
 
 QRFactor qr_factor(const xt::xarray<double> &A_in) {
     using namespace cxxlapack;

@@ -1,5 +1,6 @@
 #include "src/wendy.h"
 #include "src/utils.h"
+#include "src/noise.h"
 
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
@@ -81,6 +82,7 @@ int main() {
     const xt::xtensor<double, 2> U = xt::adapt(u_flat, shape);
 
     try {
+
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
