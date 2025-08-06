@@ -1,4 +1,4 @@
-#include "src/wendy.h"
+#include "include/wendy/wendy.h"
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
@@ -51,7 +51,7 @@ std::vector<std::vector<double> > add_noise(const std::vector<std::vector<double
 
 int main() {
     std::vector<double> p_star = {10.0, 28.0, 8.0 / 3.0};
-    std::vector<double> p0 = {15.0, 3.0, 4.0};
+    std::vector<double> p0 = {12.0, 21.0, 4.0};
     const std::vector<double> u0 = {2, 1, 1};
     std::vector u = u0;
 

@@ -1,6 +1,6 @@
 #include "./doctest.h"
-#include "../src/cost/wnll.h"
-#include "../src/weak_residual_covariance.h"
+#include "../include/wendy/wnll.h"
+#include "../include/wendy/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
 #include <iostream>

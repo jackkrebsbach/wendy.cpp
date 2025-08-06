@@ -1,4 +1,4 @@
-#include "weak_residual.h"
+#include <wendy/weak_residual.h>
 
 #include <utility>
 #include <xtensor/containers/xtensor.hpp>

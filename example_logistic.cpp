@@ -1,7 +1,4 @@
-#include "src/wendy.h"
-#include "src/utils.h"
-#include "src/noise.h"
-
+#include "include/wendy/wendy.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>

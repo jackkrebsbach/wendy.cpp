@@ -1,4 +1,4 @@
-#include "wnll.h"
+#include <wendy/wnll.h>
 #include "../utils.h"
 #include <numbers>
 #include <xtensor/containers/xadapt.hpp>

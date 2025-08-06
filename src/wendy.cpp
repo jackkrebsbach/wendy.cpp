@@ -1,10 +1,14 @@
+#include <wendy/wnll.h>
+#include <wendy/wendy.h>
+
+#include "test_function.h"
+#include "optimization/ceres.h"
+#include "optimization/ipopt.h"
 #include "symbolic_utils.h"
 #include "utils.h"
-#include "wendy.h"
-#include "test_function.h"
-#include "cost/wnll.h"
-#include "optimization/ceres.h"
 
+
+#include <IpIpoptApplication.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>
@@ -42,6 +46,11 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
 
     compute_svd(compute_svd_), // Standard deviation of the noise from the data
     noise_dist(noise_dist_from_string(noise_dist)) {
+
+    std::cout << "\n<< Initializing WENDy Problem >>"  << std::endl;
+    std::cout << "Distribution: " << to_string(this->noise_dist) << std::endl;
+    std::cout << "p0: " << std::endl;
+    print_vector(p0);
 
     switch (this->noise_dist) {
         case NoiseDist::AddGaussian: {
@@ -130,16 +139,44 @@ void Wendy::optimize_parameters() {
     options.function_tolerance = 1e-9;
     options.gradient_tolerance = 1e-9;
 
+    std::vector<double> p_hat(p0.begin(), p0.end());
     ceres::GradientProblemSolver::Summary summary;
+    ceres::Solve(options, problem, p_hat.data(), &summary);
 
-    ceres::Solve(options, problem, p0.data(), &summary);
+    std::cout << summary.FullReport() << std::endl;
 
-    // std::cout << summary.FullReport() << std::endl;
+    // this->p_hat = p_hat;
 
     std::cout << "Optimized params:\n";
-    for (double val: p0) std::cout << val << " ";
+    for (const double val: p_hat) std::cout << val << " ";
 
-    p_hat = p0;
+    // const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
+    // const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
+    //
+    // app->Options()->SetIntegerValue("print_level", 0);
+    // app->Options()->SetNumericValue("tol", 1e-9);
+    // app->Options()->SetStringValue("mu_strategy", "adaptive");
+    // app->Options()->SetStringValue("linear_solver", "mumps");
+    // app->Options()->SetIntegerValue("max_iter", 200);
+    // app->Options()->SetStringValue("hessian_approximation", "exact");
+    // // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+    // app->Options()->SetStringValue("derivative_test", "first-order");
+    // app->Options()->SetStringValue("derivative_test", "second-order");
+    // app->Options()->SetNumericValue("derivative_test_tol", 1e-4);
+    // app->Options()->SetNumericValue("derivative_test_perturbation", 1e-8);
+    // app->Options()->SetStringValue("derivative_test_print_all", "yes");
+    //
+    // if (app->Initialize() != Ipopt::Solve_Succeeded) {
+    //     std::cerr << "Failed to initialize IPOPT" << std::endl;
+    //     return;
+    // }
+    //
+    // app->OptimizeTNLP(nlp);
+    //
+    // // this->p_hat = p_hat;
+    //
+    // std::cout << "Optimized params:\n";
+    // for (const double val: p_hat) std::cout << val << " ";
 }
 
 

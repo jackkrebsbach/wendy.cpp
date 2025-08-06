@@ -1,5 +1,5 @@
 #include "./doctest.h"
-#include "../src/weak_residual.h"
+#include "../include/wendy/weak_residual.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
 #include <iostream>

@@ -1,8 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "weak_residual.h"
-
+#include <wendy/weak_residual.h>
 #include <xtensor/misc/xsort.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>

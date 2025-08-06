@@ -1,6 +1,6 @@
 #include "utils.h"
 #include "symbolic_utils.h"
-#include "weak_residual.h"
+#include <wendy/weak_residual.h>
 
 #include <cmath>
 #include <xtensor/misc/xsort.hpp>

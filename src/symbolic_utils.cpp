@@ -4,7 +4,7 @@
 #include <symengine/parser.h>
 #include <symengine/subs.h>
 
-#include "wendy.h"
+#include <wendy/wendy.h>
 
 using namespace SymEngine;
 

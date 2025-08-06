@@ -1,5 +1,5 @@
 #include "./doctest.h"
-#include "../src/weak_residual_covariance.h"
+#include "../include/wendy/weak_residual_covariance.h"
 #include "../src/utils.h"
 #include "../src/symbolic_utils.h"
 #include <xtensor/containers/xtensor.hpp>

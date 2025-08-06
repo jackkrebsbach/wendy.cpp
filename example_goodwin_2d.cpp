@@ -1,4 +1,4 @@
-#include "src/wendy.h"
+#include "include/wendy/wendy.h"
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
