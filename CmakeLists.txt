@@ -26,17 +26,16 @@ find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 
-
 add_library(wendy STATIC ${WENDY_SOURCES} ${WENDY_HEADERS})
 
 target_include_directories(wendy PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/wendy
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${IPOPT_INCLUDE_DIRS}
         /opt/homebrew/include
         /opt/homebrew/include/coin-or
         /opt/homebrew/Caskroom/miniforge/base/include
+        ${IPOPT_INCLUDE_DIRS}
         ${FFTW3_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/wendy
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_link_directories(wendy PRIVATE /opt/homebrew/lib)
@@ -46,62 +45,21 @@ target_link_libraries(wendy PUBLIC
         Ceres::ceres OpenMP::OpenMP_CXX
         ipopt
         ${IPOPT_LIBRARIES}
-        ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
+        ${BLAS_LIBRARIES}
+        ${LAPACK_LIBRARIES}
         ${FLINT_LIBRARY} ${MPFR_LIBRARY} ${GMP_LIBRARY} ${FFTW3_LIBRARY}
 )
 
+target_compile_options(wendy PRIVATE
+        -O3
+        -march=native
+        -mtune=native
+        -ffast-math
+        -funroll-loops
+        -flto
+        -fstrict-aliasing
+        -DNDEBUG
+)
 
-
-
-
-function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
-    file(GLOB_RECURSE EXAMPLE_CORE src/*.cpp)  # fresh compilation
-    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE} ${EXAMPLE_CORE})
-
-    target_include_directories(${EXAMPLE_NAME} PRIVATE
-            /opt/homebrew/include
-            /opt/homebrew/include/coin-or
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/wendy
-            /opt/homebrew/Caskroom/miniforge/base/include
-            ${FFTW3_INCLUDE_DIR}
-    )
-
-    target_link_directories(${EXAMPLE_NAME} PRIVATE /opt/homebrew/lib)
-
-    target_link_libraries(${EXAMPLE_NAME}
-            PRIVATE
-            symengine
-            xtensor
-            xtensor-blas
-            Eigen3::Eigen
-            fftw3
-            Ceres::ceres
-            OpenMP::OpenMP_CXX
-            ipopt
-            ${BLAS_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            ${FLINT_LIBRARY}
-            ${MPFR_LIBRARY}
-            ${GMP_LIBRARY}
-            ${FFTW3_LIBRARY}
-    )
-    target_compile_options(${EXAMPLE_NAME} PRIVATE
-            -O3
-            -march=native
-            -mtune=native
-            -ffast-math
-            -funroll-loops
-            -flto
-            -fstrict-aliasing
-            -DNDEBUG
-    )
-
-
-endfunction()
-
-add_wendy_example(example_lorenz example/example_lorenz.cpp)
-add_wendy_example(example_logistic example/example_logistic.cpp)
-add_wendy_example(example_goodwin_2d example/example_goodwin_2d.cpp)
-add_wendy_example(example_goodwin_3d example/example_goodwin_3d.cpp)
-
+add_subdirectory(example)
+add_subdirectory(test)

@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.15)
+project(wendy LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_library(FLINT_LIBRARY flint REQUIRED)
+find_library(MPFR_LIBRARY mpfr REQUIRED)
+find_library(GMP_LIBRARY gmp REQUIRED)
+find_library(FFTW3_LIBRARY fftw3 REQUIRED)
+
+find_path(FFTW3_INCLUDE_DIR fftw3.h REQUIRED PATHS /opt/homebrew/include /usr/local/include)
+
+file(GLOB_RECURSE WENDY_SOURCES ../src/*.cpp)
+file(GLOB_RECURSE WENDY_HEADERS ../include/wendy/*.h)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(IPOPT REQUIRED IMPORTED_TARGET ipopt)
+
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_package(xtensor REQUIRED)
+find_package(symengine REQUIRED)
+find_package(xtensor-blas REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(Ceres REQUIRED)
+
+function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
+    file(GLOB_RECURSE EXAMPLE_CORE ../src/*.cpp)
+    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE} ${EXAMPLE_CORE})
+
+    target_include_directories(${EXAMPLE_NAME} PRIVATE
+            /opt/homebrew/include
+            /opt/homebrew/include/coin-or
+            /opt/homebrew/Caskroom/miniforge/base/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../include/wendy
+            ${FFTW3_INCLUDE_DIR}
+    )
+
+    target_link_directories(${EXAMPLE_NAME} PRIVATE /opt/homebrew/lib)
+
+    target_link_libraries(${EXAMPLE_NAME}
+            PRIVATE
+            symengine
+            xtensor
+            xtensor-blas
+            Eigen3::Eigen
+            fftw3
+            Ceres::ceres
+            OpenMP::OpenMP_CXX
+            ipopt
+            ${BLAS_LIBRARIES}
+            ${LAPACK_LIBRARIES}
+            ${FLINT_LIBRARY}
+            ${MPFR_LIBRARY}
+            ${GMP_LIBRARY}
+            ${FFTW3_LIBRARY}
+    )
+#    target_compile_options(${EXAMPLE_NAME} PRIVATE
+#            -O3
+#            -march=native
+#            -mtune=native
+#            -ffast-math
+#            -funroll-loops
+#            -flto
+#            -fstrict-aliasing
+#            -DNDEBUG
+#    )
+
+endfunction()
+
+add_wendy_example(example_lorenz example_lorenz.cpp)
+add_wendy_example(example_logistic example_logistic.cpp)
+add_wendy_example(example_goodwin_2d example_goodwin_2d.cpp)
+add_wendy_example(example_goodwin_3d example_goodwin_3d.cpp)
+
