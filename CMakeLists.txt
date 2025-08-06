@@ -20,7 +20,7 @@ pkg_check_modules(IPOPT REQUIRED IMPORTED_TARGET ipopt)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 find_package(xtensor REQUIRED)
-find_package(symengine REQUIRED)
+find_package(SymEngine REQUIRED)
 find_package(xtensor-blas REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -54,6 +54,7 @@ target_link_libraries(wendy PUBLIC
         xtensor-blas
         ipopt
         Eigen3::Eigen
+        SymEngine::symengine
         Ceres::ceres
         OpenMP::OpenMP_CXX
         ${IPOPT_LIBRARIES}
