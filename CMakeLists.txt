@@ -58,13 +58,12 @@ target_include_directories(wendy PUBLIC
 #target_link_directories(wendy PRIVATE /opt/homebrew/lib)
 
 target_link_libraries(wendy PUBLIC
-        symengine
         xtensor
         xtensor-blas
         ipopt
         Eigen3::Eigen
-        SymEngine::symengine
         Ceres::ceres
+        ${SYMENGINE_LIB}
         OpenMP::OpenMP_CXX
         ${IPOPT_LIBRARIES}
         ${BLAS_LIBRARIES}
@@ -73,6 +72,7 @@ target_link_libraries(wendy PUBLIC
         ${MPFR_LIBRARY}
         ${GMP_LIBRARY}
         ${FFTW3_LIBRARY}
+        ${SYMENGINE_LIB}
 )
 
 target_compile_options(wendy PRIVATE
