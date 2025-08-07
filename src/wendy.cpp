@@ -130,50 +130,51 @@ void Wendy::optimize_parameters() {
         return;
     }
 
-    // auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
-    // const ceres::GradientProblem problem(fn.release());
-    //
-    // ceres::GradientProblemSolver::Options options;
-    // options.line_search_direction_type = ceres::LBFGS;
-    // options.max_num_iterations = 1000;
-    // options.function_tolerance = 1e-9;
-    // options.gradient_tolerance = 1e-9;
-    //
-    // std::vector<double> p_hat(p0.begin(), p0.end());
-    // ceres::GradientProblemSolver::Summary summary;
-    // ceres::Solve(options, problem, p_hat.data(), &summary);
-    //
-    // std::cout << summary.FullReport() << std::endl;
+    auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
+    const ceres::GradientProblem problem(fn.release());
 
-    // this->p_hat = p_hat;
+    ceres::GradientProblemSolver::Options options;
+    options.line_search_direction_type = ceres::LBFGS;
+    options.max_num_iterations = 1000;
+    options.function_tolerance = 1e-9;
+    options.gradient_tolerance = 1e-9;
+
+    std::vector<double> p_hat(p0.begin(), p0.end());
+    ceres::GradientProblemSolver::Summary summary;
+    ceres::Solve(options, problem, p_hat.data(), &summary);
+
+    std::cout << summary.FullReport() << std::endl;
 
     std::cout << "Optimized params:\n";
     for (const double val: p_hat) std::cout << val << " ";
 
-    const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
-    const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
+    this->p_hat = p_hat;
 
-    app->Options()->SetIntegerValue("print_level", 1); // app->Options()->SetNumericValue("tol", 1e-9);
-    app->Options()->SetStringValue("mu_strategy", "adaptive");
-    app->Options()->SetStringValue("linear_solver", "mumps");
-    app->Options()->SetIntegerValue("max_iter", 200);
-    app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
-    // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-    app->Options()->SetStringValue("nlp_scaling_method", "gradient-based");
-    app->Options()->SetNumericValue("nlp_scaling_max_gradient", 1e6);
-    app->Options()->SetStringValue("derivative_test", "first-order");
-    app->Options()->SetStringValue("derivative_test", "second-order");
-    app->Options()->SetNumericValue("derivative_test_tol", 1e-4);
-    app->Options()->SetNumericValue("derivative_test_perturbation", 1e-8);
-    app->Options()->SetStringValue("derivative_test_print_all", "yes");
-    app->Options()->SetStringValue("sb", "yes");
-
-    if (app->Initialize() != Ipopt::Solve_Succeeded) {
-        std::cerr << "Failed to initialize IPOPT" << std::endl;
-        return;
-    }
-
-    app->OptimizeTNLP(nlp);
+    //
+    // const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
+    // const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
+    //
+    // app->Options()->SetIntegerValue("print_level", 1); // app->Options()->SetNumericValue("tol", 1e-9);
+    // app->Options()->SetStringValue("mu_strategy", "adaptive");
+    // app->Options()->SetStringValue("linear_solver", "mumps");
+    // app->Options()->SetIntegerValue("max_iter", 200);
+    // app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
+    // // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+    // app->Options()->SetStringValue("nlp_scaling_method", "gradient-based");
+    // app->Options()->SetNumericValue("nlp_scaling_max_gradient", 1e6);
+    // app->Options()->SetStringValue("derivative_test", "first-order");
+    // app->Options()->SetStringValue("derivative_test", "second-order");
+    // app->Options()->SetNumericValue("derivative_test_tol", 1e-4);
+    // app->Options()->SetNumericValue("derivative_test_perturbation", 1e-8);
+    // app->Options()->SetStringValue("derivative_test_print_all", "yes");
+    // app->Options()->SetStringValue("sb", "yes");
+    //
+    // if (app->Initialize() != Ipopt::Solve_Succeeded) {
+    //     std::cerr << "Failed to initialize IPOPT" << std::endl;
+    //     return;
+    // }
+    //
+    // app->OptimizeTNLP(nlp);
     //
     // // this->p_hat = p_hat;
     //

@@ -48,7 +48,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 200;
+    constexpr int num_samples = 100;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
 
