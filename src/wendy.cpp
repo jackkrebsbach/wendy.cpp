@@ -18,36 +18,45 @@
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
              const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_,
-             const std::string &noise_dist):
-    p0(p0_),
-    D(U_.shape()[1]),
-    J(p0_.size()),
-    // Symbolics
-    f_symbolic(build_symbolic_f(f_, D, noise_dist_from_string(noise_dist))),
-    Ju_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
-    Jp_f_symbolic(build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
-    // Callable functions
-    f(build_f(f_symbolic, D, J)),
-    F(f, U, tt),
-    Ju_f(build_J_f(Ju_f_symbolic, D, J)),
-    Jp_f(build_J_f(Jp_f_symbolic, D, J)),
-    Ju_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)), D, J)),
-    Jp_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)), D, J)),
-    Jp_Ju_f(build_H_f(build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)), D, J)),
-    Ju_Jp_f(build_H_f(build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)), D, J)),
-    Jp_Jp_Ju_f(build_T_f(
-            build_symbolic_jacobian(
-                build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
-                create_symbolic_vars("p", J)
-            ), D, J
-        )
-    ),
-    sigma(xt::eval(noise_sd * xt::ones<double>({D}))),
+             const std::string &noise_dist): p0(p0_),
+                                             D(U_.shape()[1]),
+                                             J(p0_.size()),
+                                             // Symbolics
+                                             f_symbolic(build_symbolic_f(f_, D, noise_dist_from_string(noise_dist))),
+                                             Ju_f_symbolic(
+                                                 build_symbolic_jacobian(f_symbolic, create_symbolic_vars("u", D))),
+                                             Jp_f_symbolic(
+                                                 build_symbolic_jacobian(f_symbolic, create_symbolic_vars("p", J))),
+                                             // Callable functions
+                                             f(build_f(f_symbolic, D, J)),
+                                             F(f, U, tt),
+                                             Ju_f(build_J_f(Ju_f_symbolic, D, J)),
+                                             Jp_f(build_J_f(Jp_f_symbolic, D, J)),
+                                             Ju_Ju_f(build_H_f(
+                                                 build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("u", D)),
+                                                 D, J)),
+                                             Jp_Jp_f(build_H_f(
+                                                 build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("p", J)),
+                                                 D, J)),
+                                             Jp_Ju_f(build_H_f(
+                                                 build_symbolic_jacobian(Ju_f_symbolic, create_symbolic_vars("p", J)),
+                                                 D, J)),
+                                             Ju_Jp_f(build_H_f(
+                                                 build_symbolic_jacobian(Jp_f_symbolic, create_symbolic_vars("u", D)),
+                                                 D, J)),
+                                             Jp_Jp_Ju_f(build_T_f(
+                                                     build_symbolic_jacobian(
+                                                         build_symbolic_jacobian(
+                                                             Ju_f_symbolic, create_symbolic_vars("p", J)),
+                                                         create_symbolic_vars("p", J)
+                                                     ), D, J
+                                                 )
+                                             ),
+                                             sigma(xt::eval(noise_sd * xt::ones<double>({D}))),
 
-    compute_svd(compute_svd_), // Standard deviation of the noise from the data
-    noise_dist(noise_dist_from_string(noise_dist)) {
-
-    std::cout << "\n<< Initializing WENDy Problem >>"  << std::endl;
+                                             compute_svd(compute_svd_), // Standard deviation of the noise from the data
+                                             noise_dist(noise_dist_from_string(noise_dist)) {
+    std::cout << "\n<< Initializing WENDy Problem >>" << std::endl;
     std::cout << "Distribution: " << to_string(this->noise_dist) << std::endl;
     std::cout << "p0: " << std::endl;
     print_vector(p0);
@@ -122,6 +131,8 @@ void Wendy::inspect_equations() const {
     // }
 }
 
+
+
 void Wendy::optimize_parameters() {
     std::cout << "\n<< Optimizing parameters >>" << std::endl;
 
@@ -129,6 +140,9 @@ void Wendy::optimize_parameters() {
         std::cout << "Warning: Objective Function not Initialized" << std::endl;
         return;
     }
+
+    std::vector<double> p_hat(p0.begin(), p0.end());
+    p_hat.insert(p_hat.end(), sigma.begin(), sigma.end());
 
     auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
     const ceres::GradientProblem problem(fn.release());
@@ -139,27 +153,44 @@ void Wendy::optimize_parameters() {
     options.function_tolerance = 1e-9;
     options.gradient_tolerance = 1e-9;
 
-    std::vector<double> p_hat(p0.begin(), p0.end());
     ceres::GradientProblemSolver::Summary summary;
     ceres::Solve(options, problem, p_hat.data(), &summary);
-
-    std::cout << summary.FullReport() << std::endl;
 
     std::cout << "Optimized params:\n";
     for (const double val: p_hat) std::cout << val << " ";
 
-    this->p_hat = p_hat;
+    this->p_hat = std::vector<double>(p_hat.begin(), p_hat.begin() + J);
 
+    // ceres::Problem problem;
+    // auto *cost_fn = new WNLLCostFunction(*cost);
+    // problem.AddResidualBlock(cost_fn, nullptr, p_hat.data());
     //
+    // for (int i = 0; i < D; ++i) {
+    //     problem.SetParameterLowerBound(p_hat.data(), J + i, 0.0);
+    //     problem.SetParameterUpperBound(p_hat.data(), J + i, 1.0);
+    // }
+    //
+    // ceres::Solver::Options options;
+    // options.linear_solver_type = ceres::DENSE_QR;
+    // options.minimizer_progress_to_stdout = false;
+    // options.max_num_iterations = 1000;
+    // options.function_tolerance = 1e-9;
+    // options.gradient_tolerance = 1e-9;
+    //
+    // ceres::Solver::Summary summary;
+    // ceres::Solve(options, &problem, &summary);
+    // std::cout << summary.FullReport() << std::endl;
+    //
+
     // const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
     // const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
     //
-    // app->Options()->SetIntegerValue("print_level", 1); // app->Options()->SetNumericValue("tol", 1e-9);
+    // app->Options()->SetIntegerValue("print_level", 0); // app->Options()->SetNumericValue("tol", 1e-9);
     // app->Options()->SetStringValue("mu_strategy", "adaptive");
     // app->Options()->SetStringValue("linear_solver", "mumps");
     // app->Options()->SetIntegerValue("max_iter", 200);
-    // app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
-    // // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+    // // app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
+    // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
     // app->Options()->SetStringValue("nlp_scaling_method", "gradient-based");
     // app->Options()->SetNumericValue("nlp_scaling_max_gradient", 1e6);
     // app->Options()->SetStringValue("derivative_test", "first-order");
@@ -175,11 +206,6 @@ void Wendy::optimize_parameters() {
     // }
     //
     // app->OptimizeTNLP(nlp);
-    //
-    // // this->p_hat = p_hat;
-    //
-    // std::cout << "Optimized params:\n";
-    // for (const double val: p_hat) std::cout << val << " ";
 }
 
 

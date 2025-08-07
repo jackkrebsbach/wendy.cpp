@@ -145,6 +145,7 @@ xt::xtensor<double, 2> Covariance::operator()(const std::vector<double> &p, cons
     auto WEIGHT = 1.0 - REG;
     const auto eye = REG * Reg_I;
     xt::xtensor<double, 2> S = xt::eval(WEIGHT * S_ + eye);
+    S = xt::eval(0.5 * (S + xt::transpose(S)));
     return (S);
 };
 
@@ -157,7 +158,6 @@ xt::xtensor<double, 3> Covariance::Jacobian(const std::vector<double> &p,const x
     for (int j = 0; j < J; ++j) {
         auto Jp_L_j = xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(), j));
         auto prt = xt::eval(xt::linalg::dot(Jp_L_j, xt::transpose(Lp)));
-        auto sym_part = xt::eval(prt + xt::transpose(prt));
         xt::view(Jp_S, xt::all(), xt::all(), j) = xt::eval(prt + xt::transpose(prt));
     }
     return xt::eval(Jp_S);

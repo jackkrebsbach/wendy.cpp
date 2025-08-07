@@ -90,6 +90,7 @@ struct WNLL {
 
    std::vector<double> Jacobian(const std::vector<double> &p) const;
    std::vector<double> Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;
+   std::vector<double> Jacobian_sigma(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;
 
    [[nodiscard]] std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
    [[nodiscard]] std::vector<std::vector<double>> Hessian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;

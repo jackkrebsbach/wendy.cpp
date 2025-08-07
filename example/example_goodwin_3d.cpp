@@ -12,10 +12,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct LorenzODE {
+struct Goodwin2D {
     std::vector<double> p;
 
-    explicit LorenzODE(const std::vector<double> &p_) : p(p_) {}
+    explicit Goodwin2D(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
@@ -43,7 +43,7 @@ std::vector<std::vector<double> > add_noise( const std::vector<std::vector<doubl
 
 int main() {
     std::vector<double> p_star = {3.4884, 0.0969, 1, 10, 0.0969, 0.0581, 0.0969, 0.0775};
-    std::vector<double> p0 = {3.0, 0.1, 4 , 12, 0.1, 0.1, 0.1, 0.1};
+    std::vector<double> p0 = {2.2, 0.1, 4 , 12, 0.1, 0.1, 0.1, 0.1};
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
     std::vector u = u0;
 
@@ -62,7 +62,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, LorenzODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin2D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 

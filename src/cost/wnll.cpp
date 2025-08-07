@@ -101,8 +101,8 @@ double WNLL::operator()(const std::vector<double> &p) const {
     return (*this)(p, sig);
 }
 
-std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
-    return Jacobian(p, sig);
+std::vector<double> WNLL::Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+    return Jacobian_sigma(p, sig);
 }
 
 std::vector<std::vector<double>> WNLL::Hessian(const std::vector<double> &p) const {
@@ -138,12 +138,12 @@ double WNLL::operator()(const std::vector<double> &p, const xt::xtensor<double,1
 
     const auto quad = xt::linalg::dot(r, quad_)();
 
-    const auto wnll = 0.5 * (logDetS + quad) ;
+    const auto wnll = 0.5 * (logDetS + quad) + constant_term ;
 
     return (wnll);
 }
 
-std::vector<double> WNLL::Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
     auto Sp = S(p, sig);
     auto Jp_Sp = S.Jacobian(p, sig);
     auto Jp_rp = Jp_r(p);
@@ -171,10 +171,56 @@ std::vector<double> WNLL::Jacobian(const std::vector<double> &p, const xt::xtens
         const auto tmp = xt::eval(xt::linalg::dot(Jp_S_j_eval, S_inv_rp));
         const double prt0 = 2.0 * xt::linalg::dot(Jp_r_j_eval, S_inv_rp)();
         const double prt1 = -1.0 * xt::linalg::dot(S_inv_rp, tmp)();
-        const double logDetPart =  xt::linalg::trace(S_inv->solve(Jp_S_j))();
+        const double logDetPart =  xt::linalg::trace(S_inv->solve(Jp_S_j_eval))();
 
 
         J_wnn[j] = 0.5 * (prt0 + prt1 + logDetPart);
+    }
+
+    return (J_wnn);
+}
+
+std::vector<double> WNLL::Jacobian_sigma(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+    auto Sp = S(p, sig);
+    auto Jp_Sp = S.Jacobian(p, sig);
+    auto Jp_rp = Jp_r(p);
+    auto r = g(p) - b;
+
+    std::unique_ptr<InverseSolver> S_inv;
+    try { S_inv = std::make_unique<CholeskySolver>(Sp); } catch (...) {
+        try { S_inv = std::make_unique<QRSolver>(Sp); } catch (...) {
+            S_inv = std::make_unique<RegularSolve>(Sp);
+        }
+    }
+
+    xt::xarray<double> S_inv_rp = S_inv->solve(r);
+
+    std::vector<double> J_wnn(p.size() + sig.size());
+
+    for (int j = 0; j < p.size(); ++j) {
+
+        const auto Jp_S_j = xt::view(Jp_Sp, xt::all(), xt::all(), j);
+        const auto Jp_r_j = xt::view(Jp_rp, xt::all(), j);
+
+        const auto Jp_S_j_eval = xt::eval(Jp_S_j);
+        const auto Jp_r_j_eval = xt::eval(Jp_r_j);
+
+        const auto tmp = xt::eval(xt::linalg::dot(Jp_S_j_eval, S_inv_rp));
+        const double prt0 = 2.0 * xt::linalg::dot(Jp_r_j_eval, S_inv_rp)();
+        const double prt1 = -1.0 * xt::linalg::dot(S_inv_rp, tmp)();
+        const double logDetPart =  xt::linalg::trace(S_inv->solve(Jp_S_j_eval))();
+
+
+        J_wnn[j] = 0.5 * (prt0 + prt1 + logDetPart);
+    }
+
+    for (int i = 0; i < sig.size(); i++) {
+        xt::xtensor<double,1> s_ = xt::zeros<double>({sig.size()});
+        s_[i] = 1;
+        const auto J_Sp_sig = S(p, s_); // 𝜕σ_i S(p, sig)
+        const double logDetPart_sig =  xt::linalg::trace(S_inv->solve(J_Sp_sig))();
+        const auto prt1_sig = xt::eval(xt::linalg::dot(S_inv_rp, xt::linalg::dot(J_Sp_sig, S_inv_rp)))();
+        J_wnn[i + p.size()] = 0.5 * (logDetPart_sig + prt1_sig);
     }
     return (J_wnn);
 }
@@ -186,7 +232,6 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p, co
     auto Lp = S.L(p, sig); // ∇ₚL(p)
     auto Jp_Lp = S.Jp_L(p,sig); // ∇ₚL(p)
     auto Hp_Lp = S.Hp_L(p, sig); // ∇ₚ∇ₚL(p)
-
 
     auto Jp_rp = Jp_r(p);
     auto Ju_rp = Ju_r(p); // ∇ᵤr(p) ∈ ℝ^(K*D x D*mp1)
@@ -252,4 +297,3 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p, co
     }
     return H_wnn;
 }
-
