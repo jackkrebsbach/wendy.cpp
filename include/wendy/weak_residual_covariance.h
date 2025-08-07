@@ -35,15 +35,15 @@ struct Covariance {
         const T_f_functor &Jp_Jp_Ju_f_
     );
 
-    xt::xtensor<double, 2> L( const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double, 2> L( const std::vector<double> &p, const xt::xtensor<double,1> &sig_) const;
 
-    xt::xtensor<double, 3> Jp_L(const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double, 3> Jp_L(const std::vector<double> &p, const xt::xtensor<double,1> &sig_) const;
 
-    xt::xtensor<double, 4> Hp_L(const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double, 4> Hp_L(const std::vector<double> &p, const xt::xtensor<double,1> &sig_) const;
 
-    xt::xtensor<double, 2> operator()(const std::vector<double> &p) const;
+    xt::xtensor<double, 2> operator()(const std::vector<double> &p, const xt::xtensor<double,1> &sig_) const;
 
-    xt::xtensor<double, 3> Jacobian(const std::vector<double> &p) const;
+    xt::xtensor<double, 3> Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig_) const;
 
 };
 

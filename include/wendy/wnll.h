@@ -12,6 +12,7 @@ struct WNLL {
     const xt::xtensor<double, 2> &V;
     const xt::xtensor<double, 2> &V_prime;
     const xt::xtensor<double, 1> &b;
+    const xt::xtensor<double, 1> &sig;
     const g_functor &g;
     const J_f_functor &Ju_f;
     const J_f_functor &Jp_f;
@@ -31,6 +32,7 @@ struct WNLL {
         const Covariance &S_,
         const g_functor &g_,
         const xt::xtensor<double, 1> &b_,
+        const xt::xtensor<double, 1> &sig_,
         const J_f_functor &Ju_f_,
         const J_f_functor &Jp_f_,
         const H_f_functor &Hp_f_
@@ -60,7 +62,7 @@ struct WNLL {
             F = qr_factor(S);
         }
 
-        xt::xarray<double> solve(const xt::xarray<double>& b) const override {
+        [[nodiscard]] xt::xarray<double> solve(const xt::xarray<double>& b) const override {
             return solve_qr(F, b);
         }
     };
@@ -70,23 +72,27 @@ struct WNLL {
         explicit RegularSolve(const xt::xarray<double>& S) {
             F = S;
         }
-        xt::xarray<double> solve(const xt::xarray<double>& b) const override {
+        [[nodiscard]] xt::xarray<double> solve(const xt::xarray<double>& b) const override {
             return xt::linalg::solve(F, b);
         }
     };
 
 
-    xt::xtensor<double ,2> Jp_r(const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double ,2> Jp_r(const std::vector<double> &p) const;
 
-    xt::xtensor<double ,2> Ju_r(const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double ,2> Ju_r(const std::vector<double> &p) const;
 
-    xt::xtensor<double, 3> Hp_r(const std::vector<double> &p) const;
+    [[nodiscard]] xt::xtensor<double, 3> Hp_r(const std::vector<double> &p) const;
+
 
    double operator()(const std::vector<double> &p) const;
+   double operator()(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;
 
    std::vector<double> Jacobian(const std::vector<double> &p) const;
+   std::vector<double> Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;
 
-   std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
+   [[nodiscard]] std::vector<std::vector<double>> Hessian(const std::vector<double> &p) const;
+   [[nodiscard]] std::vector<std::vector<double>> Hessian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const;
 
 };
 

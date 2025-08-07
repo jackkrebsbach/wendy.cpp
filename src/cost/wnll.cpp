@@ -14,11 +14,12 @@ WNLL::WNLL(
     const Covariance &S_,
     const g_functor &g_,
     const xt::xtensor<double, 1> &b_,
+    const xt::xtensor<double, 1> &sig_,
     const J_f_functor &Ju_f_,
     const J_f_functor &Jp_f_,
     const H_f_functor &Hp_f_
 
-): S(S_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), g(g_),
+): S(S_), U(U_), tt(tt_), V(V_), V_prime(V_prime_), b(b_), sig(sig_), g(g_),
    Ju_f(Ju_f_), Jp_f(Jp_f_), Hp_f(Hp_f_),
    K(V_.shape()[0]), mp1(U.shape()[0]), D(U.shape()[1]) {
     J = Jp_f.dx[0].size();
@@ -96,9 +97,20 @@ xt::xtensor<double, 3> WNLL::Hp_r(const std::vector<double> &p) const {
     return Hp_r;
 }
 
-
 double WNLL::operator()(const std::vector<double> &p) const {
-    auto Sp = S(p);
+    return (*this)(p, sig);
+}
+
+std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
+    return Jacobian(p, sig);
+}
+
+std::vector<std::vector<double>> WNLL::Hessian(const std::vector<double> &p) const {
+    return Hessian(p, sig);
+}
+
+double WNLL::operator()(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+    auto Sp = S(p, sig);
 
     std::unique_ptr<InverseSolver> S_inv;
 
@@ -131,9 +143,9 @@ double WNLL::operator()(const std::vector<double> &p) const {
     return (wnll);
 }
 
-std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
-    auto Sp = S(p);
-    auto Jp_Sp = S.Jacobian(p);
+std::vector<double> WNLL::Jacobian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+    auto Sp = S(p, sig);
+    auto Jp_Sp = S.Jacobian(p, sig);
     auto Jp_rp = Jp_r(p);
     auto r = g(p) - b;
 
@@ -167,17 +179,18 @@ std::vector<double> WNLL::Jacobian(const std::vector<double> &p) const {
     return (J_wnn);
 }
 
-std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) const {
-    auto Sp = S(p);
-    auto Jp_Sp = S.Jacobian(p);
+std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p, const xt::xtensor<double,1> &sig) const {
+    auto Sp = S(p, sig);
+    auto Jp_Sp = S.Jacobian(p, sig);
+
+    auto Lp = S.L(p, sig); // ∇ₚL(p)
+    auto Jp_Lp = S.Jp_L(p,sig); // ∇ₚL(p)
+    auto Hp_Lp = S.Hp_L(p, sig); // ∇ₚ∇ₚL(p)
+
 
     auto Jp_rp = Jp_r(p);
     auto Ju_rp = Ju_r(p); // ∇ᵤr(p) ∈ ℝ^(K*D x D*mp1)
     auto Hp_rp = Hp_r(p);
-
-    auto Lp = S.L(p); // ∇ₚL(p)
-    auto Jp_Lp = S.Jp_L(p); // ∇ₚL(p)
-    auto Hp_Lp = S.Hp_L(p); // ∇ₚ∇ₚL(p)
 
     auto r = g(p) - b;
 
@@ -239,3 +252,4 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) co
     }
     return H_wnn;
 }
+
