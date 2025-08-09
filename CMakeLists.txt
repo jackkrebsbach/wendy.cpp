@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 find_library(GMP_LIBRARY NAMES gmp REQUIRED)
 find_library(GMPXX_LIBRARY NAMES gmpxx REQUIRED)
@@ -26,12 +25,13 @@ target_include_directories(wendy PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtl/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor-blas/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/eigen/Eigen
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/eigen/unsupported
         ${FFTW3_INCLUDE_DIR}
 )
 
 target_link_libraries(wendy PUBLIC
         symengine
-        Eigen3::Eigen
         Ceres::ceres
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}

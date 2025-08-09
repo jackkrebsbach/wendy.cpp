@@ -22,6 +22,9 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtl/include
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor/include
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor-blas/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/eigen/Eigen
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/eigen/unsupported
+
     )
     target_link_libraries(${EXAMPLE_NAME} PRIVATE
             symengine
