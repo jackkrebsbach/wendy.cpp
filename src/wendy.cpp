@@ -3,7 +3,7 @@
 
 #include "utils.h"
 #include "test_function.h"
-#include "ceres.h"
+#include "ceres_cost.h"
 // #include "optimization/ipopt.h"
 #include "symbolic_utils.h"
 
