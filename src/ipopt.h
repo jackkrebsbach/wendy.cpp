@@ -2,7 +2,7 @@
 #define IPOPT_H
 
 #pragma once
-#include <wendy/wnll.h>
+#include "wnll.h"
 #include <IpTNLP.hpp>
 #include <Eigen/src/Core/util/Memory.h>
 

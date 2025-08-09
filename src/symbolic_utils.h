@@ -1,7 +1,7 @@
 #ifndef SYMBOLIC_UTILS_H
 #define SYMBOLIC_UTILS_H
 
-#include <wendy/wendy.h>
+#include "wendy.h"
 #include <symengine/expression.h>
 #include <symengine/lambda_double.h>
 

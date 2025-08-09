@@ -1,4 +1,4 @@
-#include "../include/wendy/wendy.h"
+#include "../src/wendy.h"
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor-blas/xlinalg.hpp>

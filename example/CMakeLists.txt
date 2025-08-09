@@ -19,11 +19,9 @@ file(GLOB_RECURSE WENDY_HEADERS ../include/wendy/*.h)
 function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE} ${WENDY_CORE_SOURCES} ${WENDY_HEADERS})
     target_include_directories(${EXAMPLE_NAME} PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/../include/wendy
-            ${CMAKE_CURRENT_SOURCE_DIR}/../include
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtl/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor-blas/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtl/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor-blas/include
     )
     target_link_libraries(${EXAMPLE_NAME} PRIVATE
             symengine

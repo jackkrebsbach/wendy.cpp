@@ -1,9 +1,9 @@
-#include <wendy/wnll.h>
-#include <wendy/wendy.h>
+#include "wnll.h"
+#include "wendy.h"
 
 #include "utils.h"
 #include "test_function.h"
-#include "optimization/ceres.h"
+#include "ceres.h"
 // #include "optimization/ipopt.h"
 #include "symbolic_utils.h"
 

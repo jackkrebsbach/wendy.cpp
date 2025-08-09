@@ -1,9 +1,9 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#include <wendy/wnll.h>
-#include <wendy/weak_residual.h>
-#include <wendy/weak_residual_covariance.h>
+#include "wnll.h"
+#include "weak_residual.h"
+#include "weak_residual_covariance.h"
 #include <symengine/expression.h>
 
 struct TestFunctionParams {

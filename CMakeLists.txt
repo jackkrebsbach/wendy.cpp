@@ -23,11 +23,10 @@ message(STATUS "WENDY_HEADERS: ${WENDY_HEADERS}")
 add_library(wendy STATIC ${WENDY_SOURCES} ${WENDY_HEADERS})
 
 target_include_directories(wendy PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/wendy
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtl/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor-blas/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtl/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor-blas/include
+        ${FFTW3_INCLUDE_DIR}
 )
 
 target_link_libraries(wendy PUBLIC
@@ -39,6 +38,7 @@ target_link_libraries(wendy PUBLIC
         ${FFTW3_LIBRARY}
         ${GMP_LIBRARY}
         ${GMPXX_LIBRARY}
+
 )
 
 target_compile_options(wendy PRIVATE
@@ -52,7 +52,7 @@ target_compile_options(wendy PRIVATE
         -DNDEBUG
 )
 
-option(BUILD_EXAMPLES "Build example programs" ON)
+option(BUILD_EXAMPLES "Build example programs" OFF)
 option(BUILD_TESTS "Build tests" OFF)
 
 if(BUILD_EXAMPLES)

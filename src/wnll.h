@@ -1,7 +1,7 @@
 #ifndef WNLL_H
 #define WNLL_H
 
-#include "../../src/utils.h"
+#include "utils.h"
 #include "weak_residual_covariance.h"
 #include "weak_residual.h"
 

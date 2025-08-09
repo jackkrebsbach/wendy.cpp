@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <wendy/weak_residual.h>
+#include "weak_residual.h"
 #include <xtensor/misc/xsort.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <symengine/expression.h>
@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <unistd.h>
 
 struct FilteredData {

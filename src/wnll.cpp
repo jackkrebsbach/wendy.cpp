@@ -1,5 +1,5 @@
-#include <wendy/wnll.h>
-#include "../utils.h"
+#include "wnll.h"
+#include "utils.h"
 #include <numbers>
 #include <xtensor/containers/xadapt.hpp>
 #include <xtensor/views/xview.hpp>
