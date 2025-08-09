@@ -1,16 +1,18 @@
 #include <wendy/wnll.h>
 #include <wendy/wendy.h>
 
+#include "utils.h"
 #include "test_function.h"
 #include "optimization/ceres.h"
-#include "optimization/ipopt.h"
+// #include "optimization/ipopt.h"
 #include "symbolic_utils.h"
-#include "utils.h"
 
 
-#include <IpIpoptApplication.hpp>
+//#include <IpIpoptApplication.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
+#include <xtensor/views/xindex_view.hpp>
+#include <xtensor/core/xmath.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <iostream>
 #include <vector>
@@ -150,7 +152,6 @@ void Wendy::optimize_parameters() {
 
     this->p_hat = p_hat;
 
-    //
     // const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
     // const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
     //
@@ -158,8 +159,8 @@ void Wendy::optimize_parameters() {
     // app->Options()->SetStringValue("mu_strategy", "adaptive");
     // app->Options()->SetStringValue("linear_solver", "mumps");
     // app->Options()->SetIntegerValue("max_iter", 200);
-    // app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
-    // // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+    // // app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
+    // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
     // app->Options()->SetStringValue("nlp_scaling_method", "gradient-based");
     // app->Options()->SetNumericValue("nlp_scaling_max_gradient", 1e6);
     // app->Options()->SetStringValue("derivative_test", "first-order");
@@ -175,13 +176,9 @@ void Wendy::optimize_parameters() {
     // }
     //
     // app->OptimizeTNLP(nlp);
-    //
-    // // this->p_hat = p_hat;
-    //
-    // std::cout << "Optimized params:\n";
-    // for (const double val: p_hat) std::cout << val << " ";
-}
 
+    // this->p_hat = p_hat;
+}
 
 void Wendy::build_full_test_function_matrices() {
     std::cout << "<< Building test matrices >>" << std::endl;
