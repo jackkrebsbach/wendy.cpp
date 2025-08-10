@@ -66,13 +66,10 @@ void print_xtensor2d(const T &tensor) {
 }
 
 inline void print_system(const std::vector<SymEngine::Expression> &system) {
-    std::cout << "\n==================== ODE system ====================\n";
     for (size_t i = 0; i < system.size(); ++i) {
-        std::cout << "f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
+        std::cout << " f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
                 << std::endl;
     }
-    std::cout << "===================================================\n"
-            << std::endl;
 }
 
 inline void print_jacobian(

@@ -98,7 +98,7 @@ public:
 
     void inspect_equations() const;
 
-    void optimize_parameters();
+    void optimize_parameters(std::string solver = "ceres");
 
     inline const char* to_string(NoiseDist dist) {
         switch (dist) {

@@ -87,7 +87,7 @@ int main() {
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
         // wendy.inspect_equations();
-        wendy.optimize_parameters();
+        wendy.optimize_parameters("ipopt");
 
         // auto wnll = *wendy.cost;
         // auto S = wnll.S(p0);

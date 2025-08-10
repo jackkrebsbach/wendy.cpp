@@ -1,4 +1,6 @@
 #include "../src/wendy.h"
+#include "../src/utils.h"
+
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
@@ -6,7 +8,6 @@
 #include <xtensor-blas/xlinalg.hpp>
 #include <boost/numeric/odeint.hpp>
 
-#include "../src/utils.h"
 
 using namespace boost::numeric::odeint;
 
@@ -89,7 +90,7 @@ int main() {
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
         // wendy.inspect_equations();
-        wendy.optimize_parameters();
+        wendy.optimize_parameters("ceres");
 
         // const auto cost = *wendy.cost;
         // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;

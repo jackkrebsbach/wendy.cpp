@@ -4,41 +4,34 @@ project(wendy LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
-find_package(Ceres REQUIRED)
-find_library(GMP_LIBRARY NAMES gmp REQUIRED)
-find_library(GMPXX_LIBRARY NAMES gmpxx REQUIRED)
-find_package(Symengine REQUIRED)
-find_library(FFTW3_LIBRARY NAMES fftw3 REQUIRED)
-
 file(GLOB_RECURSE WENDY_SOURCES src/*.cpp)
-file(GLOB_RECURSE WENDY_HEADERS include/wendy/*.h)
 
-message(STATUS "WENDY_SOURCES: ${WENDY_SOURCES}")
-message(STATUS "WENDY_HEADERS: ${WENDY_HEADERS}")
+add_library(wendy STATIC ${WENDY_SOURCES})
+find_package(OpenMP REQUIRED)
 
-
-add_library(wendy STATIC ${WENDY_SOURCES} ${WENDY_HEADERS})
+target_link_directories( wendy PRIVATE /opt/homebrew/lib)
 
 target_include_directories(wendy PUBLIC
+        /opt/homebrew/include
+        /opt/homebrew/include/eigen3
+        /opt/homebrew/include/coin-or
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtl/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../external/xtensor-blas/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/eigen/Eigen
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../external/eigen/unsupported
-        ${FFTW3_INCLUDE_DIR}
 )
 
-target_link_libraries(wendy PUBLIC
-        symengine
-        Ceres::ceres
-        ${BLAS_LIBRARIES}
-        ${LAPACK_LIBRARIES}
-        ${FFTW3_LIBRARY}
-        ${GMP_LIBRARY}
-        ${GMPXX_LIBRARY}
+target_link_directories(wendy PUBLIC /opt/homebrew/lib)
 
+target_link_libraries(wendy PUBLIC
+        OpenMP::OpenMP_CXX
+        symengine
+        fftw3
+        ceres
+        flint
+        gmp
+        mpfr
+        lapack
+        ipopt
 )
 
 target_compile_options(wendy PRIVATE

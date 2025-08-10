@@ -124,8 +124,9 @@ public:
                            const Ipopt::IpoptData * /*ip_data*/,
                            Ipopt::IpoptCalculatedQuantities * /*ip_cq*/) override {
         std::cout << "Ipopt finished with objective value: " << obj_value << "\n";
+        solution.resize(n);
         for (Ipopt::Index i = 0; i < n; ++i) {
-            std::cout << "x[" << i << "] = " << x[i] << "\n";
+            solution[i] = x[i];
         }
     }
 

@@ -87,7 +87,7 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        //wendy.inspect_equations();
-       wendy.optimize_parameters();
+       wendy.optimize_parameters("ipopt");
 
      // const auto mle = *wendy.obj;
      // std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;
