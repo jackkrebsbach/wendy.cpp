@@ -50,9 +50,10 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     noise_dist(noise_dist_from_string(noise_dist)) {
 
     std::cout << "\n<< Initializing WENDy Problem >>"  << std::endl;
-    std::cout << "Distribution: " << to_string(this->noise_dist) << std::endl;
-    std::cout << "p0: " << std::endl;
+    std::cout << " Distribution: " << to_string(this->noise_dist) << std::endl;
+    std::cout << " p0: " << std::endl;
     print_vector(p0);
+    print_system(f_symbolic);
 
     switch (this->noise_dist) {
         case NoiseDist::AddGaussian: {

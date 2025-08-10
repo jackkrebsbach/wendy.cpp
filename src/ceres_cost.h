@@ -1,6 +1,5 @@
 #pragma once
 #include <ceres/ceres.h>
-
 #include "wnll.h"
 
 class FirstOrderCostFunction final : public ceres::FirstOrderFunction {

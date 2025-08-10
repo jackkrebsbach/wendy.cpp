@@ -1,7 +1,7 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-#define GLOG_USE_GLOG_EXPORT
+
 
 #include "wnll.h"
 #include "weak_residual.h"
