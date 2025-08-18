@@ -4,9 +4,19 @@ project(wendy LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 file(GLOB_RECURSE WENDY_CORE_SOURCES ../src/*.cpp)
-find_package(OpenMP REQUIRED)
+
+if (WIN32)
+    find_package(OpenBLAS REQUIRED)
+    set(BLAS_LIBRARIES ${CMAKE_INSTALL_PREFIX}${OpenBLAS_LIBRARIES})
+else()
+    find_package(BLAS REQUIRED)
+    find_package(LAPACK REQUIRED)
+endif()
+
+message(STATUS "BLAS VENDOR:    " ${BLA_VENDOR})
+message(STATUS "BLAS LIBRARIES: " ${BLAS_LIBRARIES})
+
 
 function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE} ${WENDY_CORE_SOURCES} ${WENDY_HEADERS})
@@ -17,27 +27,30 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             /opt/homebrew/include
             /opt/homebrew/include/eigen3
             /opt/homebrew/include/coin-or
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtl/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/xtensor-blas/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtl/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor-blas/include
     )
+
     target_link_libraries(${EXAMPLE_NAME} PRIVATE
-            OpenMP::OpenMP_CXX
             symengine
             fftw3
             ceres
             flint
             gmp
             mpfr
-            lapack
             ipopt
+            ${BLAS_LIBRARIES}
+            ${LAPACK_LIBRARIES}
     )
+
     target_compile_options(${EXAMPLE_NAME} PRIVATE
             -O3
             -march=native
             -mtune=native
-            -fno-math-errno -fno-signed-zeros -fno-trapping-math -freciprocal-math
+            -ffast-math
             -funroll-loops
+            -flto
             -fstrict-aliasing
             -DNDEBUG
     )
