@@ -1,8 +1,6 @@
 #ifndef WENDY_H
 #define WENDY_H
 
-
-
 #include "wnll.h"
 #include "weak_residual.h"
 #include "weak_residual_covariance.h"
