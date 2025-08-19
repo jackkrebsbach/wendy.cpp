@@ -24,8 +24,8 @@ std::vector<std::vector<double> > add_noise(const std::vector<std::vector<double
 
     for (int i = 0; i < n_points; ++i) {
         for (int d = 0; d < dim; ++d) {
-             // noisy[i][d] += noise_sd * dist(gen);
-             noisy[i][d] *= std::exp(noise_sd * dist(gen));
+             noisy[i][d] += noise_sd * dist(gen);
+             // noisy[i][d] *= std::exp(noise_sd * dist(gen));
         }
     }
     return noisy;
@@ -83,10 +83,10 @@ int main() {
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true , "LogNormal");
+        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true);
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        // wendy.inspect_equations();
+        wendy.inspect_equations();
         wendy.optimize_parameters("ipopt");
 
         // auto wnll = *wendy.cost;

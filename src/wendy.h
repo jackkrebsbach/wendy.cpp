@@ -12,7 +12,7 @@ struct TestFunctionParams {
     xt::xtensor<int, 1> radius_params = xt::pow(2, xt::xtensor<double, 1>{0, 1, 2, 3});
     // Radii to use for the test functions
     double radius_min_time = 0.01; // Minimum radius (in seconds)
-    double radius_max_time = 5; // Maximum radius (in seconds)
+    double radius_max_time = 8; // Maximum radius (in seconds)
     int k_max = 200; // Hard maximum on the number of test functions
     double max_test_fun_condition_number = 1e4; // Truncate the SVD of the test function matrices where this is true
     double min_test_fun_info_number = 0.95; // Double check where these come from

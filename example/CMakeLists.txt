@@ -43,17 +43,24 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${BLAS_LIBRARIES}
             ${LAPACK_LIBRARIES}
     )
-
-    target_compile_options(${EXAMPLE_NAME} PRIVATE
+    target_compile_options(wendy PRIVATE
             -O3
             -march=native
             -mtune=native
-            -ffast-math
+            -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
+            -fno-math-errno
+            -funsafe-math-optimizations
+            -fno-trapping-math
+            -fno-signed-zeros
+            -fcx-limited-range
+            -fexcess-precision=fast
+            -flto -fstrict-aliasing
             -funroll-loops
             -flto
             -fstrict-aliasing
             -DNDEBUG
     )
+
 endfunction()
 
 add_wendy_example(example_lorenz example_lorenz.cpp)

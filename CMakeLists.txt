@@ -50,7 +50,14 @@ target_compile_options(wendy PRIVATE
         -O3
         -march=native
         -mtune=native
-        -ffast-math
+        -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
+        -fno-math-errno
+        -funsafe-math-optimizations
+        -fno-trapping-math
+        -fno-signed-zeros
+        -fcx-limited-range
+        -fexcess-precision=fast
+        -flto -fstrict-aliasing
         -funroll-loops
         -flto
         -fstrict-aliasing

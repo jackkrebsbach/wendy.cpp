@@ -13,10 +13,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct LorenzODE {
+struct Goodwin3D {
     std::vector<double> p;
 
-    explicit LorenzODE(const std::vector<double> &p_) : p(p_) {
+    explicit Goodwin3D(const std::vector<double> &p_) : p(p_) {
     }
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
@@ -71,7 +71,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, LorenzODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -89,8 +89,8 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, noise_sd, true, "AddGaussian");
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        // wendy.inspect_equations();
-        wendy.optimize_parameters("ceres");
+        wendy.inspect_equations();
+        wendy.optimize_parameters("ipopt");
 
         // const auto cost = *wendy.cost;
         // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;

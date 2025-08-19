@@ -12,10 +12,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct LorenzODE {
+struct Goodwin3D {
     std::vector<double> p;
 
-    explicit LorenzODE(const std::vector<double> &p_) : p(p_) {}
+    explicit Goodwin3D(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
@@ -48,7 +48,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 256;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
 
@@ -62,7 +62,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, LorenzODE(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -86,10 +86,12 @@ int main() {
        Wendy wendy(system_eqs, U, p0, tt, noise_sd);
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
-       //wendy.inspect_equations();
+       // wendy.inspect_equations();
        wendy.optimize_parameters("ipopt");
 
-     // const auto mle = *wendy.obj;
+     // const auto mle = *wendy.cost;
+     // auto hess = mle.Hessian(p_star);
+     // print_matrix(hess);
      // std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;
      // std::cout << "p0:  " << mle(std::vector<double>(p0))  << std::endl; // pstar
      // std::cout << "   " <<  mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;

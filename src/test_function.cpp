@@ -160,6 +160,7 @@ std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_err
         //Fast Fourier Transform
         auto f_hat_G = calculate_fft(GT_reshaped);
         auto f_hat_G_imag = xt::eval(xt::imag(xt::col(f_hat_G, IX)));
+
         errors[i] = xt::norm_l2(f_hat_G_imag)();
     }
 

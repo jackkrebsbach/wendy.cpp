@@ -25,7 +25,6 @@ WNLL::WNLL(
     constant_term = 0.5 * K * D * std::log(2 * std::numbers::pi);
 }
 
-
 // ∇ᵤr(p) ∈ ℝ^(K*D x J x J)
 xt::xtensor<double, 2> WNLL::Ju_r(const std::vector<double> &p) const {
     xt::xtensor<double, 3> Ju_F({mp1, D, D});
@@ -45,18 +44,17 @@ xt::xtensor<double, 2> WNLL::Ju_r(const std::vector<double> &p) const {
                     Ju_r_(k, m, d1, d2) = V(k, m) * Ju_F(m, d1, d2);
 
     const auto Ju_r = xt::eval(xt::reshape_view(Ju_r_, {K * D, mp1 * D})); // ∇ₚr(p) ∈ ℝ^(K*D x J)
-
     return Ju_r;
 }
 
 // ∇ₚr(p) ∈ ℝ^(K*D x J x J)
 xt::xtensor<double, 2> WNLL::Jp_r(const std::vector<double> &p) const {
-    xt::xtensor<double, 3> Jp_F({mp1, D, J});
+    xt::xtensor<double, 3> Jp_F({D, J, mp1});
 
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
         const xt::xtensor<double, 1> &u = xt::row(U, i);
-        xt::view(Jp_F, i, xt::all(), xt::all()) = Jp_f(p, u, t);
+        xt::view(Jp_F,  xt::all(), xt::all(), i) = Jp_f(p, u, t);
     }
 
     xt::xtensor<double, 4> Jp_r_ = xt::zeros<double>({K, mp1, D, J});
@@ -65,7 +63,7 @@ xt::xtensor<double, 2> WNLL::Jp_r(const std::vector<double> &p) const {
         for (int m = 0; m < mp1; ++m)
             for (int d1 = 0; d1 < D; ++d1)
                 for (int j = 0; j < J; ++j)
-                    Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(m, d1, j);
+                    Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(d1, j, m);
 
     const auto Jp_r = xt::eval(xt::reshape_view(xt::sum(Jp_r_, {1}), {K * D, J})); // ∇ₚr(p) ∈ ℝ^(K*D x J)
 
@@ -126,7 +124,7 @@ double WNLL::operator()(const std::vector<double> &p) const {
 
     const auto quad = xt::linalg::dot(r, quad_)();
 
-    const auto wnll = 0.5 * (logDetS + quad) ;
+    const auto wnll = 0.5 * (logDetS + quad) + constant_term ;
 
     return (wnll);
 }
@@ -171,9 +169,12 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) co
     auto Sp = S(p);
     auto Jp_Sp = S.Jacobian(p);
 
+    std::cout << xt::linalg::cond(Sp,2) << std::endl;
+
     auto Jp_rp = Jp_r(p);
     auto Ju_rp = Ju_r(p); // ∇ᵤr(p) ∈ ℝ^(K*D x D*mp1)
     auto Hp_rp = Hp_r(p);
+
 
     auto Lp = S.L(p); // ∇ₚL(p)
     auto Jp_Lp = S.Jp_L(p); // ∇ₚL(p)
@@ -187,6 +188,7 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) co
             S_inv = std::make_unique<RegularSolve>(Sp);
         }
     }
+
 
     auto S_inv_rp = xt::eval(S_inv->solve(r));
 
@@ -210,10 +212,9 @@ std::vector<std::vector<double> > WNLL::Hessian(const std::vector<double> &p) co
 
             // 𝜕ᵢ𝜕ⱼS(p)
             auto Hp_Lp_ji = xt::eval(xt::view(Hp_Lp, xt::all(), xt::all(), j, i));
-            auto p1 = xt::linalg::dot(Hp_Lp_ji,xt::transpose(Lp));
-            auto p2 = xt::linalg::dot(Jp_Lp_j, xt::transpose(Jp_Lp_i));
-            auto _ji = xt::eval(p1 + p2); //𝜕ᵢ𝜕ⱼLLᵀ + 𝜕ⱼL𝜕ᵢLᵀ
-            auto Hp_Sp_ji = xt::eval(_ji + xt::transpose(_ji)); // 𝜕ᵢ𝜕ⱼS(p)
+            auto p1 = xt::linalg::dot(Jp_Lp_j, xt::transpose(Jp_Lp_i));
+            auto p2 = xt::linalg::dot(Hp_Lp_ji,xt::transpose(Lp));
+            auto Hp_Sp_ji = p1 + xt::transpose(p1) + p2 + xt::transpose(p2); // 𝜕ᵢ𝜕ⱼS(p)
 
             auto Hp_rp_ji = xt::eval(xt::view(Hp_rp, xt::all(), j, i)); // 𝜕ᵢ𝜕ⱼ r(p)
 

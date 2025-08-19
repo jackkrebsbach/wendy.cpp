@@ -102,7 +102,7 @@ xt::xtensor<double, 4> Covariance::Hp_L(const std::vector<double> &p) const {
         xt::view(T_F, i, xt::all(), xt::all(), xt::all(), xt::all()) = Jp_Jp_Ju_f(p, u, t);
     }
 
-    xt::xtensor<double, 5> H_ = xt::zeros<double>({K, D, mp1, D, J});
+    xt::xtensor<double, 6> H_ = xt::zeros<double>({K, D, mp1, D, J, J});
 
     for (std::size_t k = 0; k < K; ++k)
         for (std::size_t d1 = 0; d1 < D; ++d1)
@@ -136,8 +136,8 @@ xt::xtensor<double, 3> Covariance::Jacobian( const std::vector<double> &p ) cons
     for (int j = 0; j < J; ++j) {
         auto Jp_L_j = xt::eval(xt::view(Jp_Lp, xt::all(), xt::all(), j));
         auto prt = xt::eval(xt::linalg::dot(Jp_L_j, xt::transpose(Lp)));
-        auto sym_part = xt::eval(prt + xt::transpose(prt));
-        xt::view(Jp_S , xt::all(), xt::all(), j) = xt::eval(prt + xt::transpose(prt));
+        xt::xtensor<double, 2> sym_part = xt::eval(prt + xt::transpose(prt));
+        xt::view(Jp_S , xt::all(), xt::all(), j) = sym_part;
     }
     return xt::eval(Jp_S);
 };
