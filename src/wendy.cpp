@@ -169,13 +169,12 @@ void Wendy::optimize_parameters(std::string solver) {
         const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
         const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
 
-        // app->Options()->SetIntegerValue("print_level", 2);
-        app->Options()->SetStringValue("derivative_test", "second-order");
-        app->Options()->SetNumericValue("derivative_test_tol", 1e-3);
-        app->Options()->SetNumericValue("derivative_test_perturbation", 1e-6);
-        app->Options()->SetStringValue("derivative_test_print_all", "yes");
+        app->Options()->SetIntegerValue("print_level", 2);
+        // app->Options()->SetStringValue("derivative_test", "second-order");
+        // app->Options()->SetNumericValue("derivative_test_tol", 1e-3);
+        // app->Options()->SetNumericValue("derivative_test_perturbation", 1e-6);
+        // app->Options()->SetStringValue("derivative_test_print_all", "yes");
         app->Options()->SetStringValue("sb", "yes");
-
         app->Options()->SetNumericValue("tol", 1e-9);
         app->Options()->SetIntegerValue("max_iter", 200);
         // app->Options()->SetStringValue("hessian_approximation", "limited-memory");

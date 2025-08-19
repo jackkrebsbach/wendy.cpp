@@ -87,9 +87,10 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        // wendy.inspect_equations();
-       wendy.optimize_parameters("ipopt");
+       wendy.optimize_parameters("ceres");
 
      // const auto mle = *wendy.cost;
+     // auto op = mle(p_star);
      // auto hess = mle.Hessian(p_star);
      // print_matrix(hess);
      // std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;

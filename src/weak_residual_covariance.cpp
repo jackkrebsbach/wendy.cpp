@@ -1,4 +1,6 @@
 #include "utils.h"
+
+#include <Eigen/Dense>
 #include "weak_residual_covariance.h"
 #include <xtensor/containers/xtensor.hpp>
 #include <xtensor/views/xview.hpp>
