@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
-#include <unistd.h>
+
 
 struct FilteredData {
     xt::xtensor<double, 1> tt_filtered;
@@ -144,15 +144,6 @@ inline std::vector<std::vector<double> > hessian_3rd_order(
 
     return H;
 }
-
-
-inline void print_cwd() {
-    char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd))) {
-        std::cout << "Working dir: " << cwd << std::endl;
-    }
-}
-
 
 template<typename T, typename Predicate>
 int find_last(const xt::xtensor<T, 1> &arr, Predicate pred) {

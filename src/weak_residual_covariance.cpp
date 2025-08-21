@@ -122,7 +122,18 @@ xt::xtensor<double, 4> Covariance::Hp_L(const std::vector<double> &p) const {
 
 xt::xtensor<double, 2> Covariance::operator()( const std::vector<double> &p ) const {
     auto Lp = L(p);
+    auto start_time = std::chrono::high_resolution_clock::now();
     auto S_  = xt::linalg::dot(Lp, xt::transpose(Lp));
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration_s     = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+    auto duration_ms    = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    auto duration_us    = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    auto duration_ns    = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+
+    // std::cout << "Computation took: " << duration_s.count() << " seconds" << std::endl;
+    // std::cout << "Computation took: " << duration_ms.count() << " milliseconds" << std::endl;
+    // std::cout << "Computation took: " << duration_us.count() << " microseconds" << std::endl;
+    // std::cout << "Computation took: " << duration_ns.count() << " nanoseconds" << std::endl;
     auto WEIGHT = 1.0 - REG;
     const auto eye = REG * Reg_I;
     xt::xtensor<double, 2> S = xt::eval(WEIGHT * S_ + eye);

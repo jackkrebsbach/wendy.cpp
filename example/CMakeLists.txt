@@ -3,6 +3,7 @@ project(wendy LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 
 file(GLOB_RECURSE WENDY_CORE_SOURCES ../src/*.cpp)
 
@@ -66,3 +67,4 @@ add_wendy_example(example_lorenz example_lorenz.cpp)
 add_wendy_example(example_logistic example_logistic.cpp)
 add_wendy_example(example_goodwin_2d example_goodwin_2d.cpp)
 add_wendy_example(example_goodwin_3d example_goodwin_3d.cpp)
+add_wendy_example(example_hindmarsh_rose example_hindmarsh_rose.cpp)

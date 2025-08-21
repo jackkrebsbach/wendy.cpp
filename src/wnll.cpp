@@ -99,7 +99,6 @@ double WNLL::operator()(const std::vector<double> &p) const {
     auto Sp = S(p);
 
     std::unique_ptr<InverseSolver> S_inv;
-
     try { S_inv = std::make_unique<CholeskySolver>(Sp); } catch (...) {
         try { S_inv = std::make_unique<QRSolver>(Sp); } catch (...) {
             S_inv = std::make_unique<RegularSolve>(Sp);
@@ -110,13 +109,13 @@ double WNLL::operator()(const std::vector<double> &p) const {
     double logDetS;
     try {
         // This appears to be more unstable
-        // const auto C = xt::linalg::cholesky(Sp);
-        // const auto diagC_eval = xt::eval(xt::diag(C));
-        // const auto filtered_diag = xt::filter(diagC_eval, xt::abs(diagC_eval) > 1e-15);
-        // logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
+        const auto C = xt::linalg::cholesky(Sp);
+        const auto diagC_eval = xt::eval(xt::diag(C));
+        const auto filtered_diag = xt::filter(diagC_eval, xt::abs(diagC_eval) > 1e-15);
+        logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
         // Computationally expensive but works for now
-        const auto [_, s, __] = xt::linalg::svd(Sp, false, false);
-        logDetS = xt::sum(xt::log(s))();
+        // const auto [_, s, __] = xt::linalg::svd(Sp, false, false);
+        // logDetS = xt::sum(xt::log(s))();
     } catch (...) {
         logDetS = std::log(xt::linalg::det(Sp));
     }
