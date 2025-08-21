@@ -13,10 +13,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct Hindmarsh_Rose {
+struct Goodwin_3D {
     std::vector<double> p;
 
-    explicit Hindmarsh_Rose(const std::vector<double> &p_) : p(p_) {
+    explicit Goodwin_3D(const std::vector<double> &p_) : p(p_) {
     }
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
@@ -71,7 +71,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, Hindmarsh_Rose(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin_3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 

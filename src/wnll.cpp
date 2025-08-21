@@ -49,12 +49,12 @@ xt::xtensor<double, 2> WNLL::Ju_r(const std::vector<double> &p) const {
 
 // ∇ₚr(p) ∈ ℝ^(K*D x J x J)
 xt::xtensor<double, 2> WNLL::Jp_r(const std::vector<double> &p) const {
-    xt::xtensor<double, 3> Jp_F({D, J, mp1});
+    xt::xtensor<double, 3> Jp_F({mp1, D, J});
 
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
         const xt::xtensor<double, 1> &u = xt::row(U, i);
-        xt::view(Jp_F,  xt::all(), xt::all(), i) = Jp_f(p, u, t);
+        xt::view(Jp_F,i,  xt::all(), xt::all()) = Jp_f(p, u, t);
     }
 
     xt::xtensor<double, 4> Jp_r_ = xt::zeros<double>({K, mp1, D, J});
@@ -63,7 +63,7 @@ xt::xtensor<double, 2> WNLL::Jp_r(const std::vector<double> &p) const {
         for (int m = 0; m < mp1; ++m)
             for (int d1 = 0; d1 < D; ++d1)
                 for (int j = 0; j < J; ++j)
-                    Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(d1, j, m);
+                    Jp_r_(k, m, d1, j) = V(k, m) * Jp_F(m, d1, j);
 
     const auto Jp_r = xt::eval(xt::reshape_view(xt::sum(Jp_r_, {1}), {K * D, J})); // ∇ₚr(p) ∈ ℝ^(K*D x J)
 
@@ -109,13 +109,13 @@ double WNLL::operator()(const std::vector<double> &p) const {
     double logDetS;
     try {
         // This appears to be more unstable
-        const auto C = xt::linalg::cholesky(Sp);
-        const auto diagC_eval = xt::eval(xt::diag(C));
-        const auto filtered_diag = xt::filter(diagC_eval, xt::abs(diagC_eval) > 1e-15);
-        logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
+        // const auto C = xt::linalg::cholesky(Sp);
+        // const auto diagC_eval = xt::eval(xt::diag(C));
+        // const auto filtered_diag = xt::filter(diagC_eval, xt::abs(diagC_eval) > 1e-15);
+        // logDetS = 2.0 * xt::sum(xt::log(filtered_diag))();
         // Computationally expensive but works for now
-        // const auto [_, s, __] = xt::linalg::svd(Sp, false, false);
-        // logDetS = xt::sum(xt::log(s))();
+        const auto [_, s, __] = xt::linalg::svd(Sp, false, false);
+        logDetS = xt::sum(xt::log(s))();
     } catch (...) {
         logDetS = std::log(xt::linalg::det(Sp));
     }

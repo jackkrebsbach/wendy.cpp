@@ -12,10 +12,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct Hindmarsh_Rose {
+struct Goodwin_3D {
     std::vector<double> p;
 
-    explicit Hindmarsh_Rose(const std::vector<double> &p_) : p(p_) {}
+    explicit Goodwin_3D(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] / (36.0 + p[1]*u[1]) - p[2];
@@ -49,7 +49,7 @@ std::vector<std::vector<double> > add_noise( const std::vector<std::vector<doubl
 
 int main() {
     std::vector<double> p_star = {72, 1, 2, 1, 1};
-    std::vector<double> p0 = {74, 1.5, 2.2, 1.5, 2};
+    std::vector<double> p0 = {78, 1.56, 2.5, 1.75, 2.3};
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
     constexpr double noise_sd = 0.05;
@@ -67,7 +67,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, Hindmarsh_Rose(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin_3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -86,13 +86,14 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        // wendy.inspect_equations();
-       wendy.optimize_parameters("ipopt");
+       wendy.optimize_parameters("ceres");
 
      // const auto cost = *wendy.cost;
      // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;
-     // std::cout << "   " << cost(std::vector<double>({44.9581, 1.70535, 1.41093, 0.979979, 1.13597}))  << std::endl;
-     // std::cout << "p0:  " << cost(std::vector<double>(p0))  << std::endl; // pstar
-     // std::cout << "   " << cost(std::vector<double>({ 66, 2.6, 3.0, 1.6, 2}))  << std::endl;
+     // std::cout << "p0:     " << cost(std::vector<double>(p0))  << std::endl; // pstar
+     // std::cout << "        " << cost(std::vector<double>({44.9581, 1.70535, 1.41093, 0.979979, 1.13597}))  << std::endl;
+     // std::cout << "        " << cost(std::vector<double>({ 66, 2.6, 3.0, 1.6, 2}))  << std::endl;
+     // std::cout << "        " << cost(std::vector<double>({ 29.063, 1.750, 1.121, 1.029, 1.043 }))  << std::endl;
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: " << e.what() << std::endl;

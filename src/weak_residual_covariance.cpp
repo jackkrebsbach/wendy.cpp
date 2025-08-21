@@ -30,14 +30,15 @@ Covariance::Covariance(
     K = V.shape()[0];
     J = Jp_f.dx[0].size();
 
-    xt::xtensor<double,4> L0_ = xt::zeros<double>({K, D, mp1, D});
+    xt::xtensor<double,4> L0_ = xt::zeros<double>({K, D, D, mp1});
 
     for (std::size_t k = 0; k < K; ++k)
         for (std::size_t d = 0; d < D; ++d)
             for (std::size_t m = 0; m < mp1; ++m)
-                L0_(k, d, m, d) = V_prime(k, m) * sig(d);
+                  L0_(k, d, d, m) = V_prime(k, m) * sig(d);
 
-    L0 = xt::xtensor<double,2>(xt::reshape_view(L0_, {K * D, mp1 * D}));
+    auto _ = xt::transpose(L0_, {0,1,3,2});
+    L0 = xt::xtensor<double,2>(xt::reshape_view(_, {K * D, mp1 * D}));
     Reg_I = xt::eval(xt::eye<double>(K*D));
 }
 
@@ -49,7 +50,7 @@ xt::xtensor<double, 2> Covariance::L(
     xt::xtensor<double, 3> J_F({mp1, D, D});
     for (size_t i = 0; i < mp1; ++i) {
         const double &t = tt[i];
-        const auto &u = xt::row(U,i);
+        const auto &u = xt::row(U, i);
         xt::view(J_F, i, xt::all(), xt::all()) = Ju_f(p, u, t);
     }
 
@@ -59,7 +60,7 @@ xt::xtensor<double, 2> Covariance::L(
         for (std::size_t d1 = 0; d1 < D; ++d1)
             for (std::size_t m = 0; m < mp1; ++m)
                 for (std::size_t d2 = 0; d2 < D; ++d2)
-                    L1_(k, d1, m, d2) = J_F(m, d1, d2) * V(k, m) * sig(d2);
+                    L1_(k, d1, m, d2) = J_F(m, d1, d2) * V(k, m) * sig(d1);
 
     auto L1 = xt::reshape_view(L1_, {K * D, mp1 * D});
     const auto L = xt::eval(L1 + L0);
@@ -85,7 +86,7 @@ xt::xtensor<double, 3> Covariance::Jp_L(const std::vector<double> &p) const {
             for (std::size_t m = 0; m < mp1; ++m)
                 for (std::size_t d2 = 0; d2 < D; ++d2)
                     for (std::size_t j = 0; j < J; ++j)
-                        J_(k, d1, m, d2, j) = H_F(m, d1, d2, j) * V(k, m) * sig(d2);
+                        J_(k, d1, m, d2, j) = H_F(m, d1, d2, j) * V(k, m) * sig(d1);
 
     const auto Jp_L = xt::eval(xt::reshape_view(J_, {K*D, mp1*D, J}));
 
@@ -112,7 +113,7 @@ xt::xtensor<double, 4> Covariance::Hp_L(const std::vector<double> &p) const {
                 for (std::size_t d2 = 0; d2 < D; ++d2)
                     for (std::size_t j1 = 0; j1 < J; ++j1)
                         for (std::size_t j2 = 0; j2 < J; ++j2)
-                            H_(k, d1, m, d2, j1, j2) = T_F(m, d1, d2, j1, j2) * V(k, m) * sig(d2);
+                            H_(k, d1, m, d2, j1, j2) = T_F(m, d1, d2, j1, j2) * V(k, m) * sig(d1);
 
     const auto Jp_H = xt::eval(xt::reshape_view(H_, {K*D, mp1*D, J , J}));
 
@@ -122,18 +123,7 @@ xt::xtensor<double, 4> Covariance::Hp_L(const std::vector<double> &p) const {
 
 xt::xtensor<double, 2> Covariance::operator()( const std::vector<double> &p ) const {
     auto Lp = L(p);
-    auto start_time = std::chrono::high_resolution_clock::now();
     auto S_  = xt::linalg::dot(Lp, xt::transpose(Lp));
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration_s     = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-    auto duration_ms    = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-    auto duration_us    = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    auto duration_ns    = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
-
-    // std::cout << "Computation took: " << duration_s.count() << " seconds" << std::endl;
-    // std::cout << "Computation took: " << duration_ms.count() << " milliseconds" << std::endl;
-    // std::cout << "Computation took: " << duration_us.count() << " microseconds" << std::endl;
-    // std::cout << "Computation took: " << duration_ns.count() << " nanoseconds" << std::endl;
     auto WEIGHT = 1.0 - REG;
     const auto eye = REG * Reg_I;
     xt::xtensor<double, 2> S = xt::eval(WEIGHT * S_ + eye);
