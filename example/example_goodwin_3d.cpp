@@ -1,4 +1,7 @@
 #include "../src/wendy.h"
+#include "../src/noise.h"
+#include "../src/utils.h"
+
 #include <vector>
 #include <string>
 #include <xtensor/containers/xadapt.hpp>
@@ -6,16 +9,14 @@
 #include <xtensor-blas/xlinalg.hpp>
 #include <boost/numeric/odeint.hpp>
 
-#include "../src/utils.h"
-
 using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct Goodwin_3D {
+struct Goodwin_2D {
     std::vector<double> p;
 
-    explicit Goodwin_3D(const std::vector<double> &p_) : p(p_) {}
+    explicit Goodwin_2D(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] / (2.15 + p[2] * std::pow(u[2], p[3])) - p[1] * u[0];
@@ -47,7 +48,7 @@ int main() {
     const std::vector<double> u0 = {0.3617, 0.9137, 1.3934};
     std::vector u = u0;
 
-    constexpr double noise_sd = 0.05;
+    constexpr double noise_sd = 0.15;
     constexpr int num_samples = 256;
     constexpr double t0 = 0.0;
     constexpr double t1 = 80;
@@ -62,7 +63,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, Goodwin_3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin_2D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -83,22 +84,23 @@ int main() {
 
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
     try {
-       Wendy wendy(system_eqs, U, p0, tt, noise_sd);
+
+       Wendy wendy(system_eqs, U, p0, tt);
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
-       // wendy.inspect_equations();
        wendy.optimize_parameters("ceres");
 
-        const auto mle = *wendy.cost;
+       //
+       //  const auto mle = *wendy.cost;
         // auto op = mle.Jacobian(p_star);
         // auto hess = mle.Hessian(p_star);
         // print_matrix(hess);
-        std::cout << "\n" << std::endl;
-        std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;
-        std::cout << "p0:    " << mle(std::vector<double>(p0))  << std::endl; // pstar
-        std::cout << "       " <<  mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
-        std::cout << "       " <<mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
-        std::cout << "       " <<mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
+        // std::cout << "\n" << std::endl;
+        // std::cout << "\npstar: " << mle(std::vector<double>(p_star)) << std::endl;
+        // std::cout << "p0:    " << mle(std::vector<double>(p0))  << std::endl; // pstar
+        // std::cout << "       " <<  mle(std::vector<double>({2, 0.05, 1.5, 13, 0.15, 0.12, 0.18, 0.10}))  << std::endl;
+        // std::cout << "       " <<mle(std::vector<double>({0.5, 0.15, 1.75, 7, 0.03, 0.03, 0.1, 0.08}))  << std::endl;
+        // std::cout << "       " <<mle(std::vector<double>({0.25, 0.015, 3, 10, 0.1, 0.02, 0.15, 0.11}))  << std::endl;
 
     } catch (const std::exception &e) {
         std::cout << "Exception occurred: " << e.what() << std::endl;

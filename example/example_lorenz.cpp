@@ -13,10 +13,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct Goodwin_3D {
+struct Goodwin_2D {
     std::vector<double> p;
 
-    explicit Goodwin_3D(const std::vector<double> &p_) : p(p_) {
+    explicit Goodwin_2D(const std::vector<double> &p_) : p(p_) {
     }
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
@@ -57,7 +57,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 256;
     constexpr double t0 = 0.0;
     constexpr double t1 = 10;
 
@@ -71,7 +71,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, Goodwin_3D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
+    integrate_times(stepper, Goodwin_2D(p_star), u, t_eval.begin(), t_eval.end(), 0.01, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -86,10 +86,10 @@ int main() {
     const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
     try {
-        Wendy wendy(system_eqs, U, p0, tt, noise_sd, true, "AddGaussian");
+        Wendy wendy(system_eqs, U, p0, tt, true, "AddGaussian");
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        wendy.inspect_equations();
+        // wendy.inspect_equations();
         wendy.optimize_parameters("ceres");
 
         // const auto cost = *wendy.cost;

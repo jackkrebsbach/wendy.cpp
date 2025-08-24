@@ -17,8 +17,10 @@
 #include <vector>
 #include <iomanip>
 
+#include "noise.h"
+
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_, double noise_sd, const bool compute_svd_,
+             const xt::xtensor<double, 1> &tt_, const bool compute_svd_,
              const std::string &noise_dist): p0(p0_),
                                              D(U_.shape()[1]),
                                              J(p0_.size()),
@@ -53,8 +55,6 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
                                                      ), D, J
                                                  )
                                              ),
-                                             sigma(xt::eval(noise_sd * xt::ones<double>({D}))),
-
                                              compute_svd(compute_svd_), // Standard deviation of the noise from the data
                                              noise_dist(noise_dist_from_string(noise_dist)) {
     std::cout << "\n<< Initializing WENDy Problem >>" << std::endl;
@@ -80,6 +80,11 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
         default:
             break;
     }
+
+    std::cout << "\n<< Estimating noise standard deviation >>" << std::endl;
+    sigma = estimate_std(U);
+
+    std::cout << " p0: " << sigma << std::endl;
 }
 
 void Wendy::build_cost_function() {

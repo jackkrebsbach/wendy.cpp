@@ -13,10 +13,10 @@ using namespace boost::numeric::odeint;
 
 using state_type = std::vector<double>;
 
-struct Goodwin_3D {
+struct Goodwin_2D {
     std::vector<double> p;
 
-    explicit Goodwin_3D(const std::vector<double> &p_) : p(p_) {}
+    explicit Goodwin_2D(const std::vector<double> &p_) : p(p_) {}
 
     void operator()(const std::vector<double> &u, std::vector<double> &du_dt, double /*t*/) const {
         du_dt[0] = p[0] * u[1] - p[1]* std::pow(u[0], 3) + p[2]*std::pow(u[0],2) - p[3]*u[2];
@@ -73,7 +73,7 @@ int main() {
     };
 
     runge_kutta4<state_type> stepper;
-    integrate_times(stepper, Goodwin_3D(p_star), u, t_eval.begin(), t_eval.end(), 0.00001, observer);
+    integrate_times(stepper, Goodwin_2D(p_star), u, t_eval.begin(), t_eval.end(), 0.00001, observer);
 
     const auto u_noisy = add_noise(u_eval, noise_sd);
 
@@ -89,7 +89,7 @@ int main() {
 
     try {
 
-       Wendy wendy(system_eqs, U, p0, tt, noise_sd, true, "AddGaussian");
+       Wendy wendy(system_eqs, U, p0, tt, true, "AddGaussian");
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        // wendy.inspect_equations();

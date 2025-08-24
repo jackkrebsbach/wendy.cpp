@@ -88,7 +88,7 @@ public:
     std::shared_ptr<WNLL> cost;
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-          const xt::xtensor<double, 1> &tt_, double noise_sd = 0.05, bool compute_svd_ = true, const std::string &noise_dist = "AddGaussian" );
+          const xt::xtensor<double, 1> &tt_, bool compute_svd_ = true, const std::string &noise_dist = "AddGaussian" );
 
     void build_full_test_function_matrices();
 

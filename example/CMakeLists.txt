@@ -43,7 +43,7 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${BLAS_LIBRARIES}
             ${LAPACK_LIBRARIES}
     )
-    target_compile_options(wendy PRIVATE
+    target_compile_options(${EXAMPLE_NAME} PRIVATE
             -O3
             -march=native
             -mtune=native
