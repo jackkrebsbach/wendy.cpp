@@ -84,7 +84,7 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
     std::cout << "\n<< Estimating noise standard deviation >>" << std::endl;
     sigma = estimate_std(U);
 
-    std::cout << " p0: " << sigma << std::endl;
+    std::cout << " Sigma: " << sigma << std::endl;
 }
 
 void Wendy::build_cost_function() {

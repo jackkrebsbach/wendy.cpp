@@ -29,6 +29,7 @@ xt::xtensor<double, 1> convolve1d_inner(const xt::xtensor<double, 1>& signal,
 }
 
 
+// https://faculty.washington.edu/rjl/fdmbook/matlab/fdcoeffF.m
 xt::xtensor<double, 2> fdcoeffF(const int k, const double xbar, const xt::xtensor<double, 1> &x) {
     const auto n = x.shape()[0];
     if (k >= n) {
