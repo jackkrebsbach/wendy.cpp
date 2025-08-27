@@ -53,7 +53,7 @@ int main() {
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 100;
+    constexpr int num_samples = 150;
     constexpr double t0 = 0.0;
     constexpr double t1 = 60;
 

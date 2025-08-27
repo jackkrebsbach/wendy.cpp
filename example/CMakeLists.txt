@@ -30,9 +30,11 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtl/include
             ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor/include
             ${CMAKE_CURRENT_SOURCE_DIR}/../external/xtensor-blas/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../external/spdlog/include
     )
 
     target_link_libraries(${EXAMPLE_NAME} PRIVATE
+            spdlog
             symengine
             fftw3
             ceres
@@ -40,6 +42,7 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             gmp
             mpfr
             ipopt
+            fmt
             ${BLAS_LIBRARIES}
             ${LAPACK_LIBRARIES}
     )

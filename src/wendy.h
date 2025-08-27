@@ -5,6 +5,7 @@
 #include "weak_residual.h"
 #include "weak_residual_covariance.h"
 #include <symengine/expression.h>
+#include <spdlog/spdlog.h>
 
 struct TestFunctionParams {
     const std::optional<int> number_test_functions;
@@ -88,7 +89,7 @@ public:
     std::shared_ptr<WNLL> cost;
 
     Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-          const xt::xtensor<double, 1> &tt_, bool compute_svd_ = true, const std::string &noise_dist = "AddGaussian" );
+          const xt::xtensor<double, 1> &tt_, const std::string &log_level = "none", bool compute_svd_ = true, const std::string &noise_dist = "AddGaussian" );
 
     void build_full_test_function_matrices();
 
@@ -98,11 +99,23 @@ public:
 
     void optimize_parameters(std::string solver = "ceres");
 
-    inline const char* to_string(NoiseDist dist) {
+    const char* to_string(NoiseDist dist) {
         switch (dist) {
             case NoiseDist::AddGaussian: return "AddGaussian";
             case NoiseDist::LogNormal: return "LogNormal";
             default: return "Unknown";
+        }
+    }
+
+    static spdlog::level::level_enum log_level_from_string(const std::string &level) {
+        if (level == "" || level == "off" || level == "none") {
+            return spdlog::level::off;
+        } else if (level == "info") {
+            return spdlog::level::info;
+        } else if (level == "debug") {
+            return spdlog::level::debug;
+        } else {
+            return spdlog::level::info;  // default
         }
     }
 

@@ -30,6 +30,7 @@ target_include_directories(wendy PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/external/xtl/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/xtensor/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/xtensor-blas/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
 )
 
 target_link_directories(wendy PUBLIC /opt/homebrew/lib)
@@ -42,27 +43,28 @@ target_link_libraries(wendy PUBLIC
         gmp
         mpfr
         ipopt
+        fmt
         ${BLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
 )
 
-target_compile_options(wendy PRIVATE
-        -O3
-        -march=native
-        -mtune=native
-        -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
-        -fno-math-errno
-        -funsafe-math-optimizations
-        -fno-trapping-math
-        -fno-signed-zeros
-        -fcx-limited-range
-        -fexcess-precision=fast
-        -flto -fstrict-aliasing
-        -funroll-loops
-        -flto
-        -fstrict-aliasing
-        -DNDEBUG
-)
+#target_compile_options(wendy PRIVATE
+#        -O3
+#        -march=native
+#        -mtune=native
+#        -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
+#        -fno-math-errno
+#        -funsafe-math-optimizations
+#        -fno-trapping-math
+#        -fno-signed-zeros
+#        -fcx-limited-range
+#        -fexcess-precision=fast
+#        -flto -fstrict-aliasing
+#        -funroll-loops
+#        -flto
+#        -fstrict-aliasing
+#        -DNDEBUG
+#)
 
 option(BUILD_EXAMPLES "Build example programs" OFF)
 option(BUILD_TESTS "Build tests" OFF)

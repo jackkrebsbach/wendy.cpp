@@ -7,6 +7,9 @@
 #include "ipopt.h"
 #include "symbolic_utils.h"
 
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ranges.h>
+
 #include <IpIpoptApplication.hpp>
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
@@ -20,7 +23,7 @@
 #include "noise.h"
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_, const bool compute_svd_,
+             const xt::xtensor<double, 1> &tt_,const std::string &log_level, const bool compute_svd_,
              const std::string &noise_dist): p0(p0_),
                                              D(U_.shape()[1]),
                                              J(p0_.size()),
@@ -57,13 +60,13 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
                                              ),
                                              compute_svd(compute_svd_), // Standard deviation of the noise from the data
                                              noise_dist(noise_dist_from_string(noise_dist)) {
-    std::cout << "\n<< Initializing WENDy Problem >>" << std::endl;
-    std::cout << " Distribution: " << to_string(this->noise_dist) << std::endl;
-    std::cout << " p0: ";
-    print_vector(p0);
-    std::cout << "\n System: " << std::endl;
+    spdlog::set_level(log_level_from_string(log_level));
+    spdlog::set_pattern("[%^%l%$] %v");
+    spdlog::info("<< Initializing WENDy Problem >>");
+    spdlog::info(" Distribution: {}", to_string(this->noise_dist));
+    spdlog::info(" p0: {}", fmt::join(p0, ", "));
+    spdlog::info(" System: ");
     print_system(f_symbolic);
-    std::cout << std::endl;
 
     switch (this->noise_dist) {
         case NoiseDist::AddGaussian: {
@@ -81,14 +84,16 @@ Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U
             break;
     }
 
-    std::cout << "\n<< Estimating noise standard deviation >>" << std::endl;
+    spdlog::info("");
+    spdlog::info("<< Estimating noise standard deviation >>");
     sigma = estimate_std(U);
-
-    std::cout << " Sigma: " << sigma << std::endl;
+    spdlog::info(" Sigma: {}", fmt::join(sigma, ", "));
+    spdlog::info("");
 }
 
 void Wendy::build_cost_function() {
-    std::cout << "\n<< Initializing cost functions >>" << std::endl;
+    spdlog::info("");
+    spdlog::info("<< Initializing cost functions >>");
     g = std::make_unique<g_functor>(F, V);
     b = xt::eval(xt::ravel(xt::linalg::dot(-1.0 * V_prime, U)));
     S = std::make_unique<Covariance>(U, tt, V, V_prime, sigma, Ju_f, Jp_f, Jp_Ju_f, Jp_Jp_Ju_f);
@@ -143,10 +148,12 @@ void Wendy::inspect_equations() const {
 }
 
 void Wendy::optimize_parameters(std::string solver) {
-    std::cout << "\n<< Optimizing parameters >>" << std::endl;
+
+    spdlog::info("");
+    spdlog::info("<< Optimizing parameters >>");
 
     if (!cost) {
-        std::cout << "Warning: Objective Function not Initialized" << std::endl;
+        spdlog::info("Warning: Objective Function not Initialized");
         return;
     }
 
@@ -159,15 +166,14 @@ void Wendy::optimize_parameters(std::string solver) {
         options.max_num_iterations = 1000;
         options.function_tolerance = 1e-9;
         options.gradient_tolerance = 1e-9;
+        options.minimizer_progress_to_stdout = spdlog::get_level() <= spdlog::level::debug;
 
         std::vector<double> p_hat(p0.begin(), p0.end());
         ceres::GradientProblemSolver::Summary summary;
         ceres::Solve(options, problem, p_hat.data(), &summary);
 
-        std::cout << summary.FullReport() << std::endl;
-
-        std::cout << "Optimized params:\n";
-        for (const double val: p_hat) std::cout << val << " ";
+        spdlog::info(summary.FullReport());
+        spdlog::info("p̂: {}", fmt::join(p_hat, ", "));
 
         this->p_hat = p_hat;
     } else {
@@ -194,13 +200,12 @@ void Wendy::optimize_parameters(std::string solver) {
 
         auto* cost_fn = dynamic_cast<IpoptCostFunction*>(Ipopt::GetRawPtr(nlp));
         this->p_hat = cost_fn->solution;
-        std::cout << "Optimized params:\n";
-        for (const double val: p_hat) std::cout << val << " ";
+        spdlog::info("p̂: {}", fmt::join(p_hat, ", "));
     }
 }
 
 void Wendy::build_full_test_function_matrices() {
-    std::cout << "<< Building test matrices >>" << std::endl;
+    spdlog::info("<< Building test matrices >>");
     const double dt = xt::mean(xt::diff(tt))();
     const int mp1 = static_cast<int>(U.shape()[0]); // Number of observations
 
@@ -222,13 +227,11 @@ void Wendy::build_full_test_function_matrices() {
         max_radius = max_radius_for_interior;
     }
 
-    std::cout << "  Min radius: " << min_radius << std::endl;
-    std::cout << "  Max radius: " << max_radius << std::endl;
-    std::cout << "  Minmax radius: " << radius_min_max << std::endl;
-
+    spdlog::info("  Min radius: {}", min_radius);
+    spdlog::info("  Max radius: {}", max_radius);
+    spdlog::info("  Minmax radius: {}", radius_min_max);
 
     const auto [ix, errors,radii_sweep] = find_min_radius_int_error(U, tt, min_radius, radius_min_max);
-
 
     auto min_radius_int_error = radii_sweep[ix];
 
@@ -237,7 +240,7 @@ void Wendy::build_full_test_function_matrices() {
     this->min_radius_ix = ix;
     this->min_radius = min_radius_int_error;
 
-    std::cout << "  Integral Error min radius: " << min_radius_int_error << std::endl;
+    spdlog::info("  Integral Error min radius: {}", min_radius_int_error);
 
     radii = test_function_params.radius_params * min_radius_int_error;
 
@@ -249,7 +252,8 @@ void Wendy::build_full_test_function_matrices() {
         radii_ = xt::xtensor<int, 1>({max_radius});
     }
 
-    std::cout << "  Radii " << radii_ << std::endl;
+    spdlog::info("  Radii {}", fmt::join(radii_, ", "));
+
 
     auto V_ = build_full_test_function_matrix(tt, radii_, 0);
     auto V_prime_ = build_full_test_function_matrix(tt, radii_, 1);
@@ -262,7 +266,7 @@ void Wendy::build_full_test_function_matrices() {
 
     const auto k_full = static_cast<int>(V_.shape()[0]);
 
-    std::cout << "  K Full: " << k_full << std::endl;
+    spdlog::info("  K Full: {}", k_full);
 
     const auto SVD = xt::linalg::svd(V_, false);
 
@@ -295,15 +299,15 @@ void Wendy::build_full_test_function_matrices() {
 
     auto K = std::min({k1, k2, k_max});
 
-    std::cout << "  Condition Number is now: " << condition_numbers[K] << std::endl;
-    std::cout << "  Info Number is now: " << info_numbers[K] << std::endl;
-    std::cout << "  K is: " << K << std::endl;
+    spdlog::info("  Condition Number is now: {:.4f}", condition_numbers[K]);
+    spdlog::info("  Info Number is now: {:.4f}", info_numbers[K]);
+    spdlog::info("  K is: {}", K);
 
 
     this->V = xt::eval(xt::view(Vt, xt::range(0, K), xt::all()));
     // ϕ_full = UΣVᵀ =>  Vᵀ = Σ⁻¹ Uᵀϕ_full = ϕ.
     // Apply same transformation to ϕ' = Σ⁻¹ Uᵀϕ'_full
-    std::cout << "  Calculating Vprime" << std::endl;
+    spdlog::info("  Calculating Vprime");
 
     const auto U_T = xt::eval(xt::view(xt::transpose(U_), xt::range(0, K))); // (D, K)
     const auto UV = xt::eval(xt::linalg::dot(U_T, V_prime_)); // (D, mp1)

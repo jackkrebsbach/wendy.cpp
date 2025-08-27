@@ -81,14 +81,13 @@ int main() {
     const xt::xtensor<double, 2> U = xt::adapt(u_flat, shape);
 
     try {
-
         const std::vector<std::string> system_eqs = {"u1*p1 - p2*u1^2"};
         const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
-        Wendy wendy(system_eqs, U, p0, tt);
+        Wendy wendy(system_eqs, U, p0, tt, "info");
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        wendy.inspect_equations();
+        // wendy.inspect_equations();
         wendy.optimize_parameters("ceres");
 
         // auto wnll = *wendy.cost;

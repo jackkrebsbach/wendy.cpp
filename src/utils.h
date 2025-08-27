@@ -9,6 +9,9 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ranges.h>
+
 
 
 struct FilteredData {
@@ -67,8 +70,9 @@ void print_xtensor2d(const T &tensor) {
 
 inline void print_system(const std::vector<SymEngine::Expression> &system) {
     for (size_t i = 0; i < system.size(); ++i) {
-        std::cout << " f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
-                << std::endl;
+        spdlog::info(" f[{}] = {}", i, SymEngine::str(*system[i].get_basic()));
+        // std::cout << " f[" << i << "] = " << SymEngine::str(*system[i].get_basic())
+                // << std::endl;
     }
 }
 
