@@ -227,6 +227,10 @@ void Wendy::build_full_test_function_matrices() {
         max_radius = max_radius_for_interior;
     }
 
+    if (radius_min_max <= min_radius) {
+        radius_min_max = min_radius * 10;
+    }
+
     spdlog::info("  Min radius: {}", min_radius);
     spdlog::info("  Max radius: {}", max_radius);
     spdlog::info("  Minmax radius: {}", radius_min_max);
@@ -252,7 +256,7 @@ void Wendy::build_full_test_function_matrices() {
         radii_ = xt::xtensor<int, 1>({max_radius});
     }
 
-    spdlog::info("  Radii {}", fmt::join(radii_, ", "));
+    spdlog::info("  Radii [{}]", fmt::join(radii_, ", "));
 
 
     auto V_ = build_full_test_function_matrix(tt, radii_, 0);

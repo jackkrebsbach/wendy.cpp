@@ -238,6 +238,5 @@ size_t get_corner_index(const xt::xtensor<double, 1> &y, const xt::xtensor<doubl
     E[0] = INF_APPROX;
     E[E.size() - 1] = INF_APPROX;
 
-
     return xt::argmin(E)();
 }

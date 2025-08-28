@@ -49,11 +49,11 @@ std::vector<std::vector<double> > add_noise( const std::vector<std::vector<doubl
 
 int main() {
     std::vector<double> p_star = {72, 1, 2, 1, 1};
-    std::vector<double> p0 = {78, 1.56, 2.5, 1.75, 0.6};
+    std::vector<double> p0 = {70, 1.56, 2.5, 1.75, 0.6};
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 256;
+    constexpr int num_samples = 150;
     constexpr double t0 = 0.0;
     constexpr double t1 = 60;
 
@@ -82,7 +82,7 @@ int main() {
     const xt::xtensor<double,1> tt = xt::linspace(t0, t1, num_samples);
 
     try {
-       Wendy wendy(system_eqs, U, p0, tt);
+       Wendy wendy(system_eqs, U, p0, tt, "info");
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        wendy.optimize_parameters("ceres");
