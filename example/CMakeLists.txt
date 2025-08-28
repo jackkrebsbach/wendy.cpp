@@ -47,7 +47,6 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${LAPACK_LIBRARIES}
     )
     target_compile_options(${EXAMPLE_NAME} PRIVATE
-            -O3
             -march=native
             -mtune=native
             -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
@@ -58,10 +57,6 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             -fcx-limited-range
             -fexcess-precision=fast
             -flto -fstrict-aliasing
-            -funroll-loops
-            -flto
-            -fstrict-aliasing
-            -DNDEBUG
     )
 
 endfunction()

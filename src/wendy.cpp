@@ -173,7 +173,7 @@ void Wendy::optimize_parameters(std::string solver) {
         ceres::Solve(options, problem, p_hat.data(), &summary);
 
         spdlog::info(summary.FullReport());
-        spdlog::info("p̂: {}", fmt::join(p_hat, ", "));
+        spdlog::info("p̂: {:.4f}", fmt::join(p_hat, ", "));
 
         this->p_hat = p_hat;
     } else {

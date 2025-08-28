@@ -89,6 +89,11 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        wendy.optimize_parameters("ceres");
+       spdlog::set_level(spdlog::level::info);
+
+       spdlog::info("p* = [{:.4f}]", fmt::join(p_star, ", "));
+       spdlog::info("p̂ = [{:.4f}]", fmt::join(wendy.p_hat, ", "));
+
 
        //
        //  const auto mle = *wendy.cost;

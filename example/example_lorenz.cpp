@@ -57,7 +57,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 256;
+    constexpr int num_samples = 512;
     constexpr double t0 = 0.0;
     constexpr double t1 = 10;
 
@@ -86,11 +86,15 @@ int main() {
     const xt::xtensor<double, 1> tt = xt::linspace(t0, t1, num_samples);
 
     try {
-        Wendy wendy(system_eqs, U, p0, tt, true, "AddGaussian");
+        Wendy wendy(system_eqs, U, p0, tt);
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
         // wendy.inspect_equations();
         wendy.optimize_parameters("ceres");
+
+        spdlog::set_level(spdlog::level::info);
+        spdlog::info("p*= [{:.4f}]", fmt::join(p_star, ", "));
+        spdlog::info("p̂ = [{:.4f}]", fmt::join(wendy.p_hat, ", "));
 
         // const auto cost = *wendy.cost;
         // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;

@@ -53,7 +53,7 @@ int main() {
     const std::vector<double> u0 = {7, -10};
     std::vector u = u0;
     constexpr double noise_sd = 0.05;
-    constexpr int num_samples = 150;
+    constexpr int num_samples = 256;
     constexpr double t0 = 0.0;
     constexpr double t1 = 60;
 
@@ -86,6 +86,10 @@ int main() {
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        wendy.optimize_parameters("ceres");
+       spdlog::set_level(spdlog::level::info);
+       spdlog::info("p* = [{:.4f}]", fmt::join(p_star, ", "));
+       spdlog::info("p̂ = [{:.4f}]", fmt::join(wendy.p_hat, ", "));
+
 
      // const auto cost = *wendy.cost;
      // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;
