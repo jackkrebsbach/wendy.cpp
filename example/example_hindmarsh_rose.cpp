@@ -89,16 +89,16 @@ int main() {
 
     try {
 
-       Wendy wendy(system_eqs, U, p0, tt, true, "AddGaussian");
+       Wendy wendy(system_eqs, U, p0, tt, "info");
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
        // wendy.inspect_equations();
-       // wendy.optimize_parameters("ceres");
+       // wendy.optimize_parameters();
 
         std::cout << U << std::endl;
 
      // const auto cost = *wendy.cost;
-     // std::cout << "\np_star: " << cost(std::vector<double>(p_star)) << std::endl;
+     // std::cout << "\np_star: " << cost() << std::endl;
      // std::cout << "   " << cost(std::vector<double>({44.9581, 1.70535, 1.41093, 0.979979, 1.13597}))  << std::endl;
      // std::cout << "p0:  " << cost(std::vector<double>(p0))  << std::endl; // pstar
      // std::cout << "   " << cost(std::vector<double>({ 66, 2.6, 3.0, 1.6, 2}))  << std::endl;

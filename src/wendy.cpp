@@ -1,29 +1,27 @@
 #include "wnll.h"
 #include "wendy.h"
-
+#include "noise.h"
 #include "utils.h"
+#include "ceres.h"
 #include "test_function.h"
-#include "ceres_cost.h"
-#include "ipopt.h"
 #include "symbolic_utils.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ranges.h>
 
-#include <IpIpoptApplication.hpp>
+#include <iostream>
+#include <vector>
+#include <iomanip>
+
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
 #include <xtensor/views/xindex_view.hpp>
 #include <xtensor/core/xmath.hpp>
 #include <xtensor-blas/xlinalg.hpp>
-#include <iostream>
-#include <vector>
-#include <iomanip>
 
-#include "noise.h"
 
 Wendy::Wendy(const std::vector<std::string> &f_, const xt::xtensor<double, 2> &U_, const std::vector<double> &p0_,
-             const xt::xtensor<double, 1> &tt_,const std::string &log_level, const bool compute_svd_,
+             const xt::xtensor<double, 1> &tt_, const std::string &log_level, const bool compute_svd_,
              const std::string &noise_dist): p0(p0_),
                                              D(U_.shape()[1]),
                                              J(p0_.size()),
@@ -101,7 +99,6 @@ void Wendy::build_cost_function() {
 }
 
 void Wendy::inspect_equations() const {
-
     std::cout << "\n<< Inspecting cost functions >>" << std::endl;
     if (!cost) {
         std::cout << "ERROR: Objective Function not Initialized" << std::endl;
@@ -147,8 +144,7 @@ void Wendy::inspect_equations() const {
     }
 }
 
-void Wendy::optimize_parameters(std::string solver) {
-
+void Wendy::optimize_parameters() {
     spdlog::info("");
     spdlog::info("<< Optimizing parameters >>");
 
@@ -156,52 +152,23 @@ void Wendy::optimize_parameters(std::string solver) {
         spdlog::info("Warning: Objective Function not Initialized");
         return;
     }
+    auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
+    const ceres::GradientProblem problem(fn.release());
 
-    if (solver == "ceres") {
-        auto fn = std::make_unique<FirstOrderCostFunction>(*cost);
-        const ceres::GradientProblem problem(fn.release());
+    ceres::GradientProblemSolver::Options options;
+    options.line_search_direction_type = ceres::LBFGS;
+    options.max_num_iterations = 1000;
+    options.function_tolerance = 1e-9;
+    options.gradient_tolerance = 1e-9;
+    options.minimizer_progress_to_stdout = spdlog::get_level() <= spdlog::level::debug;
 
-        ceres::GradientProblemSolver::Options options;
-        options.line_search_direction_type = ceres::LBFGS;
-        options.max_num_iterations = 1000;
-        options.function_tolerance = 1e-9;
-        options.gradient_tolerance = 1e-9;
-        options.minimizer_progress_to_stdout = spdlog::get_level() <= spdlog::level::debug;
+    std::vector<double> p_hat(p0.begin(), p0.end());
+    ceres::GradientProblemSolver::Summary summary;
+    ceres::Solve(options, problem, p_hat.data(), &summary);
 
-        std::vector<double> p_hat(p0.begin(), p0.end());
-        ceres::GradientProblemSolver::Summary summary;
-        ceres::Solve(options, problem, p_hat.data(), &summary);
-
-        spdlog::info(summary.FullReport());
-        spdlog::info("p̂: {:.4f}", fmt::join(p_hat, ", "));
-
-        this->p_hat = p_hat;
-    } else {
-        const Ipopt::SmartPtr<Ipopt::TNLP> nlp = new IpoptCostFunction(*cost);
-        const Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
-
-        // app->Options()->SetIntegerValue("print_level", 2);
-        // app->Options()->SetStringValue("derivative_test", "second-order");
-        // app->Options()->SetNumericValue("derivative_test_tol", 1e-4);
-        // app->Options()->SetNumericValue("derivative_test_perturbation", 1e-6);
-        // app->Options()->SetStringValue("derivative_test_print_all", "yes");
-        app->Options()->SetStringValue("sb", "yes");
-        app->Options()->SetNumericValue("tol", 1e-10);
-        app->Options()->SetIntegerValue("max_iter", 200);
-        // app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-        app->Options()->SetStringValue("hessian_approximation", "exact"); // exact or limited-memory
-
-        if (app->Initialize() != Ipopt::Solve_Succeeded) {
-            std::cerr << "Failed to initialize IPOPT" << std::endl;
-            return;
-        }
-
-        app->OptimizeTNLP(nlp);
-
-        auto* cost_fn = dynamic_cast<IpoptCostFunction*>(Ipopt::GetRawPtr(nlp));
-        this->p_hat = cost_fn->solution;
-        spdlog::info("p̂: {}", fmt::join(p_hat, ", "));
-    }
+    spdlog::info(summary.FullReport());
+    spdlog::info("p̂: {:.4f}", fmt::join(p_hat, ", "));
+    this->p_hat = p_hat;
 }
 
 void Wendy::build_full_test_function_matrices() {
@@ -257,7 +224,6 @@ void Wendy::build_full_test_function_matrices() {
     }
 
     spdlog::info("  Radii [{}]", fmt::join(radii_, ", "));
-
 
     auto V_ = build_full_test_function_matrix(tt, radii_, 0);
     auto V_prime_ = build_full_test_function_matrix(tt, radii_, 1);

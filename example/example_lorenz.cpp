@@ -90,7 +90,7 @@ int main() {
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
         // wendy.inspect_equations();
-        wendy.optimize_parameters("ceres");
+        wendy.optimize_parameters();
 
         spdlog::set_level(spdlog::level::info);
         spdlog::info("p*= [{:.4f}]", fmt::join(p_star, ", "));

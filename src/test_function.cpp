@@ -123,6 +123,8 @@ xt::xarray<double> build_test_function_matrix(const xtensor<double, 1> &tt, int 
 xt::xarray<double> build_full_test_function_matrix(const xt::xtensor<double, 1> &tt, const xt::xtensor<int, 1> &radii, const int order) {
     std::vector<xt::xtensor<double, 2> > test_matrices(radii.shape()[0]); // Vector containing test matrices for one radius
 
+    // std::cout << "radii:  " << radii << std::endl;
+
     for (int i = 0; i < radii.shape()[0]; ++i) {
         test_matrices[i] = build_test_function_matrix(tt, radii[i], order);  // Build the test matrix for one radius
     }
@@ -140,7 +142,10 @@ std::tuple<int, xt::xarray<double>, xt::xtensor<int, 1>> find_min_radius_int_err
     auto D = U.shape()[1]; // Dimension of the system
 
     int step = std::max(1, static_cast<int>(std::ceil((radius_max - radius_min) / static_cast<double>(num_radii))));
+    // std::cout << radius_min << std::endl;
+    // std::cout << radius_max << std::endl;
     const xtensor<int, 1> radii = xt::arange(radius_min, radius_max, step);
+
     xarray<double> errors = xt::zeros<double>({radii.size()});
 
     const auto IX = static_cast<int>(std::floor((Mp1 - 1) / sub_sample_rate));

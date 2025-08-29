@@ -46,18 +46,7 @@ function(add_wendy_example EXAMPLE_NAME EXAMPLE_SOURCE)
             ${BLAS_LIBRARIES}
             ${LAPACK_LIBRARIES}
     )
-    target_compile_options(${EXAMPLE_NAME} PRIVATE
-            -march=native
-            -mtune=native
-            -O3 -DNDEBUG -march=native -mtune=native -funroll-loops
-            -fno-math-errno
-            -funsafe-math-optimizations
-            -fno-trapping-math
-            -fno-signed-zeros
-            -fcx-limited-range
-            -fexcess-precision=fast
-            -flto -fstrict-aliasing
-    )
+    target_compile_options(${EXAMPLE_NAME} PRIVATE -O2 -DNDEBUG -funroll-loops)
 
 endfunction()
 

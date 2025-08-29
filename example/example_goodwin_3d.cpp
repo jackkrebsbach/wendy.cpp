@@ -88,7 +88,7 @@ int main() {
        Wendy wendy(system_eqs, U, p0, tt);
        wendy.build_full_test_function_matrices();
        wendy.build_cost_function();
-       wendy.optimize_parameters("ceres");
+       wendy.optimize_parameters();
        spdlog::set_level(spdlog::level::info);
 
        spdlog::info("p* = [{:.4f}]", fmt::join(p_star, ", "));

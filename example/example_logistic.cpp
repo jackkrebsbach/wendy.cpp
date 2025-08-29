@@ -1,5 +1,4 @@
 #include "../src/wendy.h"
-#include "../src/noise.h"
 
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/views/xview.hpp>
@@ -52,7 +51,7 @@ int main() {
     std::vector u = u0;
 
     constexpr double noise_sd = 0.10;
-    constexpr int num_samples = 512;
+    constexpr int num_samples = 100;
 
     constexpr double t0 = 0.0;
     constexpr double t1 = 10.0;
@@ -87,8 +86,7 @@ int main() {
         Wendy wendy(system_eqs, U, p0, tt, "none");
         wendy.build_full_test_function_matrices();
         wendy.build_cost_function();
-        // wendy.inspect_equations();
-        wendy.optimize_parameters("ceres");
+        wendy.optimize_parameters();
 
         spdlog::set_level(spdlog::level::info);
         spdlog::info("p̂ = [{:.4f}]", fmt::join(wendy.p_hat, ", "));
